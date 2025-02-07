@@ -7,7 +7,7 @@ void main() {
     MultiProvider(
       providers: [],
       builder: (context, _) {
-        context.bind(() => CounterStore());
+        context.provide(() => CounterStore());
         return const MainApp();
       },
     ),
@@ -35,6 +35,7 @@ class MainApp extends StatelessWidget {
     final (count, setCount) = context.useState(0);
     final (names, setNames) = context.useState(<String>[]);
     final ac = context.useAnimationController();
+    final ctn = context.watch<CounterStore>();
 
     return MaterialApp(
       home: Scaffold(
@@ -56,6 +57,59 @@ class MainApp extends StatelessWidget {
                   );
                 },
                 child: Text('Animar cor'),
+              ),
+              ElevatedButton(
+                onPressed: () => ctn.increment(),
+                child: Text('CounterStore: ${ctn.count}'),
+              ),
+              Builder(
+                builder: (context) {
+                  context.provide(() => CounterStore());
+                  // final ac = context.provide(
+                  //   () => AnimationController(vsync: context.vsync),
+                  // );
+                  final counter = context.useProvider((_) => CounterStore());
+                  final counter2 = context.useProvider((_) => CounterStore());
+                  final counter3 = context.useProvider((_) => CounterStore());
+                  final counter4 = context.useProvider((_) => CounterStore());
+
+                  final aCounter = context.findHookValueByType<CounterStore>();
+
+                  return Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          counter.increment();
+                        },
+                        child: Text('counter: ${counter.count}'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          counter2.increment();
+                        },
+                        child: Text('counter2: ${counter2.count}'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          counter3.increment();
+                        },
+                        child: Text('counter3: ${counter3.count}'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          counter4.increment();
+                        },
+                        child: Text('counter4: ${counter4.count}'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          aCounter.increment();
+                        },
+                        child: Text('aCounter: ${aCounter.count}'),
+                      ),
+                    ],
+                  );
+                },
               ),
               ElevatedButton(
                 onPressed: () => setCount(count + 1),
