@@ -1,162 +1,93 @@
-import 'package:context_plus/context_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:provider_plus/provider_plus.dart';
+import 'package:provide_it/provide_it.dart';
 
 void main() {
   runApp(
-    MultiProvider(
-      providers: [],
-      builder: (context, _) {
-        context.provide(() => CounterStore());
-        return const MainApp();
-      },
+    ProvideIt.root(
+      child: MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: CounterProvider(),
+          ),
+        ),
+      ),
     ),
   );
 }
 
-final counter = Ref<CounterStore>();
-
-class CounterStore extends ChangeNotifier {
+class Counter extends ChangeNotifier {
   var _count = 0;
   int get count => _count;
+
+  var _ascending = true;
+  bool get ascending => _ascending;
 
   void increment() {
     _count++;
     notifyListeners();
   }
+
+  void toggle() {
+    _ascending = !_ascending;
+    notifyListeners();
+  }
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+// final countRef = ValueRef((_) => Counter());
+
+class CounterProvider extends StatelessWidget {
+  const CounterProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final a = context.useState(0);
-    final (count, setCount) = context.useState(0);
-    final (names, setNames) = context.useState(<String>[]);
-    final ac = context.useAnimationController();
-    final ctn = context.watch<CounterStore>();
+    final counter = context.provide((_) => Counter());
+    final (count, setCount) = context.value(0);
 
-    return MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ColorTween(
-                    begin: Colors.yellow,
-                    end: Colors.red,
-                  ).evaluate(ac),
+    context.listenSelect((Counter counter) => counter.count, (previous, next) {
+      print('Count: $previous -> $next');
+    });
+    context.listenSelect((Counter counter) => counter.count, (previous, next) {
+      print('Count: $previous -> $next');
+    });
+
+    return ElevatedButton(
+      onPressed: () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            final count = context.watch<Counter>();
+
+            return AlertDialog(
+              title: Text('Count: ${count.count}'),
+              actions: [
+                ElevatedButton(
+                  onPressed: () => counter.increment(),
+                  child: Text('Increment'),
                 ),
-                onPressed: () {
-                  ac.animateTo(
-                    ac.value < 0.5 ? 1 : 0,
-                    curve: Curves.fastOutSlowIn,
-                    duration: const Duration(seconds: 1),
-                  );
-                },
-                child: Text('Animar cor'),
-              ),
-              ElevatedButton(
-                onPressed: () => ctn.increment(),
-                child: Text('CounterStore: ${ctn.count}'),
-              ),
-              Builder(
-                builder: (context) {
-                  context.provide(() => CounterStore());
-                  // final ac = context.provide(
-                  //   () => AnimationController(vsync: context.vsync),
-                  // );
-                  final counter = context.useProvider((_) => CounterStore());
-                  final counter2 = context.useProvider((_) => CounterStore());
-                  final counter3 = context.useProvider((_) => CounterStore());
-                  final counter4 = context.useProvider((_) => CounterStore());
-
-                  final aCounter = context.findHookValueByType<CounterStore>();
-
-                  return Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          counter.increment();
-                        },
-                        child: Text('counter: ${counter.count}'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          counter2.increment();
-                        },
-                        child: Text('counter2: ${counter2.count}'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          counter3.increment();
-                        },
-                        child: Text('counter3: ${counter3.count}'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          counter4.increment();
-                        },
-                        child: Text('counter4: ${counter4.count}'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          aCounter.increment();
-                        },
-                        child: Text('aCounter: ${aCounter.count}'),
-                      ),
-                    ],
-                  );
-                },
-              ),
-              ElevatedButton(
-                onPressed: () => setCount(count + 1),
-                child: Text('Increment: $count'),
-              ),
-              ElevatedButton(
-                onPressed: () => setNames(names + ['Name ${names.length}']),
-                child: Text('Names: $names'),
-              ),
-            ],
-          ),
-        ),
-      ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+      child: Text('Count: $count'),
     );
   }
 }
 
-class Counter extends StatelessWidget {
-  const Counter({super.key});
+class CounterValue extends StatelessWidget {
+  const CounterValue({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text('Count: ${counter.watchOnly(context, (vm) => vm.count)}'),
-        ElevatedButton(
-          onPressed: () => showDialog(
-            context: context,
-            useRootNavigator: false,
-            builder: (context) => AlertDialog(
-              title: const Text('Alert'),
-              content: const Text('Alert content'),
-              actions: [
-                TextButton(
-                  onPressed: () => counter.of(context).increment(),
-                  child: const Text('Close'),
-                ),
-              ],
-            ),
-          ),
-          child: const Text('Increment'),
-        ),
-        ElevatedButton(
-          onPressed: () => counter.of(context).increment(),
-          child: const Text('Increment'),
-        ),
-      ],
+    final counter = context.value(0);
+
+    return ElevatedButton(
+      onPressed: () => counter.value++,
+      child: Text('Counter: ${counter.value}'),
     );
   }
 }

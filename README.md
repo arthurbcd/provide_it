@@ -1,39 +1,93 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# Provide It
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+ProvideIt is a provider-like state binding, management, and injection using only context extensions.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+**This is a proof of concept and is not recommended for production use.**
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+## Use
 
-## Features
+### Setup
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Set `Provider.root` on the root of your app.
 
 ```dart
-const like = 'sample';
+void main() {
+  runApp(
+    Provider.root(
+      child: App(), // Ex: MaterialApp
+    ),
+  );
+}
 ```
 
-## Additional information
+### 1. Providing
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+#### `context.provide`
+
+Use the `provide` method to bind a state to the context. The state will be disposed when the context is unmounted.
+
+This is equivalent to `Provider` in the provider package.
+
+```dart
+class CounterProvider extends StatelessWidget {
+  const CounterProvider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final counter = context.provide((_) => CounterNotifier());
+
+    return ElevatedButton(
+      onPressed: () => counter.increment(),
+      child: Text('Counter: ${counter.count}'),
+    );
+  }
+}
+```
+
+#### `context.value`
+
+Use the `value` method to bind a state to the context. The state will **not** be disposed when the context is unmounted.
+
+This is equivalent to `Provider.value` in the provider package.
+
+```dart
+class CounterProvider extends StatelessWidget {
+  const CounterProvider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final counter = context.value(0);
+
+    return ElevatedButton(
+      onPressed: () => counter.value++,
+      child: Text('Counter: ${counter.value}'),
+    );
+  }
+}
+```
+
+### 2. Accessing
+
+For accessing a state, several methods are available:
+
+```dart
+final count = context.watch<CounterNotifier>().count;
+final count2 = context.read<int>();
+final count3 = context.select((CounterNotifier counter) => counter.count);
+```
+
+All of these methods are equivalent to the respective methods in the provider package.
+
+### 3. Listening
+
+A highly requested feature is the ability to listen to a state without rebuilding the widget.
+
+There is no equivalent in the `provider` package.
+
+```dart
+context.listen<CounterNotifier>((counter) {
+  print('Counter changed: ${counter.count}');
+});
+```
+
+**This is a proof of concept and is not recommended for production use.**

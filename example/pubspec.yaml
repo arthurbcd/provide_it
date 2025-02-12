@@ -7,9 +7,12 @@ environment:
   sdk: ^3.6.0
 
 dependencies:
+  context_plus: ^4.1.3
   flutter:
     sdk: flutter
-  provider_plus: 
+  flutter_hooks: ^0.20.5
+  provider: ^6.1.2
+  provide_it: 
     path: ../
 
 dev_dependencies:
