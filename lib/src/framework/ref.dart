@@ -1,13 +1,10 @@
 part of 'framework.dart';
 
 abstract class Ref<T> {
-  /// The [key] of the [Ref].
-  Object? get key;
+  const Ref({this.key});
 
-  /// Creates a new [ProvideRef] with the given [key], [create] and [dispose].
-  factory Ref(Create<T> create, {Dispose<T>? dispose, Object? key}) {
-    return ProvideRef<T>(create, dispose: dispose, key: key);
-  }
+  /// The [key] of the [Ref].
+  final Object? key;
 
   /// The default equality for comparing [Ref.key] & [RefState.select] values.
   ///
@@ -33,32 +30,4 @@ abstract class Ref<T> {
 
   @protected
   RefState<T, Ref<T>> createState();
-}
-
-extension RefExtension<T> on Ref<T> {
-  /// Reads the value of this [Ref]. Auto-binds if not already.
-  T read(BuildContext context) {
-    return context.read(key: this);
-  }
-
-  /// Watches the value of this [Ref]. Auto-binds if not already.
-  T watch(BuildContext context) {
-    return context.watch(key: this);
-  }
-
-  /// Selects a value from this [Ref] using [selector].
-  R select<R>(BuildContext context, R selector(T value)) {
-    return context.select(selector, key: this);
-  }
-
-  /// Listens to the value of this [Ref] using [listener].
-  void listen(BuildContext context, void listener(T value)) {
-    context.listen(listener, key: this);
-  }
-
-  /// Listens to the value of this [Ref] using [selector] and [listener].
-  void listenSelect<R>(BuildContext context, R selector(T value),
-      void listener(R? previous, R next)) {
-    context.listenSelect(selector, listener, key: this);
-  }
 }

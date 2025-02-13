@@ -11,7 +11,7 @@ extension ContextVsync on BuildContext {
   TickerProvider get vsync {
     assert(
       ProvideItRootElement.instance.debugDoingInit,
-      'context.vsync must be used within Provider.create/initState method.',
+      'context.vsync must be used within Ref.create/initState method.',
     );
 
     return _TickerProvider(this);

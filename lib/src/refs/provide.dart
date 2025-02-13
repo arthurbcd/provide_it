@@ -58,10 +58,10 @@ class ProvideRef<T> extends RefWidget<T> {
   T bind(BuildContext context) => context.bind(this);
 
   @override
-  RefState<T, ProvideRef<T>> createState() => ProvideState<T>();
+  RefState<T, ProvideRef<T>> createState() => ProvideRefState<T>();
 }
 
-class ProvideState<T> extends RefState<T, ProvideRef<T>> {
+class ProvideRefState<T> extends RefState<T, ProvideRef<T>> {
   late final T value = ref.create(context);
 
   void listener() => setState(() {});

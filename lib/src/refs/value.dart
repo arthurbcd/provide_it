@@ -28,10 +28,10 @@ class ValueRef<T> extends RefWidget<T> {
   (T, void Function(T)) bind(BuildContext context) => context.bind(this);
 
   @override
-  RefState<T, ValueRef<T>> createState() => _ValueState<T>();
+  RefState<T, ValueRef<T>> createState() => ValueRefState<T>();
 }
 
-class _ValueState<T> extends RefState<T, ValueRef<T>> {
+class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   late var value = ref.initialValue;
 
   void setValue(T value) {

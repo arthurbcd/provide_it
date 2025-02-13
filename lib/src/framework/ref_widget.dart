@@ -19,11 +19,11 @@ abstract class RefWidget<T> extends Widget implements Ref<T> {
   void bind(BuildContext context) => context.bind(this);
 
   @override
-  Element createElement() => _RefElement(this);
+  Element createElement() => RefElement(this);
 }
 
-class _RefElement extends ComponentElement {
-  _RefElement(super.widget);
+class RefElement extends ComponentElement {
+  RefElement(super.widget);
 
   @override
   RefWidget get widget => super.widget as RefWidget;
@@ -32,7 +32,9 @@ class _RefElement extends ComponentElement {
   Widget build() {
     assert(widget.builder != null || widget.child != null);
 
+    // we bind the ref to it's own element
     widget.bind(this);
+
     return widget.builder?.call(this, widget.child) ?? widget.child!;
   }
 

@@ -1,18 +1,41 @@
 part of 'framework.dart';
 
-typedef _State<T> = RefState<T, Ref<T>>;
-typedef _Selector = (dynamic, Function);
-typedef _ListenSelector = (dynamic, Function, Function);
+typedef Listeners<T> = Map<int, void Function(T)>;
+typedef Selectors = Map<int, (dynamic, Function)>;
+typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 
+/// An abstract class that represents the state of a [Ref].
+///
+/// This class is intended to be extended by other classes that manage the state
+/// of a [Ref] of type [T] and a reference type [R] that extends [Ref<T>].
+///
+/// The [RefState] class provides a base for managing the lifecycle and state
+/// transitions of a reference, allowing for more complex state management
+/// patterns to be implemented.
+///
+/// This class is designed with the [State] class of a [StatefulWidget] in mind,
+/// and like it, will be used to persist the state of its reference [Ref].
+///
+/// Type Parameters:
+/// - [T]: The type of the value used by [read], [watch], [select], [listen]
+/// - [R]: The [Ref] type that this state is associated with.
+///
+/// See also:
+/// - [ProvideRef]
+/// - [ValueRef]
+///
 abstract class RefState<T, R extends Ref<T>> {
-  final _watchers = <Element>{};
-  final _listeners = <Element, Map<int, ValueSetter<T>>>{};
-  final _selectors = <Element, Map<int, _Selector>>{};
-  final _listenSelectors = <Element, Map<int, _ListenSelector>>{};
+  // binding states
   Element? _element;
   T? _lastReadValue;
   R? _lastRef;
   R? _ref;
+
+  // dependencies
+  final _watchers = <Element>{};
+  final _listeners = <Element, Listeners<T>>{};
+  final _selectors = <Element, Selectors>{};
+  final _listenSelectors = <Element, ListenSelectors>{};
 
   /// The [key] of the [Ref].
   Object? get key {
@@ -29,6 +52,7 @@ abstract class RefState<T, R extends Ref<T>> {
   /// The [context] of [Ref.bind].
   BuildContext get context => _element!;
 
+  /// The last value read by [read].
   T? get debugValue => _lastReadValue;
 
   @protected
@@ -52,35 +76,13 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void reassemble() {
-    _lastRef = null;
-    _watchers.clear();
-    _listeners.clear();
-    _selectors.clear();
-    _listenSelectors.clear();
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      // on reassemble [didUpdateRef] should always be called
-      // so we can safely self-dispose
-      if (_lastRef == null) {
-        ProvideItRootElement.instance._disposeRef(context, ref);
-      }
-    });
-  }
-
-  @protected
-  @mustCallSuper
-  void removeDependent(Element dependent) {
-    _watchers.remove(dependent);
-    _listeners.remove(dependent);
-    _selectors.remove(dependent);
-    _listenSelectors.remove(dependent);
-  }
+  void reassemble() => _clean();
 
   @protected
   @mustCallSuper
   void setState(VoidCallback fn) {
-    fn();
     assert(_element != null && _element!.mounted);
+    fn();
     _element?.markNeedsBuild();
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
@@ -88,60 +90,17 @@ abstract class RefState<T, R extends Ref<T>> {
     _listenSelectors.forEach(_listenSelect);
   }
 
-  void _markNeedsBuild(Element el) {
-    assert(el.mounted);
-    el.markNeedsBuild();
-  }
-
-  void _listen(Element el, Map<int, ValueSetter<T>> fn) {
-    assert(el.mounted);
-    final value = read(el);
-    fn.forEach((_, listener) => listener(value));
-  }
-
-  void _select(Element el, Map<int, _Selector> fn) {
-    assert(el.mounted);
-    final val = read(el);
-
-    for (final e in fn.entries) {
-      final (previous, selector) = e.value;
-      final value = selector(val);
-      final didChange = !Ref.equals(previous, value);
-
-      if (didChange) el.markNeedsBuild();
-      _selectors[el]?[e.key] = (value, selector);
-    }
-  }
-
-  void _listenSelect(Element el, Map<int, _ListenSelector> fn) {
-    assert(el.mounted);
-    final val = read(el);
-
-    for (final e in fn.entries) {
-      final (previous, selector, listener) = e.value;
-      final value = selector(val);
-      final didChange = !Ref.equals(previous, value);
-
-      if (didChange) listener(previous, value);
-      _listenSelectors[el]?[e.key] = (value, selector, listener);
-    }
-  }
-
-  void _assert(BuildContext context, String method, [String? extra]) {
-    assert(
-      context.debugDoingBuild,
-      '$method() can only be called during build. ${extra ?? ''}',
-    );
-  }
-
   @protected
+  @mustCallSuper
   void listen(BuildContext context, int index, void listener(T value)) {
     _assert(context, 'listen');
+
     final branch = _listeners[context as Element] ??= {};
     branch[index] = listener;
   }
 
   @protected
+  @mustCallSuper
   void listenSelect<S>(
     BuildContext context,
     int index,
@@ -156,6 +115,7 @@ abstract class RefState<T, R extends Ref<T>> {
   }
 
   @protected
+  @mustCallSuper
   S select<S>(BuildContext context, int index, S selector(T value)) {
     _assert(context, 'select');
 
@@ -167,6 +127,7 @@ abstract class RefState<T, R extends Ref<T>> {
   }
 
   @protected
+  @mustCallSuper
   T watch(BuildContext context) {
     _assert(context, 'watch', 'Use `read()` instead.');
 
@@ -175,36 +136,23 @@ abstract class RefState<T, R extends Ref<T>> {
   }
 
   @protected
-  T read(BuildContext context);
-
-  @protected
-  void build(BuildContext context);
+  @mustCallSuper
+  void removeDependent(Element dependent) {
+    _watchers.remove(dependent);
+    _listeners.remove(dependent);
+    _selectors.remove(dependent);
+    _listenSelectors.remove(dependent);
+  }
 
   @override
-  String toString() {
-    final keyText = key == null ? '' : '#$key';
-    final valueText = '${debugValue ?? 'null'}'.replaceAll('Instance of ', '');
-    final desc = [
-      if (_watchers.isNotEmpty) 'watchers: ${_watchers.length}',
-      if (_listeners.isNotEmpty) 'listeners: ${_listeners.lengthExpanded}',
-      if (_selectors.isNotEmpty) 'selectors: ${_selectors.lengthExpanded}',
-      if (_listenSelectors.isNotEmpty)
-        'listenSelectors: ${_listenSelectors.lengthExpanded}',
-    ].join(', ');
+  String toString() => _debugState();
 
-    return '${ref.debugLabel}$keyText: $valueText${desc.isNotEmpty ? ', $desc' : ''}';
-  }
-}
+  /// The value to be read by [watch], [select], [listen] and [listenSelect].
+  @protected
+  T read(BuildContext context);
 
-extension on Ref {
-  String get debugLabel {
-    final parts = runtimeType.toString().split('<');
-    final ref = parts.first.replaceAll('Ref', '').toLowerCase();
-    final type = parts.last;
-    return 'context.$ref<$type';
-  }
-}
-
-extension<K> on Map<K, Map> {
-  int get lengthExpanded => values.fold(0, (sum, value) => sum + value.length);
+  /// The method called by [Ref.bind]. You can override this method to
+  /// return a custom value. See [ProvideRef] or [ValueRef].
+  @protected
+  void build(BuildContext context);
 }
