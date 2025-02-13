@@ -8,12 +8,12 @@ ProvideIt is a provider-like state binding, management, and injection using only
 
 ### Setup
 
-Set `Provider.root` on the root of your app.
+Set `ProvideIt.root` on the root of your app.
 
 ```dart
 void main() {
   runApp(
-    Provider.root(
+    ProvideIt.root(
       child: App(), // Ex: MaterialApp
     ),
   );

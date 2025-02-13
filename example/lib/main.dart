@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
 
@@ -19,21 +20,11 @@ class Counter extends ChangeNotifier {
   var _count = 0;
   int get count => _count;
 
-  var _ascending = true;
-  bool get ascending => _ascending;
-
   void increment() {
     _count++;
     notifyListeners();
   }
-
-  void toggle() {
-    _ascending = !_ascending;
-    notifyListeners();
-  }
 }
-
-// final countRef = ValueRef((_) => Counter());
 
 class CounterProvider extends StatelessWidget {
   const CounterProvider({super.key});
@@ -44,14 +35,20 @@ class CounterProvider extends StatelessWidget {
     final (count, setCount) = context.value(0);
 
     context.listenSelect((Counter counter) => counter.count, (previous, next) {
-      print('Count: $previous -> $next');
+      if (kDebugMode) {
+        print('Count1: $previous -> $next');
+      }
     });
     context.listenSelect((Counter counter) => counter.count, (previous, next) {
-      print('Count: $previous -> $next');
+      if (kDebugMode) {
+        print('Count2: $previous -> $next');
+      }
     });
 
     return ElevatedButton(
       onPressed: () {
+        setCount(count + 1);
+
         showDialog(
           context: context,
           builder: (context) {
@@ -73,7 +70,7 @@ class CounterProvider extends StatelessWidget {
           },
         );
       },
-      child: Text('Count: $count'),
+      child: Text('Opened: $count'),
     );
   }
 }

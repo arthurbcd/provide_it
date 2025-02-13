@@ -1,4 +1,4 @@
-part of '../framework.dart';
+part of 'framework.dart';
 
 abstract class RefWidget<T> extends Widget implements Ref<T> {
   const RefWidget({

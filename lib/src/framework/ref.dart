@@ -1,4 +1,4 @@
-part of '../framework.dart';
+part of 'framework.dart';
 
 abstract class Ref<T> {
   /// The [key] of the [Ref].

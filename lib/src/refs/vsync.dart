@@ -1,9 +1,8 @@
-// import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/refs/provide.dart';
 
-import '../framework.dart';
+import '../framework/framework.dart';
 
 extension ContextVsync on BuildContext {
   /// Creates a single [TickerProvider] for the current [BuildContext].
@@ -11,7 +10,7 @@ extension ContextVsync on BuildContext {
   /// Must be used exactly once, preferably within [Create].
   TickerProvider get vsync {
     assert(
-      ProvideItRoot.of(this).debugDoingInit,
+      ProvideItRootElement.instance.debugDoingInit,
       'context.vsync must be used within Provider.create/initState method.',
     );
 

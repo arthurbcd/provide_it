@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
-import '../framework.dart';
+import '../framework/framework.dart';
 
 extension ContextValue on BuildContext {
   (T, void Function(T)) value<T>(T initialValue, {Object? key}) {
@@ -42,4 +43,7 @@ class _ValueState<T> extends RefState<T, ValueRef<T>> {
 
   @override
   T read(BuildContext context) => value;
+
+  @override
+  T? get debugValue => value;
 }

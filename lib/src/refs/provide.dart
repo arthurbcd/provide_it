@@ -1,8 +1,7 @@
-// ignore_for_file: deprecated_member_use_from_same_package
-
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
-import '../framework.dart';
+import '../framework/framework.dart';
 import 'value.dart';
 
 @Deprecated('Use `context.provide` instead.')
@@ -86,4 +85,7 @@ class ProvideState<T> extends RefState<T, ProvideRef<T>> {
 
   @override
   T read(BuildContext context) => value;
+
+  @override
+  T get debugValue => value;
 }
