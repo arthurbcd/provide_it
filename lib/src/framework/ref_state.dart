@@ -59,10 +59,13 @@ abstract class RefState<T, R extends Ref<T>> {
   /// The [context] of [Ref.bind].
   BuildContext get context => _element!;
 
-  /// The type used to bind this state.
+  /// The type used to [Ref.bind] this state.
   late final type = () {
     final type = T.toString();
-    assert(type != 'dynamic', 'Type must not be dynamic.');
+    assert(
+      type != 'dynamic' && type != 'Object',
+      'This is likely a mistake. Provide a non-generic type.',
+    );
     return type;
   }();
 
@@ -137,7 +140,6 @@ abstract class RefState<T, R extends Ref<T>> {
 
     final listeners = _listeners[context as Element] ??= {};
     listeners[index] = listener;
-    _rootWatchers;
   }
 
   @protected
@@ -153,7 +155,6 @@ abstract class RefState<T, R extends Ref<T>> {
     final value = selector(_read(context));
     final listSelectors = _listenSelectors[context as Element] ??= {};
     listSelectors[index] = (value, selector, listener);
-    _rootWatchers;
   }
 
   @protected
@@ -164,7 +165,6 @@ abstract class RefState<T, R extends Ref<T>> {
     final value = selector(_read(context));
     final selectors = _selectors[context as Element] ??= {};
     selectors[index] = (value, selector);
-    _rootWatchers;
 
     return value;
   }
@@ -174,11 +174,8 @@ abstract class RefState<T, R extends Ref<T>> {
   T watch(BuildContext context) {
     _assert(context, 'watch', 'Use `read()` instead.');
 
-    final value = _read(context);
     _watchers.add(context as Element);
-    _rootWatchers;
-
-    return value;
+    return _read(context);
   }
 
   @protected

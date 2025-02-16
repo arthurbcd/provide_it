@@ -20,6 +20,7 @@ abstract class Watcher<T> {
   }
 
   /// Whether this watcher can watch [value].
+  @protected
   bool canInit(value) => value is T;
 
   /// Starts watching [value].

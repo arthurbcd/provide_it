@@ -14,7 +14,10 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
   }
 
   T _read(BuildContext context) {
-    return _lastReadValue = read(context);
+    _lastReadValue = read(context);
+    _rootWatchers;
+
+    return _lastReadValue as T;
   }
 
   void _listen(Element el, Listeners listeners) {

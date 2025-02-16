@@ -18,7 +18,7 @@ extension on ProvideItElement {
 
     final contextCache = _cache[context] ??= {};
     final typeCache = contextCache[type] ??= HashMap(equals: Ref.equals);
-    final state = typeCache[key] ??= _findState(type, key: key);
+    final state = typeCache[key] ??= _findState(context, type, key);
 
     if (state?.type == type) {
       final index = _cacheIndex[context] ??= _initCacheIndex(context);
@@ -27,21 +27,32 @@ extension on ProvideItElement {
       return state!;
     }
 
-    // we assume it's a global lazy ref, so we can bind/read it.
+    // case it's a global ref, we can auto-bind it.
     if (key case Ref<T> ref) return _state(context, ref);
 
-    throw StateError('No state found for $T with key $key');
+    throw StateError('Ref<$T> not found, key: $key');
   }
 
-  _State? _findState(String type, {Object? key}) {
-    for (var branch in _tree.values) {
-      for (var state in branch.values) {
-        if (state.type == type) {
-          if (Ref.equals(state.ref.key, key)) return state;
-        }
+  _State? _findState(BuildContext context, String type, Object? key) {
+    final types = widget.allowedDuplicates?.map((e) => '$e');
+
+    // check same context first, then leafs to root.
+    var states = _tree[context]?.values ?? [];
+    states = states.followedBy(_tree.values.expand((e) => e.values));
+    _State? state;
+
+    for (var s in states) {
+      if (s.type == type && Ref.equals(s.ref.key, key)) {
+        if (!kDebugMode || types == null) return state;
+        assert(
+          state == null && types.contains(type),
+          'Duplicate Ref<$type> found, key: $key',
+        );
+        state ??= s;
       }
     }
-    return null;
+
+    return state;
   }
 
   void _disposeCache(Element context) {

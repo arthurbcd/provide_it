@@ -11,9 +11,6 @@ abstract class RefWidget<T> extends Widget implements Ref<T> {
   final Widget? child;
 
   @override
-  String get type => T.toString();
-
-  @override
   void bind(BuildContext context) => context.bind(this);
 
   @override
@@ -30,7 +27,7 @@ class RefElement extends ComponentElement {
   Widget build() {
     assert(widget.builder != null || widget.child != null);
 
-    /// we bind the reference to its own element.
+    /// we bind it to its own element.
     widget.bind(this);
 
     return widget.builder?.call(this, widget.child) ?? widget.child!;

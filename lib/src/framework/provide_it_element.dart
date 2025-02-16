@@ -21,9 +21,9 @@ class ProvideItElement extends InheritedElement {
   ParamLocator _defaultLocator(ProvideIt widget) {
     return (param) {
       if (param is NamedParam) {
-        return widget.namedLocator?.call(param) ?? read(this, type: param.type);
+        return widget.namedLocator?.call(param) ?? readIt(type: param.type);
       }
-      return read(this, type: param.type);
+      return readIt(type: param.type);
     };
   }
 
@@ -35,7 +35,7 @@ class ProvideItElement extends InheritedElement {
   final _tree = TreeMap<Element, TreeMap<int, _State>>();
   final _treeIndex = <Element, int>{};
 
-  // state finder cache by context, type and key.
+  // state reader cache by context, type and key.
   final _cache = <BuildContext, Map<String, Map<Object?, _State?>>>{};
   final _cacheIndex = <BuildContext, int>{};
 
@@ -77,13 +77,17 @@ class ProvideItElement extends InheritedElement {
     state.listenSelect(context, _cacheIndex[context]!, selector, listener);
   }
 
-  T read<T>(BuildContext context, {String? type, Object? key}) {
-    final state = _stateOf<T>(context, type: type, key: key);
+  T read<T>(BuildContext context, {Object? key}) {
+    final state = _stateOf<T>(context, key: key);
 
     return state._read(context);
   }
 
-  T readIt<T>({Object? key}) => read<T>(this, key: key);
+  T readIt<T>({String? type, Object? key}) {
+    final state = _stateOf<T>(this, type: type, key: key);
+
+    return state._read(this);
+  }
 
   @override
   void reassemble() {

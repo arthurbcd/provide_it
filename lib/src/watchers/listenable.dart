@@ -11,5 +11,6 @@ class ListenableWatcher extends Watcher<Listenable> {
   @override
   void cancel() {
     value.removeListener(notify);
+    // we do not dispose as it may be used elsewhere
   }
 }
