@@ -2,18 +2,16 @@ part of 'framework.dart';
 
 abstract class RefWidget<T> extends Widget implements Ref<T> {
   const RefWidget({
-    Object? key,
+    super.key,
     this.builder,
     this.child,
-  })  : _key = key,
-        super(key: null);
+  });
 
   final TransitionBuilder? builder;
   final Widget? child;
-  final Object? _key;
 
   @override
-  Key? get key => _key is Key ? _key as Key : ObjectKey(_key);
+  String get type => T.toString();
 
   @override
   void bind(BuildContext context) => context.bind(this);
@@ -32,7 +30,7 @@ class RefElement extends ComponentElement {
   Widget build() {
     assert(widget.builder != null || widget.child != null);
 
-    // we bind the ref to it's own element
+    /// we bind the reference to its own element.
     widget.bind(this);
 
     return widget.builder?.call(this, widget.child) ?? widget.child!;

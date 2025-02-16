@@ -2,7 +2,7 @@ part of 'framework.dart';
 
 typedef _State<T> = RefState<T, Ref<T>>;
 
-extension on ProvideItRootElement {
+extension on ProvideItElement {
   int _initTreeIndex(BuildContext context) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the index for the next build.
@@ -26,6 +26,7 @@ extension on ProvideItRootElement {
 
       final state = branch[index] = ref.createState()
         .._element = context
+        .._root = this
         .._ref = ref
         ..initState();
 

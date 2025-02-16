@@ -1,6 +1,6 @@
 part of 'framework.dart';
 
-extension on ProvideItRootElement {
+extension on ProvideItElement {
   int _initCacheIndex(BuildContext context) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the indexes for the next build.
@@ -11,19 +11,20 @@ extension on ProvideItRootElement {
     return 0;
   }
 
-  _State<T> _stateOf<T>(BuildContext context, {Object? key}) {
+  _State _stateOf<T>(BuildContext context, {String? type, Object? key}) {
     // we depend so we can get notified by [removeDependent].
     context.dependOnInheritedElement(this);
+    type ??= T.toString();
 
     final contextCache = _cache[context] ??= {};
-    final typeCache = contextCache[T] ??= HashMap(equals: Ref.equals);
-    final state = typeCache[key] ??= _findState<T>(key: key);
+    final typeCache = contextCache[type] ??= HashMap(equals: Ref.equals);
+    final state = typeCache[key] ??= _findState(type, key: key);
 
-    if (state case _State<T> state) {
+    if (state?.type == type) {
       final index = _cacheIndex[context] ??= _initCacheIndex(context);
       _cacheIndex[context] = index + 1;
 
-      return state;
+      return state!;
     }
 
     // we assume it's a global lazy ref, so we can bind/read it.
@@ -32,11 +33,11 @@ extension on ProvideItRootElement {
     throw StateError('No state found for $T with key $key');
   }
 
-  _State<T>? _findState<T>({Object? key}) {
+  _State? _findState(String type, {Object? key}) {
     for (var branch in _tree.values) {
-      for (var leaf in branch.values) {
-        if (leaf case _State<T> state) {
-          if (Ref.equals(state.key, key)) return state;
+      for (var state in branch.values) {
+        if (state.type == type) {
+          if (Ref.equals(state.ref.key, key)) return state;
         }
       }
     }

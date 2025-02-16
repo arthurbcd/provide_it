@@ -13,16 +13,20 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
     el.markNeedsBuild();
   }
 
-  void _listen(Element el, Listeners<T> listeners) {
+  T _read(BuildContext context) {
+    return _lastReadValue = read(context);
+  }
+
+  void _listen(Element el, Listeners listeners) {
     assert(el.mounted);
 
-    final value = read(el);
+    final value = _read(el);
     listeners.forEach((_, listener) => listener(value));
   }
 
   void _listenSelect(Element el, ListenSelectors listenSelectors) {
     assert(el.mounted);
-    final val = read(el);
+    final val = _read(el);
 
     for (final e in listenSelectors.entries) {
       final (previous, selector, listener) = e.value;
@@ -36,7 +40,7 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
 
   void _select(Element el, Selectors selectors) {
     assert(el.mounted);
-    final val = read(el);
+    final val = _read(el);
 
     for (final e in selectors.entries) {
       final (previous, selector) = e.value;
@@ -58,13 +62,13 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
       /// on reassemble, [didUpdateRef] should always be called.
       /// null implies that the ref was removed, allowing safe disposal.
       if (_lastRef == null) {
-        ProvideItRootElement.instance._disposeRef(context, ref);
+        ProvideItElement.instance._disposeRef(context, ref);
       }
     });
   }
 
   String _debugState() {
-    final keyText = key == null ? '' : '#$key';
+    final keyText = ref.key == null ? '' : '#${ref.key}';
     final valueText = '${debugValue ?? 'null'}'.replaceAll('Instance of ', '');
     final desc = [
       if (_watchers.isNotEmpty) 'watchers: ${_watchers.length}',
@@ -74,16 +78,7 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
         'listenSelectors: ${_listenSelectors.lengthExpanded}',
     ].join(', ');
 
-    return '${ref.debugLabel}$keyText: $valueText${desc.isNotEmpty ? ', $desc' : ''}';
-  }
-}
-
-extension on Ref {
-  String get debugLabel {
-    final parts = runtimeType.toString().split('<');
-    final ref = parts.first.replaceAll('Ref', '').toLowerCase();
-    final type = parts.last;
-    return 'context.$ref<$type';
+    return '$debugLabel$keyText: $valueText${desc.isNotEmpty ? ', $desc' : ''}';
   }
 }
 

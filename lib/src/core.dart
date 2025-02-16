@@ -1,24 +1,17 @@
 import 'package:flutter/widgets.dart';
 
 import 'framework/framework.dart';
+import 'refs/create.dart';
+import 'refs/provide.dart';
+import 'refs/value.dart';
 
 @Deprecated('Use `readIt` instead.')
 final getIt = readIt;
 
-/// A contextless version of [ProvideIt.read].
+/// A contextless version of [ContextBinds.read].
 final readIt = _instance.readIt;
 
-extension ProvideIt on BuildContext {
-  /// The root of the [ProvideIt] framework.
-  ///
-  /// This is required to be set at the root of your app.
-  static ProvideItRoot root({Key? key, required Widget child}) {
-    return ProvideItRoot(key: key, child: child);
-  }
-
-  /// Logs the current state of the [ProvideIt] framework.
-  static void log() => _instance.debugTree();
-
+extension ContextBinds on BuildContext {
   /// Binds [Ref] to this [BuildContext].
   R bind<R, T>(Ref<T> ref) {
     return _instance.bind(this, ref);
@@ -54,32 +47,51 @@ extension ProvideIt on BuildContext {
   }
 }
 
-extension RefExtension<T> on Ref<T> {
-  /// Reads the value of this [Ref]. Auto-binds if not already.
-  T read(BuildContext context) {
-    return _instance.read(context, key: this);
+extension ContextRefs on BuildContext {
+  (T, void Function(T)) value<T>(T initialValue, {Object? key}) {
+    return ValueRef(
+      initialValue,
+      key: key,
+    ).bind(this);
   }
 
-  /// Watches the value of this [Ref]. Auto-binds if not already.
-  T watch(BuildContext context) {
-    return _instance.watch(context, key: this);
+  T create<T>(T create(), {void dispose(T value)?, Object? key}) {
+    return CreateRef<T>(
+      create,
+      dispose: dispose,
+      key: key,
+    ).bind(this);
   }
 
-  /// Selects a value from this [Ref] using [selector].
-  R select<R>(BuildContext context, R selector(T value)) {
-    return _instance.select(context, selector, key: this);
+  void provide<T>(
+    Function create, {
+    void dispose(T value)?,
+    Map<String, dynamic>? parameters,
+    Object? key,
+  }) {
+    ProvideRef<T>(
+      key: key,
+      create,
+      dispose: dispose,
+      parameters: parameters,
+      lazy: false,
+    ).bind(this);
   }
 
-  /// Listens to the value of this [Ref] using [listener].
-  void listen(BuildContext context, void listener(T value)) {
-    _instance.listen(context, listener, key: this);
-  }
-
-  /// Listens to the value of this [Ref] using [selector] and [listener].
-  void listenSelect<R>(BuildContext context, R selector(T value),
-      void listener(R? previous, R next)) {
-    _instance.listenSelect(context, selector, listener, key: this);
+  void provideLazy<T>(
+    Function create, {
+    void dispose(T value)?,
+    Map<String, dynamic>? parameters,
+    Object? key,
+  }) {
+    ProvideRef(
+      create,
+      dispose: dispose,
+      key: key,
+      parameters: parameters,
+      lazy: true,
+    ).bind(this);
   }
 }
 
-ProvideItRootElement get _instance => ProvideItRootElement.instance;
+ProvideItElement get _instance => ProvideItElement.instance;

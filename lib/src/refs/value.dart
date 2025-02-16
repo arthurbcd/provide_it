@@ -3,24 +3,10 @@ import 'package:provide_it/src/core.dart';
 
 import '../framework/framework.dart';
 
-extension ContextValue on BuildContext {
-  (T, void Function(T)) value<T>(T initialValue, {Object? key}) {
-    return ValueRef(initialValue, key: key).bind(this);
-  }
-}
-
-extension ValuePair<T> on (T, void Function(T)) {
-  T get value => $1;
-  set value(T value) => $2(value);
-}
-
-@protected
-class ValueRef<T> extends RefWidget<T> {
+class ValueRef<T> extends Ref<T> {
   const ValueRef(
     this.initialValue, {
     super.key,
-    super.builder,
-    super.child,
   });
   final T initialValue;
 
@@ -39,11 +25,18 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   }
 
   @override
-  (T, void Function(T)) build(BuildContext context) => (value, setValue);
+  (T, void Function(T)) bind(BuildContext context) {
+    return (watch(context), setValue);
+  }
 
   @override
   T read(BuildContext context) => value;
 
   @override
-  T? get debugValue => value;
+  T get debugValue => value;
+}
+
+extension ValueRecordExtension<T> on (T, void Function(T)) {
+  T get value => $1;
+  set value(T value) => $2(value);
 }

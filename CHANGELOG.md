@@ -2,17 +2,15 @@
 
 ## 0.2.0
 
-- WIP Improved injection.
-- WIP Added `get_it` methods as deprecations for retro-compatibility.
-- WIP Added `provider` widgets as deprecations for retro-compatibility.
-- WIP Added `LazyProvideRef`.
-- WIP Added `FutureRef` & `context.future`.
-- WIP Added `StreamRef` & `context.stream`.
-- WIP Added `Watcher` for aditional listening.
-- WIP Added `init` to `ProvideIt.root`.
-- WIP Added `errorBuilder` to `ProvideIt.root`.
-- WIP Added `loadingBuilder` to `ProvideIt.root`.
-- WIP Added `watchers` to `ProvideIt.root`.
+- Changed `ProvideIt.root` to `ProvideIt`.
+- Added `provide_it/injector.dart` library.
+- Added `Injector` & `Param` for auto-injection.
+- Improved all `provide` methods with auto-injection.
+- Added `ProvideLazyRef` & `context.provideLazy`.
+- Added `Watcher` for custom watching.
+- Added `ProvideIt.watchers` with `DefaultWatchers`.
+- Added `ProvideIt.namedLocator`. for injecting parameters.
+- Added `CreateRef` & `context.create`.
 
 ## 0.1.0
 

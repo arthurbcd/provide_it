@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
+// import 'package:provide_it/provide_it.dart';
 
 void main() {
   runApp(
-    ProvideIt.root(
+    ProvideIt(
       child: MaterialApp(
         home: Scaffold(
           body: Center(
@@ -17,11 +18,11 @@ void main() {
 }
 
 class Counter extends ChangeNotifier {
-  var _count = 0;
-  int get count => _count;
+  Counter(this.count);
+  int count;
 
   void increment() {
-    _count++;
+    count++;
     notifyListeners();
   }
 }
@@ -31,7 +32,10 @@ class CounterProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final counter = context.provide((_) => Counter());
+    // Injector;
+    context.value(10);
+    context.provideLazy(Counter.new);
+
     final (count, setCount) = context.value(0);
 
     context.listenSelect((Counter counter) => counter.count, (previous, next) {
@@ -55,10 +59,10 @@ class CounterProvider extends StatelessWidget {
             final count = context.watch<Counter>();
 
             return AlertDialog(
-              title: Text('Count: ${count.count}'),
+              title: Text('Text: ${count.count}'),
               actions: [
                 ElevatedButton(
-                  onPressed: () => counter.increment(),
+                  onPressed: () => context.read<Counter>().increment(),
                   child: Text('Increment'),
                 ),
                 ElevatedButton(

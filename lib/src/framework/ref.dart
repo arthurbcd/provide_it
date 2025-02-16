@@ -3,7 +3,8 @@ part of 'framework.dart';
 abstract class Ref<T> {
   const Ref({this.key});
 
-  /// The [key] of the [Ref].
+  /// The unique identifier for the [Ref] instance.
+  /// Equivalent to [Widget.key].
   final Object? key;
 
   /// The default equality for comparing [Ref.key] & [RefState.select] values.
@@ -26,7 +27,10 @@ abstract class Ref<T> {
   static bool equals(Object? a, Object? b) => defaultEquality(a, b);
 
   /// Binds this [Ref] to the [context].
-  void bind(BuildContext context);
+  ///
+  /// Will internally call [RefState.bind].
+  /// When overridden, both must have the same signature.
+  void bind(BuildContext context) => context.bind(this);
 
   @protected
   RefState<T, Ref<T>> createState();
