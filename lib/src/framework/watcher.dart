@@ -1,12 +1,12 @@
-part of 'framework.dart';
+part of '../framework.dart';
 
 /// An abstract class that represents a watcher for a value of type [T].
 ///
 /// The [Watcher] class provides a mechanism to watch a value and notify
-/// dependents when the value changes. It maintains an internal state and
-/// the value being watched.
+/// dependents when the value changes.
 ///
 /// See also:
+/// - [DefaultWatchers].
 /// - [ListenableWatcher].
 abstract class Watcher<T> {
   RefState? _state;
@@ -32,7 +32,12 @@ abstract class Watcher<T> {
   /// Stops watching [value].
   ///
   /// Called when [value] is no longer being watched.
-  /// The value may be re-watched after this method is called. Do not dispose.
   @protected
   void cancel();
+
+  /// Disposes of this watcher.
+  ///
+  /// Called when the [Ref] that created this [value] is disposed.
+  @protected
+  void dispose();
 }

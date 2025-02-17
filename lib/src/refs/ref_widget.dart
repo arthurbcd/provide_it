@@ -1,4 +1,6 @@
-part of 'framework.dart';
+import 'package:flutter/widgets.dart';
+
+import 'ref.dart';
 
 abstract class RefWidget<T> extends Widget implements Ref<T> {
   const RefWidget({
@@ -27,7 +29,7 @@ class RefElement extends ComponentElement {
   Widget build() {
     assert(widget.builder != null || widget.child != null);
 
-    /// we bind it to its own element.
+    // we bind it to its own element.
     widget.bind(this);
 
     return widget.builder?.call(this, widget.child) ?? widget.child!;

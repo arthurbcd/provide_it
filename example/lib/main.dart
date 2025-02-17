@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
 // import 'package:provide_it/provide_it.dart';
@@ -6,6 +5,12 @@ import 'package:provide_it/provide_it.dart';
 void main() {
   runApp(
     ProvideIt(
+      // provide: (context) async {
+      //   await Future.delayed(Duration(seconds: 3));
+
+      //   context.provide(Counter.futureCounter);
+      //   print('Init');
+      // },
       child: MaterialApp(
         home: Scaffold(
           body: Center(
@@ -18,14 +23,36 @@ void main() {
 }
 
 class Counter extends ChangeNotifier {
-  Counter(this.count);
-  int count;
+  Counter();
+
+  static Future<Counter> futureCounter() async {
+    await Future.delayed(Duration(seconds: 3));
+    return Counter();
+  }
+
+  static Stream<Counter> streamCounter() async* {
+    for (var i = 0; i < 10; i++) {
+      await Future.delayed(Duration(seconds: 1));
+      yield Counter();
+    }
+  }
+
+  int count = 0;
 
   void increment() {
     count++;
     notifyListeners();
   }
 }
+
+Stream<int> streamCounter() async* {
+  for (var i = 0; i < 10; i++) {
+    await Future.delayed(Duration(seconds: 1));
+    yield i;
+  }
+}
+
+final countRef = ValueRef<int>(0);
 
 class CounterProvider extends StatelessWidget {
   const CounterProvider({super.key});
@@ -35,46 +62,66 @@ class CounterProvider extends StatelessWidget {
     // Injector;
     context.value(10);
     context.provideLazy(Counter.new);
+    context.provide(streamCounter, key: 'streamCounter');
+
+    context.watch<int?>(key: 'streamCounter');
 
     final (count, setCount) = context.value(0);
 
-    context.listenSelect((Counter counter) => counter.count, (previous, next) {
-      if (kDebugMode) {
-        print('Count1: $previous -> $next');
-      }
-    });
-    context.listenSelect((Counter counter) => counter.count, (previous, next) {
-      if (kDebugMode) {
-        print('Count2: $previous -> $next');
-      }
-    });
+    context.listenSelect((int count) => count, (previous, next) {
+      print('Count1: $previous -> $next');
+    }, key: 'streamCounter');
 
-    return ElevatedButton(
-      onPressed: () {
-        setCount(count + 1);
+    context.listenSelect((int count) => count, (previous, next) {
+      print('Count2: $previous -> $next');
+    }, key: 'streamCounter');
 
-        showDialog(
-          context: context,
-          builder: (context) {
-            final count = context.watch<Counter>();
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Reloader(),
+        ElevatedButton(
+          onPressed: () {
+            setCount(count + 1);
 
-            return AlertDialog(
-              title: Text('Text: ${count.count}'),
-              actions: [
-                ElevatedButton(
-                  onPressed: () => context.read<Counter>().increment(),
-                  child: Text('Increment'),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text('Close'),
-                ),
-              ],
+            showDialog(
+              context: context,
+              builder: (context) {
+                final count = context.watch<Counter>();
+
+                return AlertDialog(
+                  title: Text('Text: ${count.count}'),
+                  actions: [
+                    ElevatedButton(
+                      onPressed: () => context.read<Counter>().increment(),
+                      child: Text('Increment'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text('Close'),
+                    ),
+                  ],
+                );
+              },
             );
           },
-        );
-      },
-      child: Text('Opened: $count'),
+          child: Text('Opened: $count'),
+        ),
+      ],
+    );
+  }
+}
+
+class Reloader extends StatelessWidget {
+  const Reloader({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final snapshot = context.future(Counter.futureCounter, key: 'counter');
+
+    return ElevatedButton(
+      onPressed: () => context.reload(key: 'counter'),
+      child: Text('Reload: ${snapshot.connectionState}'),
     );
   }
 }

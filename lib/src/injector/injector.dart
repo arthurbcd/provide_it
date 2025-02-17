@@ -4,8 +4,8 @@ import 'param.dart';
 
 export 'injector.dart';
 
-/// Signature for locating a [Injector.create] argument by it's type or name.
 typedef ParamLocator = dynamic Function(Param param);
+typedef NamedLocator = dynamic Function(NamedParam param);
 
 class Injector<T> {
   /// Creates a new instance of [Injector].
@@ -49,11 +49,25 @@ class Injector<T> {
   /// Whether to ignore private types.
   final bool ignorePrivateTypes;
 
-  /// The type of [create] function.
+  /// The return type of [create] function.
+  ///
+  /// If [create] is a [Future] or [Stream], the subtype is returned.
   late final type = _type();
 
+  /// The type of [create] function.
+  late final rawType = _rawType();
+
   String _type() {
-    if (T != dynamic) return T.toString();
+    if (rawType.startsWith('Future') || rawType.startsWith('Stream')) {
+      return rawType.split('<').last.split('>').first.replaceAll('?', '');
+    }
+
+    return rawType.replaceAll('?', '');
+  }
+
+  String _rawType() {
+    const types = [dynamic, Future, Stream];
+    if (!types.contains(T)) return T.toString();
 
     final typeLine = _createTexts.last.replaceFirst(' => ', '');
     final buffer = StringBuffer();
@@ -278,4 +292,8 @@ extension SplitBetweenExtension on String {
       substring(currentIndex) // After
     ];
   }
+}
+
+extension TypeExtension on Type {
+  String get type => toString().replaceAll('?', '');
 }

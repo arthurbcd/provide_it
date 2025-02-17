@@ -2,6 +2,8 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   errors:
     use_function_type_syntax_for_parameters: ignore
+    invalid_use_of_protected_member: ignore
+    deprecated_member_use_from_same_package: ignore
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

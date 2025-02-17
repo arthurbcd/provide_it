@@ -1,4 +1,4 @@
-part of 'framework.dart';
+part of '../framework.dart';
 
 class ProvideItElement extends InheritedElement {
   @override
@@ -39,30 +39,47 @@ class ProvideItElement extends InheritedElement {
   final _cache = <BuildContext, Map<String, Map<Object?, _State?>>>{};
   final _cacheIndex = <BuildContext, int>{};
 
+  Future<void> allReady() {
+    final futures = _tree.values
+        .expand((branch) => branch.values.whereType<ProvideRefState>())
+        .map((state) => state.future);
+
+    return Future.wait(futures.nonNulls);
+  }
+
   R bind<R, T>(BuildContext context, Ref<T> ref) {
-    _assert(context, 'bind');
+    _assertContext(context, 'bind');
 
     return _state(context, ref).bind(context) as R;
   }
 
   T watch<T>(BuildContext context, {Object? key}) {
-    _assert(context, 'watch');
+    _assertContext(context, 'watch');
 
-    return _stateOf<T>(context, key: key).watch(context);
+    final state = _stateOf<T?>(context, key: key);
+    final value = state?.watch(context);
+
+    if (value is T) return value;
+    throw StateError('watch<$T> not found, key: $key');
   }
 
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
-    _assert(context, 'select');
+    _assertContext(context, 'select');
 
     final state = _stateOf<T>(context, key: key);
-    return state.select(context, _cacheIndex[context]!, selector);
+    final value = state?.select(context, _cacheIndex[context]!, selector);
+
+    if (value is R) return value;
+    throw StateError('Ref<$T> not found, key: $key');
   }
 
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
-    _assert(context, 'listen');
+    _assertContext(context, 'listen');
 
     final state = _stateOf<T>(context, key: key);
-    state.listen(context, _cacheIndex[context]!, listener);
+    _assertState<T>(state, 'listen', key);
+
+    state?.listen(context, _cacheIndex[context]!, listener);
   }
 
   void listenSelect<T, R>(
@@ -71,22 +88,35 @@ class ProvideItElement extends InheritedElement {
     void listener(R previous, R next), {
     Object? key,
   }) {
-    _assert(context, 'listenSelect');
+    _assertContext(context, 'listenSelect');
 
     final state = _stateOf<T>(context, key: key);
-    state.listenSelect(context, _cacheIndex[context]!, selector, listener);
+    final index = _cacheIndex[context]!;
+    _assertState<T>(state, 'listenSelect', key);
+
+    state?.listenSelect<T, R>(context, index, selector, listener);
+  }
+
+  Future<void> reload<T>(BuildContext context, {Object? key}) async {
+    final type = T.type;
+    final state = _findState<AsyncRefState>(context, type, key);
+    state?.load();
   }
 
   T read<T>(BuildContext context, {Object? key}) {
     final state = _stateOf<T>(context, key: key);
+    final value = state?.of(context, listen: false);
 
-    return state._read(context);
+    if (value is T) return value;
+    throw StateError('Ref<$T> not found, key: $key');
   }
 
   T readIt<T>({String? type, Object? key}) {
     final state = _stateOf<T>(this, type: type, key: key);
+    final value = state?.of(this, listen: false);
 
-    return state._read(this);
+    if (value is T) return value;
+    throw StateError('Ref<$T> not found, key: $key');
   }
 
   @override
@@ -131,13 +161,36 @@ class ProvideItElement extends InheritedElement {
       print(_tree);
     }
   }
+
+  @override
+  Widget build() {
+    final snapshot = future(() async => [
+          Future(() => widget.provide?.call(this)),
+          allReady(),
+        ]);
+    final isLoading = snapshot.connectionState == ConnectionState.waiting;
+    print("isLoading $isLoading");
+
+    return switch ((isLoading, snapshot.error, snapshot.stackTrace)) {
+      (_, var e?, var s?) => widget.errorBuilder(this, e, s),
+      (true, _, _) => widget.loadingBuilder(this),
+      _ => super.build(),
+    };
+  }
 }
 
 extension on ProvideItElement {
-  void _assert(BuildContext context, String method) {
+  void _assertContext(BuildContext context, String method) {
     assert(
       context is Element && context.debugDoingBuild,
       '$method() should be called within the build() method of a widget.',
+    );
+  }
+
+  void _assertState<T>(_State? state, String method, Object? key) {
+    assert(
+      state != null,
+      'Failed to $method(). Ref<$T> not found, key: $key.',
     );
   }
 }

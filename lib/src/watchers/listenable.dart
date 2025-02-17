@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../framework/framework.dart';
+import '../framework.dart';
 
 class ListenableWatcher extends Watcher<Listenable> {
   @override
@@ -11,6 +11,10 @@ class ListenableWatcher extends Watcher<Listenable> {
   @override
   void cancel() {
     value.removeListener(notify);
-    // we do not dispose as it may be used elsewhere
+  }
+
+  @override
+  void dispose() {
+    if (value case ChangeNotifier it) it.dispose();
   }
 }

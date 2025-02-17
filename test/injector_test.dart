@@ -165,6 +165,15 @@ void main() {
       final list = Injector(() {}).splitParams(text);
       print("list $list");
     });
+
+    test('async constructors', () {
+      final injector = Injector(SomeClass.newAsync);
+      expect(injector.type, 'SomeClass');
+      expect(injector.rawType, 'Future<SomeClass>');
+      expect(injector.params.length, 2);
+      expect(injector.params.first.rawType, 'String');
+      expect(injector.params.last.rawType, 'int');
+    });
   });
 }
 
@@ -173,9 +182,22 @@ abstract class _PrivateType {}
 class SomeClass {
   SomeClass(this.a, this.b);
 
+  late var test = () {
+    print("i never had a chance");
+    return 0;
+  }();
+
+  void setTest(int value) {
+    test = value;
+  }
+
   SomeClass.named({required this.a, required this.b});
   final String a;
   final int b;
+
+  static Future<SomeClass> newAsync(String a, int b) async {
+    return SomeClass(a, b);
+  }
 
   static SomeClass staticConstructor(String a, int b) {
     return SomeClass(a, b);

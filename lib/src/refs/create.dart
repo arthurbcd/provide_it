@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 
-import '../framework/framework.dart';
+import '../framework.dart';
+import 'ref.dart';
 
 class CreateRef<T> extends Ref<T> {
   const CreateRef(
@@ -24,7 +24,12 @@ class CreateRef<T> extends Ref<T> {
 }
 
 class CreateRefState<T> extends RefState<T, CreateRef<T>> {
-  late final T value = ref.create();
+  late T value = ref.create();
+
+  @override
+  void create() {
+    value = ref.create();
+  }
 
   @override
   void dispose() {

@@ -1,6 +1,6 @@
 import 'dart:collection';
 
-import '../framework/framework.dart';
+import '../framework.dart';
 import 'listenable.dart';
 
 class DefaultWatchers extends ListBase<Watcher> {

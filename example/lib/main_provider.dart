@@ -11,12 +11,13 @@ class MyWidget extends StatefulWidget {
 class _MyWidgetState extends State<MyWidget> {
   @override
   void initState() {
-    Provider.value(value: 'value');
+    Provider.value;
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    context.read();
     return const Placeholder();
   }
 }

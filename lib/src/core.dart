@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import 'framework/framework.dart';
+import 'framework.dart';
 import 'refs/create.dart';
+import 'refs/future.dart';
 import 'refs/provide.dart';
 import 'refs/value.dart';
 
@@ -34,32 +35,74 @@ extension ContextProviders on BuildContext {
     Object? key,
   }) {
     ProvideRef(
+      key: key,
       create,
       dispose: dispose,
-      key: key,
       parameters: parameters,
       lazy: true,
+    ).bind(this);
+  }
+
+  void provideFactory<T>(
+    Function create, {
+    void dispose(T value)?,
+    Map<String, dynamic>? parameters,
+    Object? key,
+  }) {
+    ProvideRef(
+      key: key,
+      create,
+      dispose: dispose,
+      parameters: parameters,
+      factory: true,
+    ).bind(this);
+  }
+
+  void provideValue<T>(
+    T value, {
+    bool Function(T, T)? updateShouldNotify,
+    Object? key,
+  }) {
+    ProvideRef.value(
+      value,
+      key: key,
+      updateShouldNotify: updateShouldNotify,
     ).bind(this);
   }
 }
 
 extension ContextStates on BuildContext {
-  /// Binds [Ref] to this [BuildContext].
-  R bind<R, T>(Ref<T> ref) {
-    return _instance.bind(this, ref);
-  }
-
+  /// Binds [T] value to this [BuildContext].
+  /// - [initialValue] is the initial value.
+  ///
+  /// You can use the record to manage the value state.
   (T, void Function(T)) value<T>(T initialValue, {Object? key}) {
     return ValueRef(
-      initialValue,
       key: key,
+      initialValue,
     ).bind(this);
   }
 
+  /// Binds [create] to this [BuildContext].
+  ///
+  /// You can use the value directly.
   T create<T>(T create(), {void dispose(T value)?, Object? key}) {
     return CreateRef<T>(
+      key: key,
       create,
       dispose: dispose,
+    ).bind(this);
+  }
+
+  /// Subscribes to a [Future] and updates the value.
+  AsyncSnapshot<T> future<T>(
+    Future<T> create(), {
+    T? initialData,
+    Object? key,
+  }) {
+    return FutureRef<T>(
+      create,
+      initialData: initialData,
       key: key,
     ).bind(this);
   }
@@ -103,6 +146,10 @@ extension ContextReaders on BuildContext {
     Object? key,
   }) {
     _instance.listenSelect<T, R>(this, selector, listener, key: key);
+  }
+
+  Future<void> reload({Object? key}) {
+    return _instance.reload(this, key: key);
   }
 }
 

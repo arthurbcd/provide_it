@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 
-import '../framework/framework.dart';
+import '../framework.dart';
+import 'ref.dart';
 
 class ValueRef<T> extends Ref<T> {
   const ValueRef(
@@ -22,6 +22,11 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
 
   void setValue(T value) {
     setState(() => this.value = value);
+  }
+
+  @override
+  void create() {
+    value = ref.initialValue;
   }
 
   @override

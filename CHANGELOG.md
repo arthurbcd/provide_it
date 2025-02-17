@@ -2,17 +2,13 @@
 
 ## 0.3.0
 
-- WIP Added `get_it` methods as deprecations for retro-compatibility.
-- WIP Added `provider` widgets as deprecations for retro-compatibility.
-- WIP Added `FutureRef` & `context.future`.
-- WIP Added `StreamRef` & `context.stream`.
-- WIP Added `init` to `ProvideIt.root`.
-- WIP Added `dispose` to `ProvideIt.root`.
-- WIP Added `errorBuilder` to `ProvideIt.root`.
-- WIP Added `loadingBuilder` to `ProvideIt.root`.
-- WIP Added `ProvideInstanceRef` & `context.provideInstance`.
-- WIP Added `ProvideFactoryRef` & `context.provideFactory`.
-- WIP Now `provide` methods support `Future` & `Stream`.
+- Added `AsyncRef` & `context.reload()`.
+- Added `errorBuilder` to `ProvideIt.root`.
+- Added `loadingBuilder` to `ProvideIt.root`.
+- Added `context.provideFactory()`.
+- Added `context.provideValue()`.
+- Added `FutureRef` & `context.future()`.
+- Added `StreamRef` & `context.stream()`.
 - Added `ProvideIt.allowedDuplicates` for duplicate rules.
 - Added `Watcher.canUpdate`.
 - Improved `Injector` for efficient parsing.

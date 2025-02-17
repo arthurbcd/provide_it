@@ -1,4 +1,4 @@
-part of 'framework.dart';
+part of '../framework.dart';
 
 /// Signature for `void listener(T value)`
 typedef Listeners = Map<int, Function>;
@@ -53,15 +53,12 @@ abstract class RefState<T, R extends Ref<T>> {
   /// The [Ref] that this state is associated with.
   R get ref => _ref!;
 
-  /// The [Ref] that was previously associated with this state.
-  R? get lastRef => _lastRef;
-
   /// The [context] of [Ref.bind].
   BuildContext get context => _element!;
 
   /// The type used to [Ref.bind] this state.
   late final type = () {
-    final type = T.toString();
+    final type = T.type;
     assert(
       type != 'dynamic' && type != 'Object',
       'This is likely a mistake. Provide a non-generic type.',
@@ -120,7 +117,7 @@ abstract class RefState<T, R extends Ref<T>> {
     assert(_element != null && _element!.mounted);
     fn();
 
-    _element?.markNeedsBuild();
+    _element!.markNeedsBuild();
     notifyDependents();
   }
 
@@ -135,16 +132,30 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void listen(BuildContext context, int index, Function listener) {
-    _assert(context, 'listen');
-
-    final listeners = _listeners[context as Element] ??= {};
-    listeners[index] = listener;
+  void removeDependent(Element dependent) {
+    _watchers.remove(dependent);
+    _listeners.remove(dependent);
+    _selectors.remove(dependent);
+    _listenSelectors.remove(dependent);
   }
 
   @protected
   @mustCallSuper
-  void listenSelect(
+  void listen<L>(BuildContext context, int index, Function listener) {
+    _assert(context, 'listen');
+
+    tryListen(value) {
+      if (value is! L) return;
+      listener(value);
+    }
+
+    final listeners = _listeners[context as Element] ??= {};
+    listeners[index] = tryListen;
+  }
+
+  @protected
+  @mustCallSuper
+  void listenSelect<L, S>(
     BuildContext context,
     int index,
     Function selector,
@@ -152,19 +163,33 @@ abstract class RefState<T, R extends Ref<T>> {
   ) {
     _assert(context, 'listenSelect');
 
-    final value = selector(_read(context));
+    trySelect(value) {
+      if (value is! L) return null;
+      return selector(value);
+    }
+
+    tryListen(previous, next) {
+      if (previous is! S || next is! S) return;
+      listener(previous, next);
+    }
+
     final listSelectors = _listenSelectors[context as Element] ??= {};
-    listSelectors[index] = (value, selector, listener);
+    listSelectors[index] = (trySelect(of(context)), trySelect, tryListen);
   }
 
   @protected
   @mustCallSuper
-  S select<S>(BuildContext context, int index, Function selector) {
+  S select<L, S>(BuildContext context, int index, Function selector) {
     _assert(context, 'select');
 
-    final value = selector(_read(context));
+    trySelect(value) {
+      if (value is! L) return null;
+      return selector(value);
+    }
+
+    final value = trySelect(of(context));
     final selectors = _selectors[context as Element] ??= {};
-    selectors[index] = (value, selector);
+    selectors[index] = (value, trySelect);
 
     return value;
   }
@@ -175,16 +200,16 @@ abstract class RefState<T, R extends Ref<T>> {
     _assert(context, 'watch', 'Use `read()` instead.');
 
     _watchers.add(context as Element);
-    return _read(context);
+    return of(context);
   }
 
   @protected
   @mustCallSuper
-  void removeDependent(Element dependent) {
-    _watchers.remove(dependent);
-    _listeners.remove(dependent);
-    _selectors.remove(dependent);
-    _listenSelectors.remove(dependent);
+  T of(BuildContext context, {bool listen = true}) {
+    final value = _lastReadValue = read(context);
+    if (listen) _rootWatchers;
+
+    return value;
   }
 
   /// The method called by [Ref.bind].
@@ -195,10 +220,15 @@ abstract class RefState<T, R extends Ref<T>> {
   /// Some [Ref] may not need to override this method.
   /// See: [ProvideRef].
   @protected
-  void bind(BuildContext context) {}
+  void bind(BuildContext context) {
+    // when void we don't need to self rebuild
+    _watchers.remove(context);
+  }
+
+  /// The method to construct the value of this [Ref].
+  void create();
 
   /// The value to be read by [watch], [select], [listen] and [listenSelect].
-  @protected
   T read(BuildContext context);
 
   @override
@@ -209,17 +239,48 @@ extension RefStateExtension<T> on RefState<T, Ref<T>> {
   /// Attempts to dispose [value] by calling `value.dispose`.
   ///
   /// This won't throw an error if `value.dispose` is not a function.
-  void tryDispose(dynamic value) {
+  void tryDispose(value) {
+    for (var watcher in _rootWatchers) {
+      watcher.dispose();
+    }
+
+    // if there is a proper watcher, we let it dispose the value
+    if (_rootWatchers.isNotEmpty) return;
+
+    // well, you should have provided a dispose function, but I'll try
+    // to dispose it for you 🫡
     runZonedGuarded(
       () => value.dispose(),
       (e, s) {
         if (e is NoSuchMethodError) return;
-        final errorStr = e.toString();
-        if (!errorStr.contains('dispose\$0 is not a function') &&
-            !errorStr.contains('has no instance method \'dispose\'')) {
+        final message = e.toString();
+        if (!message.contains('dispose\$0 is not a function') &&
+            !message.contains('has no instance method \'dispose\'')) {
           throw e;
         }
       },
     );
+  }
+
+  /// Attempts to dispose [value] by calling `value.dispose`.
+  ///
+  /// This won't throw an error if `value.dispose` is not a function.
+  R? tryRun<R>(R fn()) {
+    final r = runZonedGuarded(
+      () {
+        final value = fn();
+
+        return value;
+      },
+      (e, s) {
+        if (e is! TypeError) return;
+        final message = e.toString();
+        if (!message.contains("type 'Null' is not a subtype of type")) {
+          throw e;
+        }
+      },
+    );
+
+    return r;
   }
 }

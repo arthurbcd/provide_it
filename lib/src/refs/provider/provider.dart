@@ -1,7 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/core.dart';
 
-import '../framework/framework.dart';
+import '../../framework.dart';
+import '../ref_widget.dart';
 
 @Deprecated('Use `context.provide` instead.')
 class Provider<T> extends RefWidget<T> {
@@ -52,22 +53,32 @@ class Provider<T> extends RefWidget<T> {
 }
 
 class ProviderState<T> extends RefState<T, Provider<T>> {
-  late final T value = ref.create?.call(context) ?? ref.value as T;
+  late T value = ref.create?.call(context) ?? ref.value as T;
+
+  @override
+  void create() {
+    value = ref.create?.call(context) ?? ref.value as T;
+  }
 
   @override
   void initState() {
-    if (ref.lazy == false) value;
+    if (ref.lazy == false) create();
     super.initState();
   }
 
   @override
   bool updateShouldNotify(Provider<T> oldRef) {
-    if (ref.create != null) return false;
+    var didChange = oldRef.value != ref.value;
 
-    final updateShouldNotify =
-        ref.updateShouldNotify ?? (T prev, T next) => prev != next;
+    if ((oldRef.value, ref.value) case (var prev?, var next?)) {
+      didChange = ref.updateShouldNotify?.call(prev, next) ?? prev != next;
+    }
 
-    return updateShouldNotify(oldRef.value as T, ref.value as T);
+    if (didChange) {
+      create();
+    }
+
+    return didChange;
   }
 
   @override

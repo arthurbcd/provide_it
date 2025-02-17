@@ -1,7 +1,7 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
-import '../framework/framework.dart';
+import '../framework.dart';
 
 extension ContextVsync on BuildContext {
   /// Creates a single [TickerProvider] for the current [BuildContext].

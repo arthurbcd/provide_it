@@ -1,4 +1,4 @@
-part of 'framework.dart';
+part of '../framework.dart';
 
 extension<T, R extends Ref<T>> on RefState<T, R> {
   void _assert(BuildContext context, String method, [String? extra]) {
@@ -13,23 +13,16 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
     el.markNeedsBuild();
   }
 
-  T _read(BuildContext context) {
-    _lastReadValue = read(context);
-    _rootWatchers;
-
-    return _lastReadValue as T;
-  }
-
   void _listen(Element el, Listeners listeners) {
     assert(el.mounted);
 
-    final value = _read(el);
+    final value = of(el);
     listeners.forEach((_, listener) => listener(value));
   }
 
   void _listenSelect(Element el, ListenSelectors listenSelectors) {
     assert(el.mounted);
-    final val = _read(el);
+    final val = of(el);
 
     for (final e in listenSelectors.entries) {
       final (previous, selector, listener) = e.value;
@@ -43,7 +36,7 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
 
   void _select(Element el, Selectors selectors) {
     assert(el.mounted);
-    final val = _read(el);
+    final val = of(el);
 
     for (final e in selectors.entries) {
       final (previous, selector) = e.value;
