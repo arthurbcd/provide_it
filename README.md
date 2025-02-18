@@ -8,12 +8,12 @@ ProvideIt is a provider-like state binding, management, and injection using only
 
 ### Setup
 
-Set `ProvideIt.root` on the root of your app.
+Set `ProvideIt` above your app.
 
 ```dart
 void main() {
   runApp(
-    ProvideIt.root(
+    ProvideIt(
       child: App(), // Ex: MaterialApp
     ),
   );
@@ -34,21 +34,31 @@ class CounterProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final counter = context.provide((_) => CounterNotifier());
+    context.provide(Counter.new);
 
-    return ElevatedButton(
-      onPressed: () => counter.increment(),
-      child: Text('Counter: ${counter.count}'),
-    );
+      return ElevatedButton(
+        onPressed: () => context.read<Counter>().increment(),
+        child: Text('Count: ${context.watch<Counter>().count}'),
+      );
   }
 }
 ```
 
-#### `context.value`
+Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound.
 
-Use the `value` method to bind a state to the context. The state will **not** be disposed when the context is unmounted.
+In addition to `context.provide`, there are several other methods available:
 
-This is equivalent to `Provider.value` in the provider package.
+- `context.provideFactory`
+- `context.provideValue`
+- `context.provideLazy`
+
+All of them support the `.new` auto-injection.
+
+#### `context.value` & `context.create`
+
+Those where common properties you would find in the `Provider` widgets.
+
+Now you can use them directly from the context, for simple state management.
 
 ```dart
 class CounterProvider extends StatelessWidget {
@@ -56,11 +66,34 @@ class CounterProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final counter = context.value(0);
+    // like this
+    final counter = context.value(0); // use with primitives
+
+    // or with destructuring!
+    final (count, setCount) = context.value(0); // dart records!
 
     return ElevatedButton(
       onPressed: () => counter.value++,
       child: Text('Counter: ${counter.value}'),
+    );
+  }
+}
+```
+
+When using complex objects, you can use the `create` method to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
+
+```dart
+class CounterProvider extends StatelessWidget {
+  const CounterProvider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // yes! `context.vsync` is a thing, but only available inside `create`.
+    final controller = context.create(() => AnimationController(vsync: context.vsync));
+
+    return ElevatedButton(
+      onPressed: () => controller.forward(),
+      child: Text('Animation: ${controller.value}'),
     );
   }
 }
@@ -87,6 +120,14 @@ There is no equivalent in the `provider` package.
 ```dart
 context.listen<CounterNotifier>((counter) {
   print('Counter changed: ${counter.count}');
+});
+```
+
+And you can also listen with a selector:
+
+```dart
+context.listenSelect((CounterNotifier it) => it.count, (prev, next) {
+  print('Counter changed: $prev -> $next');
 });
 ```
 

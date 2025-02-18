@@ -174,15 +174,6 @@ abstract class _PrivateType {}
 class SomeClass {
   SomeClass(this.a, this.b);
 
-  late var test = () {
-    print("i never had a chance");
-    return 0;
-  }();
-
-  void setTest(int value) {
-    test = value;
-  }
-
   SomeClass.named({required this.a, required this.b});
   final String a;
   final int b;

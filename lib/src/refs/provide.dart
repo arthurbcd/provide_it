@@ -57,7 +57,7 @@ class ProvideRef<T> extends AsyncRef<T> {
 class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   var _created = false;
   late Injector? _injector = ref.create != null
-      ? Injector(ref.create!, parameters: ref.parameters)
+      ? Injector<T>(ref.create!, parameters: ref.parameters)
       : null;
   Future<T>? _future;
   Stream<T>? _stream;
@@ -91,7 +91,7 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
     _injector = _stream = _future = null;
 
     if (ref.create != null) {
-      _injector = Injector(ref.create!, parameters: ref.parameters);
+      _injector = Injector<T>(ref.create!, parameters: ref.parameters);
     }
 
     final value = _injector?.call() ?? ref.value;

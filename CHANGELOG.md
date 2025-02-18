@@ -1,5 +1,15 @@
 # Changelog
 
+# 0.5.0
+
+- Added `MultiProvider` migration.
+- Added `Consumer` migration.
+- Added `ChangeNotifierProvider` migration.
+- Added `ListenableProvider` migration.
+- Added `ChangeNotifierWatcher`.
+- Improved abstractions injection.
+- Updated `README.md`.
+
 ## 0.4.0
 
 - Added `AsyncRefState.ready()`.

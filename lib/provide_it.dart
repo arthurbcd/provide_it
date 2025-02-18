@@ -90,7 +90,7 @@ class ProvideIt extends InheritedWidget {
   /// Example with router path parameters:
   ///
   /// ```dart
-  /// ProvideIt.root(
+  /// ProvideIt(
   ///   namedLocator: (param) => myRouter.pathParameters[param.name],
   ///   child: MyApp(),
   /// );

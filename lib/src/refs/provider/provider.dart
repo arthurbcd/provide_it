@@ -4,6 +4,12 @@ import 'package:provide_it/src/core.dart';
 import '../../framework.dart';
 import '../ref_widget.dart';
 
+@Deprecated('Use `context.provide` with `ChangeNotifierWatcher` instead.')
+typedef ChangeNotifierProvider<T extends ChangeNotifier> = Provider<T>;
+
+@Deprecated('Use `context.provide` with `ListenableWatcher` instead.')
+typedef ListenableProvider<T extends Listenable> = Provider<T>;
+
 @Deprecated('Use `context.provide` instead.')
 class Provider<T> extends RefWidget<T> {
   const Provider({

@@ -9,6 +9,10 @@ export 'injector.dart';
 typedef ParamLocator = FutureOr Function(Param param);
 typedef NamedLocator = FutureOr Function(NamedParam param);
 
+/// A class that injects dependencies into a function.
+///
+/// You must provide [T] if you wanna inject an abstract class.
+/// Otherwise, it will be inferred from the [create] function.
 class Injector<T> {
   /// Creates a new instance of [Injector].
   ///
@@ -60,6 +64,8 @@ class Injector<T> {
   late final rawType = _rawType();
 
   String _type() {
+    if (T != dynamic) return T.type;
+
     if (rawType.startsWith('Future') || rawType.startsWith('Stream')) {
       return rawType.split('<').last.split('>').first.replaceAll('?', '');
     }

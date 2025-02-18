@@ -1,5 +1,7 @@
 import 'dart:collection';
 
+import 'package:provide_it/src/watchers/change_notifier.dart';
+
 import '../framework.dart';
 import 'listenable.dart';
 
@@ -8,6 +10,7 @@ class DefaultWatchers extends ListBase<Watcher> {
   final List<Watcher> additionals;
 
   List<Watcher> get watchers => [
+        ChangeNotifierWatcher(),
         ListenableWatcher(),
         ...additionals,
       ];

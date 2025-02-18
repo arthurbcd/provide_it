@@ -6,13 +6,7 @@ void main() {
   runApp(
     ProvideIt(
       provide: (context) {
-        context.provideLazy(StoreA.new);
-        context.provideLazy(StoreB.new);
-        context.provideLazy(ServiceA.new);
-        context.provideLazy(ServiceB.new);
-        context.provideLazy(ServiceC.new);
-        context.provideLazy(RepositoryA.new);
-        context.provideLazy(RepositoryB.new);
+        context.provide<Abstract>(AbstractImpl.new);
       },
       builder: (context, _) {
         return MaterialApp(
@@ -26,6 +20,10 @@ void main() {
     ),
   );
 }
+
+abstract class Abstract {}
+
+class AbstractImpl extends Abstract {}
 
 class ServiceA {
   static Future<ServiceA> init() async {
@@ -77,10 +75,8 @@ class CounterValue extends StatelessWidget {
 
     return ElevatedButton(
       onPressed: () async {
-        final storeA = await context.readAsync<StoreA>();
-        print("storeA $storeA");
-        final storeB = await context.readAsync<StoreB>();
-        print("storeB $storeB");
+        final abs = await context.readAsync<Abstract>();
+        print("abs $abs");
       },
       child: Text('Counter: ${counter.value}'),
     );

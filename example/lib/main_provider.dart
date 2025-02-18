@@ -11,7 +11,7 @@ class MyWidget extends StatefulWidget {
 class _MyWidgetState extends State<MyWidget> {
   @override
   void initState() {
-    Provider.value;
+    ListenableProvider;
     super.initState();
   }
 
