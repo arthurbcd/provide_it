@@ -25,7 +25,6 @@ extension on ProvideItElement {
       _doingInit = true;
 
       final state = branch[index] = ref.createState()
-        .._watchers.add(context)
         .._element = context
         .._root = this
         .._ref = ref

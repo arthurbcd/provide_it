@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
 import '../framework.dart';
 
@@ -49,36 +50,37 @@ extension RefBinder on BuildContext {
   /// ```
   /// See: [CreateRef] or [ValueRef].
   R bind<R, T>(Ref<T> ref) {
-    return _instance.bind(this, ref);
+    return provideIt.bind(this, ref);
   }
 }
 
 extension RefReaders<T> on Ref<T> {
   /// Reads the value of this [Ref]. Auto-binds if not already.
   T read(BuildContext context) {
-    return _instance.read(context, key: this);
+    return context.read(key: this);
   }
 
   /// Watches the value of this [Ref]. Auto-binds if not already.
   T watch(BuildContext context) {
-    return _instance.watch(context, key: this);
+    return context.watch(key: this);
   }
 
   /// Selects a value from this [Ref] using [selector].
   R select<R>(BuildContext context, R selector(T value)) {
-    return _instance.select(context, selector, key: this);
+    return context.select(selector, key: this);
   }
 
   /// Listens to the value of this [Ref] using [listener].
   void listen(BuildContext context, void listener(T value)) {
-    _instance.listen(context, listener, key: this);
+    context.listen(listener, key: this);
   }
 
   /// Listens to the value of this [Ref] using [selector] and [listener].
-  void listenSelect<R>(BuildContext context, R selector(T value),
-      void listener(R? previous, R next)) {
-    _instance.listenSelect(context, selector, listener, key: this);
+  void listenSelect<R>(
+    BuildContext context,
+    R selector(T value),
+    void listener(R? previous, R next),
+  ) {
+    context.listenSelect(selector, listener, key: this);
   }
 }
-
-ProvideItElement get _instance => ProvideItElement.instance;

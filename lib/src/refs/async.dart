@@ -40,12 +40,24 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
     var data? => AsyncSnapshot.withData(ConnectionState.none, data),
     null => AsyncSnapshot<T>.nothing(),
   };
-  StreamSubscription<T>? _subscription;
+  StreamSubscription? _subscription;
+  var _completer = Completer<T>();
+  bool _hasLoaded = false;
 
   set snapshot(AsyncSnapshot<T> snapshot) {
     _snapshot = snapshot;
+
+    if (snapshot.connectionState == ConnectionState.done) {
+      snapshot.hasError
+          ? _completer.completeError(snapshot.error!, snapshot.stackTrace!)
+          : _completer.complete(snapshot.data as T);
+    }
+
     notifyDependents();
   }
+
+  @override
+  T? get debugValue => snapshot.data;
 
   /// The current [future] state.
   AsyncSnapshot<T> get snapshot => _snapshot;
@@ -56,19 +68,29 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   /// The stream created by [create].
   Stream<T>? get stream => null;
 
+  /// The future when [read] is [ready] to read it.
+  FutureOr<void> ready() {
+    if (!_hasLoaded) load();
+    if (snapshot.hasData) return null;
+
+    return _completer.future.then((_) {});
+  }
+
   /// Loads the value. Creates a new [future] or [snapshot].
   ///
   /// Awaiting this will complete when [future] or [stream] is done.
   Future<void> load() async {
+    _completer = Completer<T>();
     _subscription?.cancel();
+    _hasLoaded = true;
 
-    assert(future == null || stream == null);
     create();
+    assert(future == null || stream == null);
 
     if (future case var future?) {
       snapshot = _snapshot.inState(ConnectionState.waiting);
 
-      return future.then((value) {
+      future.then((value) {
         snapshot = AsyncSnapshot.withData(ConnectionState.done, value);
       }).catchError((e, s) {
         snapshot = AsyncSnapshot.withError(ConnectionState.done, e, s);
@@ -86,6 +108,13 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
         snapshot = _snapshot.inState(ConnectionState.done);
       });
     }
+  }
+
+  FutureOr<T> readAsync() {
+    if (!_hasLoaded) load();
+    if (snapshot.hasData) return snapshot.data as T;
+
+    return _completer.future;
   }
 
   @override

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import 'async.dart';
@@ -11,7 +13,7 @@ class FutureRef<T> extends AsyncRef<T> {
   });
 
   /// How to create the value.
-  final Future<T> Function() create;
+  final FutureOr<T> Function() create;
 
   @override
   AsyncSnapshot<T> bind(BuildContext context) => context.bind(this);
@@ -34,7 +36,12 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
 
   @override
   void create() {
-    _future = ref.create();
+    final value = ref.create();
+    if (value is Future<T>) {
+      _future = value;
+    } else {
+      snapshot = AsyncSnapshot.withData(ConnectionState.done, value);
+    }
   }
 
   @override

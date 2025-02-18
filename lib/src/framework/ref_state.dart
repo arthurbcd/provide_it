@@ -38,6 +38,7 @@ abstract class RefState<T, R extends Ref<T>> {
   R? _ref;
 
   // dependents
+  bool _selfWatch = true;
   final _watchers = <Element>{};
   final _listeners = <Element, Listeners>{};
   final _selectors = <Element, Selectors>{};
@@ -124,6 +125,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void notifyDependents() {
+    if (_selfWatch) _element!.markNeedsBuild();
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
     _selectors.forEach(_select);
@@ -222,7 +224,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   void bind(BuildContext context) {
     // when void we don't need to self rebuild
-    _watchers.remove(context);
+    _selfWatch = false;
   }
 
   /// The method to construct the value of this [Ref].

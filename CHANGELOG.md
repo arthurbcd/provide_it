@@ -1,10 +1,21 @@
 # Changelog
 
+## 0.4.0
+
+- Added `AsyncRefState.ready()`.
+- Added `context.readAsync()`.
+- Added `context.allReady()`.
+- Added `AsyncSnapshotExtension`: when/maybeWhen & getters.
+- Added `Param.isFuture`.
+- Improved `FutureRef` to resolve immediately.
+- Improved `Injector.call` to handle futures.
+- Improved `ProvideIt.provide` initialization.
+
 ## 0.3.0
 
 - Added `AsyncRef` & `context.reload()`.
-- Added `errorBuilder` to `ProvideIt.root`.
-- Added `loadingBuilder` to `ProvideIt.root`.
+- Added `errorBuilder` to `ProvideIt`.
+- Added `loadingBuilder` to `ProvideIt`.
 - Added `context.provideFactory()`.
 - Added `context.provideValue()`.
 - Added `FutureRef` & `context.future()`.

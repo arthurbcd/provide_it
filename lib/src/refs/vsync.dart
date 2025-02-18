@@ -9,7 +9,7 @@ extension ContextVsync on BuildContext {
   /// Must be used exactly once, preferably within [RefState.initState].
   TickerProvider get vsync {
     assert(
-      ProvideItElement.instance.debugDoingInit,
+      provideIt.debugDoingInit,
       'context.vsync must be used within Ref.create/initState method.',
     );
 

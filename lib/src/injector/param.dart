@@ -26,6 +26,9 @@ sealed class Param {
   /// Whether the type is private.
   bool get isPrivate => rawType.startsWith('_');
 
+  /// Whether the type is a future.
+  bool get isFuture => rawType.startsWith('Future');
+
   /// The name of the parameter.
   String? get name => null;
 

@@ -58,6 +58,8 @@ extension on ProvideItElement {
           return state;
         }
 
+        // print(state.hashCode);
+
         assert(
           lastState == null || types.contains(type),
           'Duplicate Ref<$type> found, key: $key',

@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'param.dart';
 
 export 'injector.dart';
 
-typedef ParamLocator = dynamic Function(Param param);
-typedef NamedLocator = dynamic Function(NamedParam param);
+typedef ParamLocator = FutureOr Function(Param param);
+typedef NamedLocator = FutureOr Function(NamedParam param);
 
 class Injector<T> {
   /// Creates a new instance of [Injector].
@@ -111,13 +113,20 @@ class Injector<T> {
   /// final user = userInjector(parameters: {'id': 1, 'Role': Role.admin});
   /// ```
   ///
-  T call({ParamLocator? locator, Map<String, dynamic>? parameters}) {
+  FutureOr<T> call({
+    ParamLocator? locator,
+    Map<String, dynamic>? parameters,
+  }) {
+    final waitFor = <Future>[];
+
     locate(Param param) {
       var arg = parameters?[param.type];
       final errors = [];
 
       try {
-        if (locator != null) arg ??= locator(param);
+        if (locator != null) {
+          arg ??= locator(param);
+        }
       } catch (e) {
         errors.add(e);
       }
@@ -139,12 +148,16 @@ class Injector<T> {
       return arg;
     }
 
-    final positionalArgs = [];
-    for (final param in _positional) {
+    final positionalArgs = <int, dynamic>{};
+    for (final (i, param) in _positional.indexed) {
       final arg = locate(param);
       if (arg == null && !param.isNullable && !param.isRequired) continue;
 
-      positionalArgs.add(arg);
+      if (arg is Future && !param.isFuture) {
+        waitFor.add(Future(() async => positionalArgs[i] = await arg));
+      } else {
+        positionalArgs[i] = arg;
+      }
     }
 
     final namedArgs = <Symbol, dynamic>{};
@@ -152,10 +165,22 @@ class Injector<T> {
       var arg = parameters?[param.name] ?? locate(param);
       if (arg == null && !param.isNullable && !param.isRequired) continue;
 
-      namedArgs[param.symbol] = arg;
+      if (arg is Future && !param.isFuture) {
+        waitFor.add(Future(() async => namedArgs[param.symbol] = await arg));
+      } else {
+        namedArgs[param.symbol] = arg;
+      }
     }
 
-    final value = Function.apply(create, positionalArgs, namedArgs);
+    if (waitFor.isNotEmpty) {
+      return Future.wait(waitFor).then(
+        (_) =>
+            Function.apply(create, positionalArgs.toListByIndex(), namedArgs),
+      );
+    }
+
+    final value =
+        Function.apply(create, positionalArgs.toListByIndex(), namedArgs);
 
     if (value is! T) {
       final t = value.runtimeType;
@@ -263,6 +288,14 @@ class Injector<T> {
 
 extension on String {
   RegExpMatch? firstMatch(String regex) => RegExp(regex).firstMatch(this);
+}
+
+extension<T> on Map<int, T> {
+  List<T> toListByIndex() {
+    final list = entries.toList();
+    list.sort((a, b) => a.key.compareTo(b.key));
+    return list.map((e) => e.value).toList();
+  }
 }
 
 extension SplitBetweenExtension on String {

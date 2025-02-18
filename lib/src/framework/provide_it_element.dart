@@ -21,9 +21,10 @@ class ProvideItElement extends InheritedElement {
   ParamLocator _defaultLocator(ProvideIt widget) {
     return (param) {
       if (param is NamedParam) {
-        return widget.namedLocator?.call(param) ?? readIt(type: param.type);
+        return widget.namedLocator?.call(param) ??
+            readItAsync(type: param.type);
       }
-      return readIt(type: param.type);
+      return readItAsync(type: param.type);
     };
   }
 
@@ -39,12 +40,16 @@ class ProvideItElement extends InheritedElement {
   final _cache = <BuildContext, Map<String, Map<Object?, _State?>>>{};
   final _cacheIndex = <BuildContext, int>{};
 
-  Future<void> allReady() {
+  /// The future when all [AsyncRefState.ready] are completed.
+  FutureOr<void> allReady() {
     final futures = _tree.values
-        .expand((branch) => branch.values.whereType<ProvideRefState>())
-        .map((state) => state.future);
+        .expand((branch) => branch.values.whereType<AsyncRefState>())
+        .map((state) => state.ready())
+        .whereType<Future>();
 
-    return Future.wait(futures.nonNulls);
+    if (futures.isEmpty) return null;
+
+    return Future.wait(futures).then((_) {});
   }
 
   R bind<R, T>(BuildContext context, Ref<T> ref) {
@@ -111,6 +116,17 @@ class ProvideItElement extends InheritedElement {
     throw StateError('Ref<$T> not found, key: $key');
   }
 
+  FutureOr<T> readItAsync<T>({String? type, Object? key}) {
+    type ??= T.type;
+
+    final state = _findState<AsyncRefState>(this, type, key);
+    final value = state!.readAsync();
+
+    if (value is Future) return value.then((it) => it as T);
+
+    return value as T;
+  }
+
   T readIt<T>({String? type, Object? key}) {
     final state = _stateOf<T>(this, type: type, key: key);
     final value = state?.of(this, listen: false);
@@ -164,18 +180,15 @@ class ProvideItElement extends InheritedElement {
 
   @override
   Widget build() {
-    final snapshot = future(() async => [
-          Future(() => widget.provide?.call(this)),
-          allReady(),
-        ]);
-    final isLoading = snapshot.connectionState == ConnectionState.waiting;
-    print("isLoading $isLoading");
+    widget.provide?.call(this);
+    final snapshot = future(allReady);
 
-    return switch ((isLoading, snapshot.error, snapshot.stackTrace)) {
-      (_, var e?, var s?) => widget.errorBuilder(this, e, s),
-      (true, _, _) => widget.loadingBuilder(this),
-      _ => super.build(),
-    };
+    // if [allReady] is void, we immediately return [super.build].
+    return snapshot.maybeWhen(
+      loading: () => widget.loadingBuilder(this),
+      error: (e, s) => widget.errorBuilder(this, e, s),
+      orElse: super.build,
+    );
   }
 }
 

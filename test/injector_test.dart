@@ -38,7 +38,6 @@ void main() {
 
     test('should parse SomeClass.new constructor correctly', () {
       final injector = Injector(SomeClass.new);
-      print("injector ${injector.type}");
       expect(injector.params.length, 2);
       expect(injector.params.first.rawType, 'String');
       expect(injector.params.last.rawType, 'int');
@@ -157,13 +156,6 @@ void main() {
         () {
       final injector = Injector((Map<String, List<int>> a) => a);
       expect(injector.type, 'Map<String, List<int>>');
-    });
-
-    test('should test splitting', () {
-      final text =
-          "Closure: (Map<String, List<int>>) => Map<String, List<int>> from something. static";
-      final list = Injector(() {}).splitParams(text);
-      print("list $list");
     });
 
     test('async constructors', () {

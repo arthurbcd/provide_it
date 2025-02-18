@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/refs/async.dart';
+import 'package:provide_it/src/refs/stream.dart';
 
 import 'framework.dart';
 import 'refs/create.dart';
@@ -10,7 +14,7 @@ import 'refs/value.dart';
 final getIt = readIt;
 
 /// A contextless version of [ContextReaders.read].
-final readIt = _instance.readIt;
+final readIt = ProvideItElement.instance.readItAsync;
 
 extension ContextProviders on BuildContext {
   void provide<T>(
@@ -96,7 +100,7 @@ extension ContextStates on BuildContext {
 
   /// Subscribes to a [Future] and updates the value.
   AsyncSnapshot<T> future<T>(
-    Future<T> create(), {
+    FutureOr<T> create(), {
     T? initialData,
     Object? key,
   }) {
@@ -106,6 +110,24 @@ extension ContextStates on BuildContext {
       key: key,
     ).bind(this);
   }
+
+  /// Subscribes to a [Stream] and updates the value.
+  AsyncSnapshot<T> stream<T>(
+    Stream<T> create(), {
+    T? initialData,
+    Object? key,
+  }) {
+    return StreamRef<T>(
+      create,
+      initialData: initialData,
+      key: key,
+    ).bind(this);
+  }
+
+  /// The future when all [AsyncRefState.ready] are completed.
+  FutureOr<void> allReady() {
+    return provideIt.allReady();
+  }
 }
 
 extension ContextReaders on BuildContext {
@@ -113,28 +135,35 @@ extension ContextReaders on BuildContext {
   ///
   /// Instantiates the bind if not already.
   T read<T>({Object? key}) {
-    return _instance.read<T>(this, key: key);
+    return provideIt.read<T>(this, key: key);
+  }
+
+  /// Reads a previously bound value by [T] and [key].
+  ///
+  /// Returns a [Future] if the value is not ready.
+  FutureOr<T> readAsync<T>({Object? key}) {
+    return provideIt.readItAsync<T>(key: key);
   }
 
   /// Watches a previously bound value by [T] and [key].
   ///
   /// Instantiates the bind if not already.
   T watch<T>({Object? key}) {
-    return _instance.watch<T>(this, key: key);
+    return provideIt.watch<T>(this, key: key);
   }
 
   /// Selects a previously bound value by [T] and [key].
   ///
   /// Instantiates the bind if not already.
   R select<T, R>(R selector(T value), {Object? key}) {
-    return _instance.select<T, R>(this, selector, key: key);
+    return provideIt.select<T, R>(this, selector, key: key);
   }
 
   /// Listens to a previously bound value by [T] and [key].
   ///
   /// Does not instantiate the bind.
   void listen<T>(void listener(T value), {Object? key}) {
-    _instance.listen<T>(this, listener, key: key);
+    provideIt.listen<T>(this, listener, key: key);
   }
 
   /// Listens to a previously bound value by [T], [selector] and [key].
@@ -145,12 +174,10 @@ extension ContextReaders on BuildContext {
     void listener(R previous, R next), {
     Object? key,
   }) {
-    _instance.listenSelect<T, R>(this, selector, listener, key: key);
+    provideIt.listenSelect<T, R>(this, selector, listener, key: key);
   }
 
   Future<void> reload({Object? key}) {
-    return _instance.reload(this, key: key);
+    return provideIt.reload(this, key: key);
   }
 }
-
-ProvideItElement get _instance => ProvideItElement.instance;

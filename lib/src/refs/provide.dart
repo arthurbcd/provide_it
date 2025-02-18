@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../framework.dart';
@@ -54,7 +56,9 @@ class ProvideRef<T> extends AsyncRef<T> {
 
 class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   var _created = false;
-  Injector? _injector;
+  late Injector? _injector = ref.create != null
+      ? Injector(ref.create!, parameters: ref.parameters)
+      : null;
   Future<T>? _future;
   Stream<T>? _stream;
 
@@ -91,9 +95,13 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
     }
 
     final value = _injector?.call() ?? ref.value;
+    // print("| $debugLabel $value");
 
-    if (value is Future<T>) {
-      _future = value;
+    if (value is Future) {
+      _future = value.then((value) {
+        // print("att value $value");
+        return value;
+      });
     } else if (value is Stream<T>) {
       _stream = value;
     } else if (value is T) {
@@ -140,9 +148,9 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
     final label = switch ((ref.lazy, ref.factory)) {
       (_, true) => 'provideFactory',
       (true, _) => 'provideLazy',
-      _ => '',
+      _ => 'provide',
     };
 
-    return 'context.provide$label<$type> $async';
+    return 'context.$label<$type> $async';
   }
 }
