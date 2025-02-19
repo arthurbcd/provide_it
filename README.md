@@ -56,7 +56,7 @@ All of them support the `.new` auto-injection.
 
 #### `context.value` & `context.create`
 
-Those where common properties you would find in the `Provider` widgets.
+Those were common properties you would find in the `Provider` widgets.
 
 Now you can use them directly from the context, for simple state management.
 

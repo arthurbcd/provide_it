@@ -263,26 +263,4 @@ extension RefStateExtension<T> on RefState<T, Ref<T>> {
       },
     );
   }
-
-  /// Attempts to dispose [value] by calling `value.dispose`.
-  ///
-  /// This won't throw an error if `value.dispose` is not a function.
-  R? tryRun<R>(R fn()) {
-    final r = runZonedGuarded(
-      () {
-        final value = fn();
-
-        return value;
-      },
-      (e, s) {
-        if (e is! TypeError) return;
-        final message = e.toString();
-        if (!message.contains("type 'Null' is not a subtype of type")) {
-          throw e;
-        }
-      },
-    );
-
-    return r;
-  }
 }

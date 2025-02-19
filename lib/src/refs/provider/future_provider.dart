@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/core.dart';
 
 import '../async.dart';
+import 'provider.dart';
 
 @Deprecated('Use `FutureRef` or `context.future` instead.')
 class FutureProvider<T> extends AsyncRefWidget<T> {
@@ -86,7 +87,3 @@ class FutureProviderState<T> extends AsyncRefState<T, FutureProvider<T>> {
     return snapshot.data as T;
   }
 }
-
-typedef Create<T> = T Function(BuildContext context);
-typedef Dispose<T> = void Function(BuildContext context, T value);
-typedef UpdateShouldNotify<T> = bool Function(T previous, T current);

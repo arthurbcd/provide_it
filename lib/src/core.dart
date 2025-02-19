@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/refs/async.dart';
+import 'package:provide_it/src/refs/init.dart';
 import 'package:provide_it/src/refs/stream.dart';
 
 import 'framework.dart';
@@ -127,6 +128,18 @@ extension ContextStates on BuildContext {
   /// The future when all [AsyncRefState.ready] are completed.
   FutureOr<void> allReady() {
     return provideIt.allReady();
+  }
+
+  /// Calls [fn] when the [BuildContext] is mounted.
+  ///
+  /// Changing [key] re-calls [fn].
+  void init(VoidCallback fn, {VoidCallback? dispose, Object? key}) {
+    InitRef(init: fn, dispose: dispose, key: key).bind(this);
+  }
+
+  /// Calls [fn] when the [BuildContext] is unmounted.
+  void dispose(VoidCallback fn, {Object? key}) {
+    InitRef(dispose: fn, key: key).bind(this);
   }
 }
 

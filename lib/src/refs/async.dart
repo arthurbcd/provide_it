@@ -69,8 +69,9 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   Stream<T>? get stream => null;
 
   /// The future when [read] is [ready] to read it.
+  /// Won't trigger lazy refs.
   FutureOr<void> ready() {
-    if (!_hasLoaded) load();
+    if (!_hasLoaded) return null;
     if (snapshot.hasData) return null;
 
     return _completer.future.then((_) {});
@@ -80,9 +81,9 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   ///
   /// Awaiting this will complete when [future] or [stream] is done.
   Future<void> load() async {
+    _hasLoaded = true;
     _completer = Completer<T>();
     _subscription?.cancel();
-    _hasLoaded = true;
 
     create();
     assert(future == null || stream == null);

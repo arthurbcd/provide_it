@@ -1,5 +1,12 @@
 # Changelog
 
+- WIP Improve ErrorBuilder
+
+# 0.6.0
+
+- Added `context.init`. 0.5.1
+- Added `context.dispose`. 0.5.1
+
 # 0.5.0
 
 - Added `MultiProvider` migration.

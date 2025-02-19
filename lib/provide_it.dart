@@ -9,11 +9,23 @@ import 'src/injector/injector.dart';
 
 export 'src/core.dart';
 export 'src/framework.dart' show RefState, Watcher;
+export 'src/refs/async.dart';
 export 'src/refs/create.dart';
+export 'src/refs/future.dart';
+export 'src/refs/init.dart';
 export 'src/refs/provide.dart';
+export 'src/refs/provider/consumer.dart';
+export 'src/refs/provider/future_provider.dart';
+export 'src/refs/provider/multi_provider.dart';
+export 'src/refs/provider/provider.dart';
+export 'src/refs/ref.dart';
+export 'src/refs/stream.dart';
 export 'src/refs/value.dart';
 export 'src/refs/vsync.dart';
+export 'src/utils/async_snapshot_extension.dart';
+export 'src/watchers/change_notifier.dart';
 export 'src/watchers/defaults.dart';
+export 'src/watchers/listenable.dart';
 
 typedef ErrorBuilder = Widget Function(
     BuildContext context, Object error, StackTrace stackTrace);
