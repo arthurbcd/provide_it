@@ -1,3 +1,5 @@
+# Changelog
+
 # 0.6.0
 
 - Added `context.init`.
