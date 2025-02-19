@@ -1,11 +1,11 @@
-# Changelog
-
-- WIP Improve ErrorBuilder
-
 # 0.6.0
 
-- Added `context.init`. 0.5.1
-- Added `context.dispose`. 0.5.1
+- Added `context.init`.
+- Added `context.dispose`.
+- Added `AsyncRef.allReady`.
+- Added `AsyncRef.allReadySync`.
+- Added `AsyncRef.isReady`.
+- Added `AsyncRef.isReadySync`.
 
 # 0.5.0
 
@@ -21,7 +21,6 @@
 
 - Added `AsyncRefState.ready()`.
 - Added `context.readAsync()`.
-- Added `context.allReady()`.
 - Added `AsyncSnapshotExtension`: when/maybeWhen & getters.
 - Added `Param.isFuture`.
 - Improved `FutureRef` to resolve immediately.

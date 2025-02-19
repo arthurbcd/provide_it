@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/core.dart';
 
 import '../framework.dart';
+import 'async.dart';
 
 abstract class Ref<T> {
   const Ref({this.key});
@@ -83,4 +86,24 @@ extension RefReaders<T> on Ref<T> {
   ) {
     context.listenSelect(selector, listener, key: this);
   }
+}
+
+extension AsyncRefReaders<T> on AsyncRef<T> {
+  /// Reloads the value of this [Ref].
+  Future<void> reload(BuildContext context) {
+    return context.reload(key: this);
+  }
+
+  /// Async reads the value of this [Ref].
+  FutureOr<T> readAsync(BuildContext context) {
+    return context.readAsync(key: this);
+  }
+
+  /// The future when this [Ref] is ready to be read.
+  FutureOr<void> isReady(BuildContext context) {
+    return context.readAsync(key: this);
+  }
+
+  /// Whether this [Ref] is ready to be read.
+  bool isReadySync(BuildContext context) => isReady(context) == null;
 }

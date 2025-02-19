@@ -40,16 +40,30 @@ class ProvideItElement extends InheritedElement {
   final _cache = <BuildContext, Map<String, Map<Object?, _State?>>>{};
   final _cacheIndex = <BuildContext, int>{};
 
-  /// The future when all [AsyncRefState.ready] are completed.
+  /// The future of [AsyncRefState.isReady].
   FutureOr<void> allReady() {
     final futures = _tree.values
         .expand((branch) => branch.values.whereType<AsyncRefState>())
-        .map((state) => state.ready())
+        .map((state) => state.isReady())
         .whereType<Future>();
 
     if (futures.isEmpty) return null;
 
     return Future.wait(futures).then((_) {});
+  }
+
+  /// The future when a [AsyncRefState.isReady] is completed.
+  FutureOr<void> isReady<T>({String? type, Object? key}) {
+    type ??= T.type;
+
+    final state = _tree.values.expand((e) {
+      return e.values.where((e) => e.type == type && e.ref.key == key);
+    }).firstOrNull;
+
+    assert(state != null, 'Ref<$T> not found, key: $key.');
+
+    if (state is AsyncRefState) return state.isReady();
+    return null;
   }
 
   R bind<R, T>(BuildContext context, Ref<T> ref) {

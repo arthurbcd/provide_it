@@ -125,10 +125,17 @@ extension ContextStates on BuildContext {
     ).bind(this);
   }
 
-  /// The future when all [AsyncRefState.ready] are completed.
-  FutureOr<void> allReady() {
-    return provideIt.allReady();
-  }
+  /// The future when all [AsyncRefState.isReady] are completed.
+  FutureOr<void> allReady() => provideIt.allReady();
+
+  /// Whether all [AsyncRefState.isReady] are completed.
+  bool allReadySync() => allReady() == null;
+
+  /// The future when [T] is ready.
+  FutureOr<void> isReady<T>({Object? key}) => provideIt.isReady<T>(key: key);
+
+  /// Whether [T] is ready.
+  bool isReadySync<T>({Object? key}) => isReady<T>(key: key) == null;
 
   /// Calls [fn] when the [BuildContext] is mounted.
   ///

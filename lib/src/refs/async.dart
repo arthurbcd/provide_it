@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 import 'package:provide_it/src/refs/ref_widget.dart';
 
 import '../framework.dart';
@@ -10,8 +9,6 @@ import 'ref.dart';
 abstract class AsyncRef<T> extends Ref<T> {
   const AsyncRef({this.initialData, super.key});
   final T? initialData;
-
-  Future<void> reload(BuildContext context) => context.reload(key: this);
 
   @override
   AsyncRefState<T, AsyncRef<T>> createState();
@@ -27,9 +24,6 @@ abstract class AsyncRefWidget<T> extends RefWidget<T> implements AsyncRef<T> {
 
   @override
   final T? initialData;
-
-  @override
-  Future<void> reload(BuildContext context) => context.reload(key: this);
 
   @override
   AsyncRefState<T, AsyncRef<T>> createState();
@@ -68,9 +62,9 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   /// The stream created by [create].
   Stream<T>? get stream => null;
 
-  /// The future when [read] is [ready] to read it.
+  /// The future when [read] is [isReady] to read it.
   /// Won't trigger lazy refs.
-  FutureOr<void> ready() {
+  FutureOr<void> isReady() {
     if (!_hasLoaded) return null;
     if (snapshot.hasData) return null;
 

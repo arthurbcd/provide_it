@@ -6,12 +6,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/injector/injector.dart';
 import 'package:provide_it/src/injector/param.dart';
-import 'package:provide_it/src/utils/async_snapshot_extension.dart';
-import 'package:provide_it/src/watchers/listenable.dart';
 
 import '../provide_it.dart';
-import 'refs/async.dart';
-import 'refs/ref.dart';
 import 'utils/tree_map.dart';
 
 part 'framework/provide_it_binding.dart';
@@ -21,6 +17,7 @@ part 'framework/ref_state.dart';
 part 'framework/ref_state_cycling.dart';
 part 'framework/watcher.dart';
 
+// @internal
 extension ProvideItExtension on BuildContext {
   @protected
   ProvideItElement get provideIt {
