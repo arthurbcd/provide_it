@@ -8,7 +8,7 @@ import 'src/framework.dart';
 import 'src/injector/injector.dart';
 
 export 'src/core.dart';
-export 'src/framework.dart' show RefState, Watcher;
+export 'src/framework.dart' hide ProvideItElement, ProvideItScope;
 export 'src/refs/async.dart';
 export 'src/refs/create.dart';
 export 'src/refs/future.dart';
@@ -21,30 +21,33 @@ export 'src/refs/provider/provider.dart';
 export 'src/refs/ref.dart';
 export 'src/refs/stream.dart';
 export 'src/refs/value.dart';
-export 'src/refs/vsync.dart';
 export 'src/utils/async_snapshot_extension.dart';
 export 'src/watchers/change_notifier.dart';
-export 'src/watchers/defaults.dart';
 export 'src/watchers/listenable.dart';
 
 typedef ErrorBuilder = Widget Function(
     BuildContext context, Object error, StackTrace stackTrace);
 
 class ProvideIt extends InheritedWidget {
-  ProvideIt({
+  const ProvideIt({
     super.key,
     this.provide,
-    this.watchers = const DefaultWatchers([]),
     this.namedLocator,
     this.allowedDuplicates = const [],
+    this.additionalWatchers = const [],
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
-    TransitionBuilder? builder,
-    Widget? child,
-  })  : assert(builder == null || child == null),
-        super(child: Builder(builder: (context) {
-          return builder?.call(context, child) ?? child!;
-        }));
+    this.scope,
+    required super.child,
+  });
+
+  /// Default watchers to use with [ContextReaders].
+  ///
+  /// Set to `[]` to disable the default watchers.
+  static List<Watcher> defaultWatchers = [
+    ListenableWatcher(),
+    ChangeNotifierWatcher(),
+  ];
 
   static Widget _loadingBuilder(BuildContext context) {
     return Center(child: CircularProgressIndicator.adaptive());
@@ -58,7 +61,7 @@ class ProvideIt extends InheritedWidget {
   /// - Use this to set up singletons or other global state.
   /// - When marked with `async`, [loadingBuilder] will show until completion.
   /// - If an error occurs, [errorBuilder] will be shown.
-  final ValueSetter<BuildContext>? provide;
+  final void Function(BuildContext context)? provide;
 
   /// The builder to use if [provide] is marked with `async`.
   final WidgetBuilder loadingBuilder;
@@ -66,11 +69,8 @@ class ProvideIt extends InheritedWidget {
   /// The builder to use if an error occurs during [provide].
   final ErrorBuilder errorBuilder;
 
-  /// List of [Watcher]s to use for the [ContextReaders] framework.
-  ///
-  /// The [DefaultWatchers] list comes with:
-  /// - [ListenableWatcher]
-  final List<Watcher> watchers;
+  /// Extra watchers to use with [ProvideIt.defaultWatchers].
+  final List<Watcher> additionalWatchers;
 
   /// List of types allowed to have duplicate values on read.
   ///
@@ -118,8 +118,8 @@ class ProvideIt extends InheritedWidget {
   /// ```
   final NamedLocator? namedLocator;
 
-  /// Logs the current state of the [RefState] tree.
-  static void log() => ProvideItElement.instance.debugTree();
+  /// The [ReadIt] scope to use. Defaults to [ReadIt.instance].
+  final ReadIt? scope;
 
   @override
   bool updateShouldNotify(covariant ProvideIt oldWidget) => false;

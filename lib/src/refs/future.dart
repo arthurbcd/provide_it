@@ -1,19 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
 import 'async.dart';
-import 'ref.dart';
 
 class FutureRef<T> extends AsyncRef<T> {
   const FutureRef(
-    this.create, {
+    FutureOr<T> Function() this.create, {
     super.initialData,
     super.key,
-  });
+  }) : value = null;
 
   /// How to create the value.
-  final FutureOr<T> Function() create;
+  final FutureOr<T> Function()? create;
+
+  const FutureRef.value(
+    FutureOr<T> this.value, {
+    super.initialData,
+    super.key,
+  }) : create = null;
+
+  /// How to create the value.
+  final FutureOr<T>? value;
 
   @override
   AsyncSnapshot<T> bind(BuildContext context) => context.bind(this);
@@ -29,6 +38,9 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
   Future<T>? get future => _future;
 
   @override
+  bool get shouldNotifySelf => true;
+
+  @override
   void initState() {
     load();
     super.initState();
@@ -36,7 +48,8 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
 
   @override
   void create() {
-    final value = ref.create();
+    final value = ref.value ?? ref.create!();
+
     if (value is Future<T>) {
       _future = value;
     } else {
@@ -48,5 +61,5 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
   AsyncSnapshot<T> bind(BuildContext context) => snapshot;
 
   @override
-  T read(BuildContext context) => snapshot.data as T;
+  T read() => snapshot.data as T;
 }

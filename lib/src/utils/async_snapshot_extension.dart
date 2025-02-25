@@ -63,16 +63,23 @@ extension AsyncSnapshotExtension<T> on AsyncSnapshot<T> {
     R Function()? none,
   }) {
     if (isLoading && !skipLoading) return loading();
+
+    // AsyncSnapshot.withData/withError
     if (hasData) return data(this.data as T);
     if (hasError) return error(this.error!, stackTrace!);
 
-    return switch (connectionState) {
-      ConnectionState.none => none != null ? none() : loading(),
-      ConnectionState.waiting => loading(),
-      ConnectionState.active => loading(),
-      ConnectionState.done when this.data is T => data(this.data as T),
-      _ => none != null ? none() : data(requireData),
-    };
+    // AsyncSnapshot.waiting/nothing
+    if (isLoading) return loading();
+    if (isNone) return none != null ? none() : loading();
+
+    // ConnectionState.done & no data/error
+    if (null is T) return data(null as T);
+    if (none != null) return none();
+
+    return error(
+      StateError('Snapshot has neither data nor error'),
+      StackTrace.empty,
+    );
   }
 
   /// Allows you to define custom behavior for different states of an [AsyncSnapshot]
@@ -116,10 +123,13 @@ extension AsyncSnapshotExtension<T> on AsyncSnapshot<T> {
     );
   }
 
-  /// Returns whether this snapshot has neither [data]/[error].
-  bool get hasNone => !hasData && !hasError;
+  /// Whether this snapshot is [ConnectionState.none].
+  bool get isNone => connectionState == ConnectionState.none;
 
-  /// Returns whether this snapshot is computing.
+  /// Whether this snapshot is [ConnectionState.done].
+  bool get isDone => connectionState == ConnectionState.done;
+
+  /// Whether this snapshot is [ConnectionState.waiting] or [ConnectionState.active].
   bool get isLoading =>
       connectionState == ConnectionState.waiting ||
       connectionState == ConnectionState.active;

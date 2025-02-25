@@ -8,11 +8,12 @@ part of '../framework.dart';
 /// See also:
 /// - [DefaultWatchers].
 /// - [ListenableWatcher].
+/// - [ChangeNotifierWatcher].
 abstract class Watcher<T> {
   RefState? _state;
 
   /// The value to watch.
-  T get value => _state?._lastReadValue as T;
+  T get value => _state?.value;
 
   @protected
   void notify() {
@@ -21,11 +22,13 @@ abstract class Watcher<T> {
 
   /// Whether this watcher can watch [value].
   @protected
-  bool canInit(value) => value is T;
+  bool canWatch(value) {
+    return value is T;
+  }
 
   /// Starts watching [value].
   ///
-  /// Called when the value is first watched.
+  /// Called lazily when [value] is first read.
   @protected
   void init();
 
@@ -35,9 +38,15 @@ abstract class Watcher<T> {
   @protected
   void cancel();
 
-  /// Disposes of this watcher.
+  /// Disposes this watcher.
   ///
   /// Called when the [Ref] that created this [value] is disposed.
   @protected
   void dispose();
+
+  @override
+  operator ==(Object other) => runtimeType == other.runtimeType;
+
+  @override
+  int get hashCode => runtimeType.hashCode;
 }

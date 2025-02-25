@@ -35,7 +35,7 @@ class TreeMap<K, V> extends MapBase<K, V> {
   @override
   String toString() {
     final buffer = StringBuffer();
-    buffer.writeln('ProvideIt:');
+    buffer.writeln('TreeMap:');
     _writeIndented(buffer, this, 0);
     return buffer.toString();
   }

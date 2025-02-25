@@ -81,7 +81,7 @@ class FutureProviderState<T> extends AsyncRefState<T, FutureProvider<T>> {
   }
 
   @override
-  T read(BuildContext context) {
+  T read() {
     _future;
 
     return snapshot.data as T;

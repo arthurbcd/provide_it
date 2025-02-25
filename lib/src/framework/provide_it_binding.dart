@@ -2,22 +2,23 @@ part of '../framework.dart';
 
 typedef _State<T> = RefState<T, Ref<T>>;
 
-extension on ProvideItElement {
-  int _initTreeIndex(BuildContext context) {
+extension on ReadItMixin {
+  int _initTreeIndex(BuildContext? context) {
+    if (context == null) return 0;
+
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the index for the next build.
       _treeIndex.remove(context);
-      _reassembled = false;
     });
 
     return 0;
   }
 
-  _State<T> _state<T>(BuildContext context, Ref<T> ref) {
+  _State<T> _state<T>(Element? context, Ref<T> ref) {
     // we depend so we can get notified by [removeDependent].
-    context.dependOnInheritedElement(this);
+    context?.dependOnInheritedElement(_element!);
 
-    final branch = _tree[context as Element] ??= TreeMap<int, _State>();
+    final branch = _tree[context] ??= TreeMap<int, _State>();
     final index = _treeIndex[context] ??= _initTreeIndex(context);
     _treeIndex[context] = index + 1;
 
@@ -25,8 +26,8 @@ extension on ProvideItElement {
       _doingInit = true;
 
       final state = branch[index] = ref.createState()
-        .._element = context
-        .._root = this
+        .._bind = (element: context, index: index)
+        .._scope = this as ProvideItScope
         .._ref = ref
         ..initState();
 
@@ -35,14 +36,12 @@ extension on ProvideItElement {
       return state;
     }
 
-    _State<T> update(_State<T> old) {
-      return old
-        .._ref = ref
-        ..didUpdateRef(old.ref);
-    }
+    _State<T> update(_State<T> old) => old
+      .._ref = ref
+      ..didUpdateRef(old.ref);
 
     _State<T> reset(_State<dynamic> old) {
-      if (_reassembled) return create();
+      if (_element!._reassembled) return create();
       throw StateError('${old.ref.runtimeType} != ${ref.runtimeType}');
     }
 
@@ -53,16 +52,8 @@ extension on ProvideItElement {
     };
   }
 
-  void _disposeBinds(Element context) {
-    _tree.remove(context)?.forEach((_, state) => state.dispose());
-    _treeIndex.remove(context);
-  }
-
-  void _disposeRef<T>(BuildContext context, Ref<T> ref) {
-    final branch = _tree[context] ?? TreeMap<int, _State>();
-
-    for (var e in branch.entries.toList()) {
-      if (e.value.ref == ref) return branch.remove(e.key)?.dispose();
-    }
+  void _disposeBinds(Element dependent) {
+    _tree.remove(dependent)?.values.forEach((state) => state.dispose());
+    _treeIndex.remove(dependent);
   }
 }

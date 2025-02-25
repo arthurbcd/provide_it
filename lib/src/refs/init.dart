@@ -19,14 +19,14 @@ class InitRefState extends RefState<void, InitRef> {
   }
 
   @override
-  void create() {}
-
-  @override
   void dispose() {
     ref.dispose?.call();
     super.dispose();
   }
 
   @override
-  void read(BuildContext context) {}
+  void create() {}
+
+  @override
+  void read() {}
 }

@@ -46,12 +46,11 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
           ? _completer.completeError(snapshot.error!, snapshot.stackTrace!)
           : _completer.complete(snapshot.data as T);
     }
-
     notifyDependents();
   }
 
   @override
-  T? get debugValue => snapshot.data;
+  T? get value => snapshot.data;
 
   /// The current [future] state.
   AsyncSnapshot<T> get snapshot => _snapshot;
@@ -74,6 +73,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   /// Loads the value. Creates a new [future] or [snapshot].
   ///
   /// Awaiting this will complete when [future] or [stream] is done.
+  @protected
   Future<void> load() async {
     _hasLoaded = true;
     _completer = Completer<T>();
@@ -105,6 +105,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
     }
   }
 
+  @protected
   FutureOr<T> readAsync() {
     if (!_hasLoaded) load();
     if (snapshot.hasData) return snapshot.data as T;

@@ -1,7 +1,8 @@
 part of '../framework.dart';
 
 extension<T, R extends Ref<T>> on RefState<T, R> {
-  void _assert(BuildContext context, String method, [String? extra]) {
+  void _assert(BuildContext? context, String method, [String? extra]) {
+    if (context == null) return;
     assert(
       context.debugDoingBuild,
       '$method() can only be called during build. ${extra ?? ''}',
@@ -13,42 +14,47 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
     el.markNeedsBuild();
   }
 
-  void _listen(Element el, Listeners listeners) {
-    assert(el.mounted);
+  void _listen(Element? el, Listeners listeners) {
+    assert(el?.mounted ?? true);
+    final value = _value;
 
-    final value = of(el);
-    listeners.forEach((_, listener) => listener(value));
+    for (final listener in listeners.values) {
+      listener(value);
+    }
   }
 
-  void _listenSelect(Element el, ListenSelectors listenSelectors) {
-    assert(el.mounted);
-    final val = of(el);
+  void _listenSelect(Element? el, ListenSelectors listenSelectors) {
+    assert(el?.mounted ?? true);
+    final last = _lastReadValue;
+    final value = _value;
 
     for (final e in listenSelectors.entries) {
-      final (previous, selector, listener) = e.value;
-      final value = selector(val);
-      final didChange = !Ref.equals(previous, value);
+      final (prev, selector, listener) = e.value;
+      final previous = prev ?? selector(last);
 
-      if (didChange) listener(previous, value);
-      _listenSelectors[el]?[e.key] = (value, selector, listener);
+      final current = selector(value);
+      final didChange = !Ref.equals(previous, current);
+
+      if (didChange) listener(previous, current);
+      _listenSelectors[el]?[e.key] = (current, selector, listener);
     }
   }
 
   void _select(Element el, Selectors selectors) {
     assert(el.mounted);
-    final val = of(el);
+    final value = read();
 
     for (final e in selectors.entries) {
       final (previous, selector) = e.value;
-      final value = selector(val);
-      final didChange = !Ref.equals(previous, value);
+      final current = selector(value);
+      final didChange = !Ref.equals(previous, current);
 
       if (didChange) el.markNeedsBuild();
-      _selectors[el]?[e.key] = (value, selector);
+      _selectors[el]?[e.key] = (current, selector);
     }
   }
 
-  void _clean() {
+  void _removeDependents() {
     _lastRef = null;
     _watchers.clear();
     _listeners.clear();
@@ -58,14 +64,14 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
       /// on reassemble, [didUpdateRef] should always be called.
       /// null implies that the ref was removed, allowing safe disposal.
       if (_lastRef == null) {
-        _root?._disposeRef(context, ref);
+        _scope!._tree[_bind!.element]![_bind!.index]?.dispose();
       }
     });
   }
 
   String _debugState() {
     final keyText = ref.key == null ? '' : '#${ref.key}';
-    final valueText = '${debugValue ?? 'null'}'.replaceAll('Instance of ', '');
+    final valueText = '${value ?? 'null'}'.replaceAll('Instance of ', '');
     final desc = [
       if (_watchers.isNotEmpty) 'watchers: ${_watchers.length}',
       if (_listeners.isNotEmpty) 'listeners: ${_listeners.lengthExpanded}',

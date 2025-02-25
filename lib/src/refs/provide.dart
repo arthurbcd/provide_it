@@ -7,6 +7,20 @@ import '../injector/injector.dart';
 import 'async.dart';
 
 class ProvideRef<T> extends AsyncRef<T> {
+  /// A reference to a provider with various configuration options.
+  ///
+  /// The `ProvideRef` class allows you to create a reference to a provider
+  /// with specific behaviors such as lazy initialization and factory creation.
+  ///
+  /// The `create` function is required and is used to create the provider.
+  ///
+  /// The optional parameters are:
+  /// - `dispose`: A function to dispose of the provider.
+  /// - `lazy`: If true, the provider is lazily initialized. Defaults to false.
+  /// - `factory`: If true, the provider is created as a factory. Defaults to false.
+  /// - `parameters`: Additional parameters for the provider.
+  /// - `key`: An optional key for the provider.
+  ///
   const ProvideRef(
     Function this.create, {
     this.dispose,
@@ -33,7 +47,14 @@ class ProvideRef<T> extends AsyncRef<T> {
   /// Whether to create a new instance each time.
   final bool factory;
 
-  /// Directly provide a value.
+  /// Creates a [ProvideRef] with a constant value.
+  ///
+  /// The [value] parameter is the constant value to be provided.
+  ///
+  /// The [updateShouldNotify] parameter is an optional callback that determines
+  /// whether listeners should be notified when the value changes.
+  ///
+  /// The [key] parameter is an optional key for the ref.
   const ProvideRef.value(
     T this.value, {
     this.updateShouldNotify,
@@ -72,6 +93,9 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   Stream<T>? get stream => _stream;
 
   @override
+  bool get shouldNotifySelf => ref.create == null;
+
+  @override
   bool updateShouldNotify(ProvideRef<T> oldRef) {
     var didChange = oldRef.value != ref.value;
 
@@ -94,14 +118,10 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
       _injector = Injector<T>(ref.create!, parameters: ref.parameters);
     }
 
-    final value = _injector?.call() ?? ref.value;
-    // print("| $debugLabel $value");
+    final value = ref.value ?? _injector!();
 
     if (value is Future) {
-      _future = value.then((value) {
-        // print("att value $value");
-        return value;
-      });
+      _future = value.then((it) => it);
     } else if (value is Stream<T>) {
       _stream = value;
     } else if (value is T) {
@@ -119,24 +139,33 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
 
   @override
   void dispose() {
-    if (!ref.factory && snapshot.data is T) {
+    if (!ref.factory && ref.create != null && snapshot.data is T) {
       (ref.dispose ?? tryDispose)(snapshot.data as T);
     }
     super.dispose();
   }
 
   @override
-  T read(BuildContext context) {
+  void bind(BuildContext context) => snapshot.data;
+
+  @override
+  T watch(BuildContext context) {
+    assert(!ref.factory, 'Cannot watch factory values.');
+    return super.watch(context);
+  }
+
+  @override
+  S select<L, S>(BuildContext context, int index, Function selector) {
+    assert(!ref.factory, 'Cannot select factory values.');
+    return super.select(context, index, selector);
+  }
+
+  @override
+  T read() {
     if (ref.factory || !_created) load();
     if (snapshot.data case T data) return data;
 
     return snapshot.requireData;
-  }
-
-  @override
-  T of(BuildContext context, {bool listen = true}) {
-    assert(!ref.factory || !listen, 'Cannot listen to factory values.');
-    return super.of(context, listen: listen);
   }
 
   @override

@@ -31,31 +31,50 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 ///
 abstract class RefState<T, R extends Ref<T>> {
   // binding states
-  ProvideItElement? _root;
-  Element? _element;
+  ProvideItScope? _scope;
+  ({Element? element, int index})? _bind;
   T? _lastReadValue;
   R? _lastRef;
   R? _ref;
 
-  // dependents
-  bool _selfWatch = true;
-  final _watchers = <Element>{};
-  final _listeners = <Element, Listeners>{};
-  final _selectors = <Element, Selectors>{};
-  final _listenSelectors = <Element, ListenSelectors>{};
+  /// Whether [RefState] is attached to the widget tree.
+  bool get isAttached => _bind!.element != null;
 
-  // root watchers
-  late final _rootWatchers =
-      _root!.widget.watchers.where((e) => e.canInit(_lastReadValue))
-        ..forEach((watcher) => watcher
+  /// Whether [notifyDependents] should also notify this [RefState.context].
+  bool get shouldNotifySelf => false;
+
+  // dependents
+  final _watchers = <Element>{};
+  final _selectors = <Element, Selectors>{};
+  final _listeners = <Element?, Listeners>{};
+  final _listenSelectors = <Element?, ListenSelectors>{};
+
+  // value watchers
+  final _valueWatchers = <Watcher>{};
+
+  void _initWatching(Object value) {
+    if (_valueWatchers.isNotEmpty) return;
+
+    for (var watcher in _scope!.watchers.toSet()) {
+      if (watcher.canWatch(value)) {
+        _valueWatchers.add(watcher
           .._state = this
           ..init());
+      }
+    }
+  }
 
   /// The [Ref] that this state is associated with.
   R get ref => _ref!;
 
   /// The [context] of [Ref.bind].
-  BuildContext get context => _element!;
+  BuildContext get context {
+    assert(
+      _scope!.isAttached,
+      'ProvideIt is not attached to the widget tree, `context` is not available.',
+    );
+    return _bind!.element ?? _scope!._element!;
+  }
 
   /// The type used to [Ref.bind] this state.
   late final type = () {
@@ -68,7 +87,7 @@ abstract class RefState<T, R extends Ref<T>> {
   }();
 
   /// The last value read by [read].
-  T? get debugValue => _lastReadValue;
+  T? get value => _lastReadValue;
 
   /// How a [RefState] should be displayed in debug output.
   String get debugLabel {
@@ -79,18 +98,10 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void initState() {}
-
-  @protected
-  @mustCallSuper
-  void dispose() {
-    for (var watcher in _rootWatchers) {
-      watcher.cancel();
-    }
+  void initState() {
+    final cache = _scope!._treeCache[(type, ref.key)] ??= {};
+    cache.add(this);
   }
-
-  @protected
-  void didChangeDependencies() {}
 
   @protected
   @mustCallSuper
@@ -103,33 +114,19 @@ abstract class RefState<T, R extends Ref<T>> {
   bool updateShouldNotify(R oldRef) => false;
 
   @protected
-  void deactivate() {}
-
-  @protected
-  void activate() {}
-
-  @protected
-  @mustCallSuper
-  void reassemble() => _clean();
-
-  @protected
-  @mustCallSuper
-  void setState(VoidCallback fn) {
-    assert(_element != null && _element!.mounted);
-    fn();
-
-    _element!.markNeedsBuild();
-    notifyDependents();
-  }
-
-  @protected
   @mustCallSuper
   void notifyDependents() {
-    if (_selfWatch) _element!.markNeedsBuild();
+    if (value != null) _initWatching(value!);
+
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
     _selectors.forEach(_select);
     _listenSelectors.forEach(_listenSelect);
+
+    if (isAttached && shouldNotifySelf) {
+      assert(_bind!.element!.mounted);
+      _bind!.element!.markNeedsBuild();
+    }
   }
 
   @protected
@@ -142,8 +139,30 @@ abstract class RefState<T, R extends Ref<T>> {
   }
 
   @protected
+  void deactivate() {}
+
+  @protected
+  void activate() {}
+
+  @protected
   @mustCallSuper
-  void listen<L>(BuildContext context, int index, Function listener) {
+  void dispose() {
+    for (var watcher in _valueWatchers) {
+      watcher.cancel();
+    }
+    _scope!._treeCache.remove((type, ref.key));
+  }
+
+  @protected
+  @mustCallSuper
+  void reassemble() {
+    // only hot restart can reassemble [ReadIt] global bindings.
+    if (isAttached) _removeDependents();
+  }
+
+  @protected
+  @mustCallSuper
+  void listen<L>(BuildContext? context, int index, Function listener) {
     _assert(context, 'listen');
 
     tryListen(value) {
@@ -151,14 +170,14 @@ abstract class RefState<T, R extends Ref<T>> {
       listener(value);
     }
 
-    final listeners = _listeners[context as Element] ??= {};
+    final listeners = _listeners[context as Element?] ??= {};
     listeners[index] = tryListen;
   }
 
   @protected
   @mustCallSuper
   void listenSelect<L, S>(
-    BuildContext context,
+    BuildContext? context,
     int index,
     Function selector,
     Function listener,
@@ -175,8 +194,9 @@ abstract class RefState<T, R extends Ref<T>> {
       listener(previous, next);
     }
 
-    final listSelectors = _listenSelectors[context as Element] ??= {};
-    listSelectors[index] = (trySelect(of(context)), trySelect, tryListen);
+    final value = trySelect(this.value);
+    final listenSelectors = _listenSelectors[context as Element?] ??= {};
+    listenSelectors[index] = (value, trySelect, tryListen);
   }
 
   @protected
@@ -189,7 +209,7 @@ abstract class RefState<T, R extends Ref<T>> {
       return selector(value);
     }
 
-    final value = trySelect(of(context));
+    final value = trySelect(_value);
     final selectors = _selectors[context as Element] ??= {};
     selectors[index] = (value, trySelect);
 
@@ -202,14 +222,12 @@ abstract class RefState<T, R extends Ref<T>> {
     _assert(context, 'watch', 'Use `read()` instead.');
 
     _watchers.add(context as Element);
-    return of(context);
+    return _value;
   }
 
-  @protected
-  @mustCallSuper
-  T of(BuildContext context, {bool listen = true}) {
-    final value = _lastReadValue = read(context);
-    if (listen) _rootWatchers;
+  T get _value {
+    final value = _lastReadValue = read();
+    if (isAttached && value != null) _initWatching(value);
 
     return value;
   }
@@ -222,16 +240,15 @@ abstract class RefState<T, R extends Ref<T>> {
   /// Some [Ref] may not need to override this method.
   /// See: [ProvideRef].
   @protected
-  void bind(BuildContext context) {
-    // when void we don't need to self rebuild
-    _selfWatch = false;
-  }
+  void bind(BuildContext context) {}
 
   /// The method to construct the value of this [Ref].
   void create();
 
-  /// The value to be read by [watch], [select], [listen] and [listenSelect].
-  T read(BuildContext context);
+  /// How to locate the value of this [Ref].
+  /// Used by [watch], [select], [listen] and [listenSelect].
+  /// Ex: `context.read<MyClass>()`
+  T read();
 
   @override
   String toString() => _debugState();
@@ -242,12 +259,17 @@ extension RefStateExtension<T> on RefState<T, Ref<T>> {
   ///
   /// This won't throw an error if `value.dispose` is not a function.
   void tryDispose(value) {
-    for (var watcher in _rootWatchers) {
-      watcher.dispose();
-    }
+    if (value is num || value is String || value is bool) return;
+    if (value is Iterable || value is Map) return;
 
     // if there is a proper watcher, we let it dispose the value
-    if (_rootWatchers.isNotEmpty) return;
+    if (_valueWatchers.isNotEmpty) {
+      for (var watcher in _valueWatchers) {
+        watcher.dispose();
+      }
+      _valueWatchers.clear();
+      return;
+    }
 
     // well, you should have provided a dispose function, but I'll try
     // to dispose it for you 🫡

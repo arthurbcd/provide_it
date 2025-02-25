@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
 import '../framework.dart';
 import 'ref.dart';
@@ -18,10 +19,15 @@ class ValueRef<T> extends Ref<T> {
 }
 
 class ValueRefState<T> extends RefState<T, ValueRef<T>> {
-  late var value = ref.initialValue;
+  @override
+  late T value = ref.initialValue;
+
+  @override
+  bool get shouldNotifySelf => true;
 
   void setValue(T value) {
-    setState(() => this.value = value);
+    this.value = value;
+    notifyDependents();
   }
 
   @override
@@ -30,15 +36,10 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   }
 
   @override
-  (T, void Function(T)) bind(BuildContext context) {
-    return (watch(context), setValue);
-  }
+  (T, void Function(T)) bind(BuildContext context) => (value, setValue);
 
   @override
-  T read(BuildContext context) => value;
-
-  @override
-  T get debugValue => value;
+  T read() => value;
 }
 
 extension ValueRecordExtension<T> on (T, void Function(T)) {

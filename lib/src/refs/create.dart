@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
 import '../framework.dart';
 import 'ref.dart';
@@ -24,6 +25,7 @@ class CreateRef<T> extends Ref<T> {
 }
 
 class CreateRefState<T> extends RefState<T, CreateRef<T>> {
+  @override
   late T value = ref.create();
 
   @override
@@ -38,8 +40,8 @@ class CreateRefState<T> extends RefState<T, CreateRef<T>> {
   }
 
   @override
-  T bind(BuildContext context) => watch(context);
+  T bind(BuildContext context) => value;
 
   @override
-  T read(BuildContext context) => value;
+  T read() => value;
 }

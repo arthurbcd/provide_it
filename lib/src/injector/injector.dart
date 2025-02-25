@@ -123,7 +123,7 @@ class Injector<T> {
     ParamLocator? locator,
     Map<String, dynamic>? parameters,
   }) {
-    final waitFor = <Future>[];
+    final futures = <Future>[];
 
     locate(Param param) {
       var arg = parameters?[param.type];
@@ -144,49 +144,51 @@ class Injector<T> {
       }
 
       if (arg == null && !param.isNullable && param.isRequired) {
-        final t = arg.runtimeType;
-
-        throw ArgumentError.notNull(
-          'Injector got $t. Expected ${param.type}\n${errors.join('\n')}',
+        throw ArgumentError(
+          'Injector got null. Expected ${param.type}\n${errors.join('\n')}',
+          param.name,
         );
       }
 
       return arg;
     }
 
-    final positionalArgs = <int, dynamic>{};
-    for (final (i, param) in _positional.indexed) {
+    final positionalArgs = [];
+
+    for (final param in _positional) {
       final arg = locate(param);
-      if (arg == null && !param.isNullable && !param.isRequired) continue;
+
+      if (arg == null && param.hasDefaultValue) continue;
 
       if (arg is Future && !param.isFuture) {
-        waitFor.add(Future(() async => positionalArgs[i] = await arg));
+        final index = (positionalArgs.length += 1) - 1;
+        futures.add(Future(() async => positionalArgs[index] = await arg));
       } else {
-        positionalArgs[i] = arg;
+        positionalArgs.add(arg);
       }
     }
 
     final namedArgs = <Symbol, dynamic>{};
+
     for (final param in _named) {
-      var arg = parameters?[param.name] ?? locate(param);
-      if (arg == null && !param.isNullable && !param.isRequired) continue;
+      final arg = parameters?[param.name] ?? locate(param);
+
+      if (arg == null && param.hasDefaultValue) continue;
 
       if (arg is Future && !param.isFuture) {
-        waitFor.add(Future(() async => namedArgs[param.symbol] = await arg));
+        futures.add(Future(() async => namedArgs[param.symbol] = await arg));
       } else {
         namedArgs[param.symbol] = arg;
       }
     }
 
-    if (waitFor.isNotEmpty) {
-      return Future.wait(waitFor).then(
-        (_) =>
-            Function.apply(create, positionalArgs.toListByIndex(), namedArgs),
+    if (futures.isNotEmpty) {
+      return Future.wait(futures).then(
+        (_) => Function.apply(create, positionalArgs, namedArgs),
       );
     }
 
-    final value =
-        Function.apply(create, positionalArgs.toListByIndex(), namedArgs);
+    final value = Function.apply(create, positionalArgs, namedArgs);
 
     if (value is! T) {
       final t = value.runtimeType;
@@ -237,17 +239,20 @@ class Injector<T> {
     final list = <PositionalParam>[];
     final paramList = splitParams(_positionalInput);
 
+    var inBrackets = false;
     for (final paramText in paramList) {
-      var isRequired = true;
       var type = paramText;
+      var isRequired = !inBrackets;
 
       if (paramText.startsWith('[')) {
+        inBrackets = true;
         isRequired = false;
         type = paramText.substring(1).trim();
       }
 
       if (paramText.endsWith(']')) {
-        isRequired = true;
+        inBrackets = false;
+        isRequired = false;
         type = paramText.substring(0, paramText.length - 1).trim();
       }
 
@@ -294,14 +299,6 @@ class Injector<T> {
 
 extension on String {
   RegExpMatch? firstMatch(String regex) => RegExp(regex).firstMatch(this);
-}
-
-extension<T> on Map<int, T> {
-  List<T> toListByIndex() {
-    final list = entries.toList();
-    list.sort((a, b) => a.key.compareTo(b.key));
-    return list.map((e) => e.value).toList();
-  }
 }
 
 extension SplitBetweenExtension on String {

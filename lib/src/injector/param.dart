@@ -29,6 +29,9 @@ sealed class Param {
   /// Whether the type is a future.
   bool get isFuture => rawType.startsWith('Future');
 
+  /// Whether the parameter has a default value.
+  bool get hasDefaultValue => !isNullable && !isRequired;
+
   /// The name of the parameter.
   String? get name => null;
 
@@ -44,7 +47,7 @@ final class NamedParam extends Param {
   const NamedParam(
     super.rawType, {
     required this.name,
-    super.isRequired = false,
+    required super.isRequired,
   });
 
   @override

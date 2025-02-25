@@ -31,7 +31,7 @@ class Provider<T> extends RefWidget<T> {
   /// How to dispose the value.
   final Dispose<T>? dispose;
 
-  @Deprecated('Use `context.value` instead.')
+  @Deprecated('Use `context.provideValue` instead.')
   const Provider.value({
     super.key,
     this.value,
@@ -59,11 +59,11 @@ class Provider<T> extends RefWidget<T> {
 }
 
 class ProviderState<T> extends RefState<T, Provider<T>> {
-  late T value = ref.create?.call(context) ?? ref.value as T;
+  late T _value = ref.create?.call(context) ?? ref.value as T;
 
   @override
   void create() {
-    value = ref.create?.call(context) ?? ref.value as T;
+    _value = ref.create?.call(context) ?? ref.value as T;
   }
 
   @override
@@ -89,12 +89,12 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
 
   @override
   void dispose() {
-    ref.dispose?.call(context, value);
+    ref.dispose?.call(context, _value);
     super.dispose();
   }
 
   @override
-  T read(BuildContext context) => value;
+  T read() => _value;
 }
 
 typedef Create<T> = T Function(BuildContext context);

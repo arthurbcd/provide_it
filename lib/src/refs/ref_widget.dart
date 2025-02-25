@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/core.dart';
 
 import 'ref.dart';
 

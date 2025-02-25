@@ -15,6 +15,6 @@ class ChangeNotifierWatcher extends Watcher<ChangeNotifier> {
 
   @override
   void dispose() {
-    if (value case ChangeNotifier it) it.dispose();
+    value.dispose();
   }
 }

@@ -1,23 +1,19 @@
 import 'dart:async';
 
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/refs/async.dart';
-import 'package:provide_it/src/refs/init.dart';
-import 'package:provide_it/src/refs/stream.dart';
 
+import '../provide_it.dart';
 import 'framework.dart';
-import 'refs/create.dart';
-import 'refs/future.dart';
-import 'refs/provide.dart';
-import 'refs/value.dart';
 
 @Deprecated('Use `readIt` instead.')
 final getIt = readIt;
 
 /// A contextless version of [ContextReaders.read].
-final readIt = ProvideItElement.instance.readItAsync;
+final readIt = ReadIt.instance;
 
 extension ContextProviders on BuildContext {
+  /// Immediately calls [create] and provides its value. See [ProvideRef].
   void provide<T>(
     Function create, {
     void dispose(T value)?,
@@ -33,6 +29,7 @@ extension ContextProviders on BuildContext {
     ).bind(this);
   }
 
+  /// Calls [create] on first read and then provides its value. See [ProvideRef].
   void provideLazy<T>(
     Function create, {
     void dispose(T value)?,
@@ -48,6 +45,7 @@ extension ContextProviders on BuildContext {
     ).bind(this);
   }
 
+  /// Calls [create] on every read and returns its value. See [ProvideRef].
   void provideFactory<T>(
     Function create, {
     void dispose(T value)?,
@@ -63,16 +61,31 @@ extension ContextProviders on BuildContext {
     ).bind(this);
   }
 
-  void provideValue<T>(
+  /// Directly provides a value. See [ProvideRef.value].
+  T provideValue<T>(
     T value, {
     bool Function(T, T)? updateShouldNotify,
     Object? key,
   }) {
-    ProvideRef.value(
+    return ProvideRef.value(
       value,
       key: key,
       updateShouldNotify: updateShouldNotify,
-    ).bind(this);
+    ).bind(this) as T;
+  }
+}
+
+extension RefBinder on BuildContext {
+  /// Shortcut to bind a [Ref] to this [BuildContext].
+  ///
+  /// Use it to override [Ref.bind] to declare a custom [R] return type:
+  /// ```dart
+  /// @override
+  /// T bind(BuildContext context) => context.bind(this);
+  /// ```
+  /// See: [CreateRef] or [ValueRef].
+  R bind<R, T>(Ref<T> ref) {
+    return scope.bind(ref, context: this) as R;
   }
 }
 
@@ -99,54 +112,80 @@ extension ContextStates on BuildContext {
     ).bind(this);
   }
 
-  /// Subscribes to a [Future] and updates the value.
+  /// Subscribes to a [Future] function and returns its snapshot.
   AsyncSnapshot<T> future<T>(
     FutureOr<T> create(), {
     T? initialData,
     Object? key,
   }) {
-    return FutureRef<T>(
+    return FutureRef(
+      key: key,
       create,
       initialData: initialData,
-      key: key,
     ).bind(this);
   }
 
-  /// Subscribes to a [Stream] and updates the value.
+  /// Subscribes to a [Future] value and returns its snapshot.
+  AsyncSnapshot<T> futureValue<T>(
+    FutureOr<T> value, {
+    T? initialData,
+    Object? key,
+  }) {
+    return FutureRef.value(
+      key: key,
+      value,
+      initialData: initialData,
+    ).bind(this);
+  }
+
+  /// Subscribes to a [Stream] function and returns its snapshot.
   AsyncSnapshot<T> stream<T>(
     Stream<T> create(), {
     T? initialData,
     Object? key,
   }) {
-    return StreamRef<T>(
+    return StreamRef(
+      key: key,
       create,
       initialData: initialData,
+    ).bind(this);
+  }
+
+  /// Subscribes to a [Stream] value and returns its snapshot.
+  AsyncSnapshot<T> streamValue<T>(
+    Stream<T> value, {
+    T? initialData,
+    Object? key,
+  }) {
+    return StreamRef.value(
       key: key,
+      value,
+      initialData: initialData,
     ).bind(this);
   }
 
   /// The future when all [AsyncRefState.isReady] are completed.
-  FutureOr<void> allReady() => provideIt.allReady();
+  FutureOr<void> allReady() => scope.allReady();
 
   /// Whether all [AsyncRefState.isReady] are completed.
   bool allReadySync() => allReady() == null;
 
   /// The future when [T] is ready.
-  FutureOr<void> isReady<T>({Object? key}) => provideIt.isReady<T>(key: key);
+  FutureOr<void> isReady<T>({Object? key}) => scope.isReady<T>(key: key);
 
   /// Whether [T] is ready.
   bool isReadySync<T>({Object? key}) => isReady<T>(key: key) == null;
 
-  /// Calls [fn] when the [BuildContext] is mounted.
+  /// Calls [init] when the [BuildContext] is mounted.
   ///
-  /// Changing [key] re-calls [fn].
-  void init(VoidCallback fn, {VoidCallback? dispose, Object? key}) {
-    InitRef(init: fn, dispose: dispose, key: key).bind(this);
+  /// Changing [key] re-calls [init].
+  void init(VoidCallback init, {VoidCallback? dispose, Object? key}) {
+    InitRef(init: init, dispose: dispose, key: key).bind(this);
   }
 
-  /// Calls [fn] when the [BuildContext] is unmounted.
-  void dispose(VoidCallback fn, {Object? key}) {
-    InitRef(dispose: fn, key: key).bind(this);
+  /// Calls [dispose] when the [BuildContext] is unmounted.
+  void dispose(VoidCallback dispose, {Object? key}) {
+    InitRef(dispose: dispose, key: key).bind(this);
   }
 }
 
@@ -155,35 +194,35 @@ extension ContextReaders on BuildContext {
   ///
   /// Instantiates the bind if not already.
   T read<T>({Object? key}) {
-    return provideIt.read<T>(this, key: key);
+    return scope.read<T>(context: this, key: key);
   }
 
   /// Reads a previously bound value by [T] and [key].
   ///
   /// Returns a [Future] if the value is not ready.
   FutureOr<T> readAsync<T>({Object? key}) {
-    return provideIt.readItAsync<T>(key: key);
+    return scope.readAsync<T>(context: this, key: key);
   }
 
   /// Watches a previously bound value by [T] and [key].
   ///
-  /// Instantiates the bind if not already.
+  /// Reads the bind if not already.
   T watch<T>({Object? key}) {
-    return provideIt.watch<T>(this, key: key);
+    return scope.watch<T>(this, key: key);
   }
 
   /// Selects a previously bound value by [T] and [key].
   ///
-  /// Instantiates the bind if not already.
+  /// Reads the bind if not already.
   R select<T, R>(R selector(T value), {Object? key}) {
-    return provideIt.select<T, R>(this, selector, key: key);
+    return scope.select<T, R>(this, selector, key: key);
   }
 
   /// Listens to a previously bound value by [T] and [key].
   ///
-  /// Does not instantiate the bind.
+  /// Does not read a lazy bind.
   void listen<T>(void listener(T value), {Object? key}) {
-    provideIt.listen<T>(this, listener, key: key);
+    scope.listen<T>(listener, context: this, key: key);
   }
 
   /// Listens to a previously bound value by [T], [selector] and [key].
@@ -194,10 +233,43 @@ extension ContextReaders on BuildContext {
     void listener(R previous, R next), {
     Object? key,
   }) {
-    provideIt.listenSelect<T, R>(this, selector, listener, key: key);
+    scope.listenSelect<T, R>(selector, listener, context: this, key: key);
   }
 
-  Future<void> reload({Object? key}) {
-    return provideIt.reload(this, key: key);
+  Future<void> reload<T>({Object? key}) {
+    return scope.reload<T>(this, key: key);
+  }
+}
+
+extension ContextVsync on BuildContext {
+  /// Creates a single [TickerProvider] for the current [BuildContext].
+  ///
+  /// Must be used exactly once, preferably within [Ref.create].
+  TickerProvider get vsync {
+    assert(
+      scope.debugDoingInit,
+      'context.vsync must be used within Ref.create/initState method.',
+    );
+
+    return _TickerProvider(this);
+  }
+}
+
+class _TickerProvider implements TickerProvider {
+  _TickerProvider(this.context);
+  final BuildContext context;
+
+  @override
+  Ticker createTicker(TickerCallback onTick) {
+    return Ticker(onTick, debugLabel: 'created by $context');
+  }
+}
+
+extension on BuildContext {
+  @protected
+  ProvideItScope get scope {
+    final it = getElementForInheritedWidgetOfExactType<ProvideIt>();
+    assert(it != null, 'You must set `ProvideIt` in your app.');
+    return (it as ProvideItElement).scope;
   }
 }

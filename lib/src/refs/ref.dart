@@ -11,7 +11,7 @@ abstract class Ref<T> {
   const Ref({this.key});
 
   /// The unique identifier for the [Ref] instance.
-  /// Equivalent to [Widget.key].
+  /// Similar to [Widget.key].
   final Object? key;
 
   /// The default equality for comparing [Ref.key] & [RefState.select] values.
@@ -41,20 +41,6 @@ abstract class Ref<T> {
 
   @protected
   RefState<T, Ref<T>> createState();
-}
-
-extension RefBinder on BuildContext {
-  /// Shortcut to bind a [Ref] to this [BuildContext].
-  ///
-  /// Use it to override [Ref.bind] to declare a custom [R] return type:
-  /// ```dart
-  /// @override
-  /// T bind(BuildContext context) => context.bind(this);
-  /// ```
-  /// See: [CreateRef] or [ValueRef].
-  R bind<R, T>(Ref<T> ref) {
-    return provideIt.bind(this, ref);
-  }
 }
 
 extension RefReaders<T> on Ref<T> {

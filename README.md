@@ -54,6 +54,8 @@ In addition to `context.provide`, there are several other methods available:
 
 All of them support the `.new` auto-injection.
 
+All of these methods are equivalent to the respective methods in the `get_it` package, deprecations were included for help in migration.
+
 #### `context.value` & `context.create`
 
 Those were common properties you would find in the `Provider` widgets.
@@ -82,6 +84,8 @@ class CounterProvider extends StatelessWidget {
 
 When using complex objects, you can use the `create` method to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
 
+You can recreate.
+
 ```dart
 class CounterProvider extends StatelessWidget {
   const CounterProvider({super.key});
@@ -109,7 +113,18 @@ final count2 = context.read<int>();
 final count3 = context.select((CounterNotifier counter) => counter.count);
 ```
 
-All of these methods are equivalent to the respective methods in the provider package.
+All of these methods are equivalent to the respective methods in the `provider` package, deprecations were included for help in migration.
+
+You can access contextlessly using `ReadIt.intance`, `ReadIt.I` or simply `readIt`.
+
+`ReadIt` is contextless, and can be used in tests or outside of widgets. `watch`, `select` and etc are not available in `ReadIt`.
+
+```dart
+final count = readIt.read<CounterNotifier>().count;
+final count = readIt.listen<CounterNotifier>((counter) {
+  print('Counter changed: ${counter.count}');
+});
+```
 
 ### 3. Listening
 

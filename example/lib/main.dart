@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
-// import 'package:provide_it/provide_it.dart';
+import 'package:provide_it_example/benchmarks/context_watch/benchmark_screen.dart';
 
 void main() {
+  // readIt.provide(create);
+  readIt.provide<Abstract>(AbstractImpl.new);
+
+  final abstract = readIt.read<Abstract>();
+
   runApp(
     ProvideIt(
-      provide: (context) {
-        context.provide<Abstract>(AbstractImpl.new);
-      },
-      builder: (context, _) {
-        return MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: CounterValue(),
+      child: Builder(
+        builder: (context) {
+          final abstract = context.read<Abstract>();
+          return MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: BenchmarkScreen(),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     ),
   );
 }
@@ -71,14 +76,31 @@ class CounterValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final counter = context.value(0);
+    final (count, setValue) = context.value(0);
+    final (count2, setValue2) = context.value(0);
+    final (count3, setValue3) = context.value(0);
 
-    return ElevatedButton(
-      onPressed: () async {
-        final abs = await context.readAsync<Abstract>();
-        print("abs $abs");
-      },
-      child: Text('Counter: ${counter.value}'),
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            setValue(count + 1);
+          },
+          child: Text('Counter: $count'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            setValue2(count2 + 1);
+          },
+          child: Text('Counter2: $count2'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            setValue3(count3 + 1);
+          },
+          child: Text('Counter3: $count3'),
+        ),
+      ],
     );
   }
 }

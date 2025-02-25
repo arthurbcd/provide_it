@@ -22,15 +22,15 @@ class MultiProvider extends RefWidget<void> {
 
 class MultiProviderState extends RefState<void, MultiProvider> {
   @override
-  void create() {}
-
-  @override
-  void read(BuildContext context) {}
-
-  @override
   void bind(BuildContext context) {
     for (var provider in ref.providers) {
       provider.bind(context);
     }
   }
+
+  @override
+  void create() {}
+
+  @override
+  void read() {}
 }

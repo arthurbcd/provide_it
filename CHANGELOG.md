@@ -1,5 +1,14 @@
 # Changelog
 
+# 0.7.0
+
+- Improved lookup: O(1) for uniques binds, and O(n) for duplicates.
+- Removed the need for `BuildContext` in `RefState.read`.
+- Added `ReadIt` for dependency injection outside of widgets.
+- Added `GetIt` migrations.
+- Added `Benchmark` example.
+- Added unit-tests & widget-tests.
+
 # 0.6.0
 
 - Added `context.init`.
