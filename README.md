@@ -6,6 +6,45 @@ ProvideIt is a provider-like state binding, management, and injection using only
 
 ## Use
 
+```dart
+void main() {
+  runApp(
+    ProvideIt(
+      // Auto-injects dependencies
+      provide: (context) {
+        context.provide(CounterService.init); // <- async
+        context.provide(CounterRepository.new);
+        context.provide(Counter.new);
+      },
+      // Auto-injects path parameters
+      namedLocator: (param) => pathParameters[param.name], // e.g: go_router
+
+      // ProvideIt will take care of loading/error, but you can customize it:
+      // - loadingBuilder: (context) => (...),
+      // - errorBuilder: (context, error, stackTrae) =>ce(...),
+      child: MaterialApp(
+        home: Builder(
+          builder: (context) {
+            final counter = context.watch<Counter>();
+
+            context.listen<Counter>((counter) {
+              // do something
+            });
+
+            return Center(
+              child: ElevatedButton(
+                onPressed: counter.increment,
+                child: Text('${counter.count}'),
+              ),
+            );
+          },
+        ),
+      ),
+    ),
+  );
+}
+```
+
 ### Setup
 
 Set `ProvideIt` above your app.
@@ -52,7 +91,15 @@ In addition to `context.provide`, there are several other methods available:
 - `context.provideValue`
 - `context.provideLazy`
 
-All of them support the `.new` auto-injection.
+All of them support the `.new` auto-injection, no matter if `async` or not.
+
+For manually providing a single named paramater, use flutter's [Symbol]:
+
+```dart
+ context.provide(Counter.new, parameters: {
+  #counterId: 'my-counter-id',
+ });
+```
 
 All of these methods are equivalent to the respective methods in the `get_it` package, deprecations were included for help in migration.
 

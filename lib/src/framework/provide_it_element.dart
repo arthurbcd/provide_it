@@ -4,7 +4,6 @@ class ProvideItElement extends InheritedElement {
   late final scope = (widget.scope ?? ReadIt.instance) as ProvideItScope;
 
   ProvideItElement(ProvideIt super.widget) {
-    print('ProvideItElement: ${scope.hashCode}');
     // attach scope to the widget tree.
     scope._element = this;
     scope.watchers.addAll(widget.additionalWatchers);
@@ -71,16 +70,14 @@ class ProvideItElement extends InheritedElement {
 }
 
 extension on ReadItMixin {
-  void _assertContext(BuildContext? context, String method) {
-    assert(
-      context != null || _element == null,
-      'ReadIt cannot bind after ProvideIt initialization.',
-    );
-    if (context == null) return;
+  void _depend(BuildContext context, String method) {
     assert(
       context is Element && context.debugDoingBuild,
       '$method() should be called within the build() method of a widget.',
     );
+
+    // we depend so we can get notified by [removeDependent].
+    context.dependOnInheritedElement(_element!);
   }
 
   void _assertState<T>(_State? state, String method, Object? key) {

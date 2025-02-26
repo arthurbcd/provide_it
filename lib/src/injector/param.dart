@@ -1,18 +1,24 @@
+import 'package:provide_it/injector.dart';
+
 /// An abstract class representing a parameter of an instance constructor.
 ///
 /// The [Param] class is used to define a parameter with a given type and
 /// whether it is required or optional.
 ///
 /// [rawType] - The type of the parameter.
-/// [isRequired] - A boolean indicating if the parameter is required. Defaults to true.
+/// [isRequired] - A boolean indicating if the parameter is required.
 ///
 /// See: [NamedParam], [PositionalParam].
 sealed class Param {
   /// Creates a new instance of the [Param] class.
   const Param(
     this.rawType, {
-    this.isRequired = true,
+    required this.isRequired,
+    required this.owner,
   });
+
+  /// The owner of the parameter.
+  final Injector owner;
 
   /// The raw type of the parameter, may contain the nullable operator.
   final String rawType;
@@ -30,12 +36,12 @@ sealed class Param {
   bool get isFuture => rawType.startsWith('Future');
 
   /// Whether the parameter has a default value.
-  bool get hasDefaultValue => !isNullable && !isRequired;
+  bool get hasDefaultValue => !isRequired || isNullable;
 
-  /// The name of the parameter.
-  String? get name => null;
+  /// The symbol of the parameter.
+  Symbol get symbol;
 
-  /// The type name without the nullable operator.
+  /// The type name, always without the nullable operator.
   String get type {
     if (isNullable) return rawType.substring(0, rawType.length - 1);
     return rawType;
@@ -48,20 +54,42 @@ final class NamedParam extends Param {
     super.rawType, {
     required this.name,
     required super.isRequired,
+    required super.owner,
   });
 
-  @override
+  /// The name of the named parameter.
   final String name;
 
+  @override
   Symbol get symbol => Symbol(name);
+
+  @override
+  String toString() {
+    final param = isRequired ? 'required $rawType' : rawType;
+    return 'NamedParam: ${owner.type}({$param $name})';
+  }
 }
 
 /// Represents a positional parameter in an instance constructor.
 final class PositionalParam extends Param {
   const PositionalParam(
     super.rawType, {
+    required this.index,
     required super.isRequired,
+    required super.owner,
   });
+
+  /// The position of the positional parameter.
+  final int index;
+
+  @override
+  Symbol get symbol => Symbol('p$index');
+
+  @override
+  String toString() {
+    final param = isRequired ? rawType : '[$rawType]';
+    return 'PositionalParam: ${owner.type}($param p$index)';
+  }
 }
 
 /// Extension on List of Params to provide various filtered iterables.

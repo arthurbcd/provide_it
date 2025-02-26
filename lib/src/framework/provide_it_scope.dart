@@ -2,23 +2,47 @@ part of '../framework.dart';
 
 class ProvideItScope with ReadItMixin {
   T watch<T>(BuildContext context, {Object? key}) {
-    _assertContext(context, 'watch');
+    _depend(context, 'watch');
 
-    final state = _stateOf<T?>(context, key: key);
+    final state = _stateOf<T>(context, key: key);
     final value = state?.watch(context);
 
     if (value is T) return value;
-    throw StateError('watch<$T> not found, key: $key');
+    throw ArgumentError.notNull('watch');
   }
 
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
-    _assertContext(context, 'select');
+    _depend(context, 'select');
 
     final state = _stateOf<T>(context, key: key);
-    final value = state?.select(context, _cacheIndex[context]!, selector);
+    final value = state?.select<T, R>(context, _cacheIndex[context]!, selector);
 
     if (value is R) return value;
-    throw StateError('Ref<$T> not found, key: $key');
+    throw ArgumentError.notNull('select');
+  }
+
+  void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
+    _depend(context, 'listen');
+
+    final state = _stateOf<T>(context, key: key);
+    _assertState<T>(state, 'listen', key);
+
+    state?.listen(context, _cacheIndex[context]!, listener);
+  }
+
+  void listenSelect<T, R>(
+    BuildContext context,
+    R selector(T value),
+    void listener(R previous, R next), {
+    Object? key,
+  }) {
+    _depend(context, 'listenSelect');
+
+    final state = _stateOf<T>(context, key: key);
+    final index = _cacheIndex[context]!;
+    _assertState<T>(state, 'listenSelect', key);
+
+    state?.listenSelect<T, R>(context, index, selector, listener);
   }
 }
 
@@ -71,8 +95,8 @@ mixin ReadItMixin implements ReadIt {
     type ??= T.type;
 
     final states = _treeCache[(type, key)];
-    assert(states != null, 'AsyncRef<$T> not found, key: $key.');
-    assert(states?.length == 1, 'Duplicate AsyncRef<$T>, key: $key.');
+    assert(states != null, 'AsyncRef<$type> not found, key: $key.');
+    assert(states?.length == 1, 'Duplicate AsyncRef<$type>, key: $key.');
 
     if (states?.firstOrNull case AsyncRefState s) return s.isReady();
     return null;
@@ -80,38 +104,16 @@ mixin ReadItMixin implements ReadIt {
 
   @override
   void bind<T>(Ref<T> ref, {BuildContext? context}) {
-    _assertContext(context, 'bind');
+    assert(
+      context != null || _element == null,
+      'ReadIt cannot bind after ProvideIt initialization.',
+    );
 
+    if (context != null) _depend(context, 'bind');
     final state = _state(context as Element?, ref);
 
     // we return `state.value` as some binds might need it.
     return context == null ? state.value : state.bind(context);
-  }
-
-  @override
-  void listen<T>(void listener(T value), {BuildContext? context, Object? key}) {
-    _assertContext(context, 'listen');
-
-    final state = _stateOf<T>(context, key: key);
-    _assertState<T>(state, 'listen', key);
-
-    state?.listen(context, _cacheIndex[context]!, listener);
-  }
-
-  @override
-  void listenSelect<T, R>(
-    R selector(T value),
-    void listener(R previous, R next), {
-    BuildContext? context,
-    Object? key,
-  }) {
-    _assertContext(context, 'listenSelect');
-
-    final state = _stateOf<T>(context, key: key);
-    final index = _cacheIndex[context]!;
-    _assertState<T>(state, 'listenSelect', key);
-
-    state?.listenSelect<T, R>(context, index, selector, listener);
   }
 
   Future<void> reload<T>(BuildContext context, {Object? key}) async {
@@ -131,8 +133,10 @@ mixin ReadItMixin implements ReadIt {
 
   @override
   FutureOr<T> readAsync<T>({BuildContext? context, String? type, Object? key}) {
-    final state = _stateOf<T>(context, key: key);
-    assert(state is AsyncRefState, 'AsyncRef<$T> not found, key: $key.');
+    type ??= T.type;
+
+    final state = _stateOf(context, type: type, key: key);
+    assert(state is AsyncRefState, 'AsyncRef<$type> not found, key: $key.');
 
     final value = (state as AsyncRefState).readAsync();
     if (value is Future) return value.then((it) => it as T);

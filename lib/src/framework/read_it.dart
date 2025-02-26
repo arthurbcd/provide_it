@@ -25,16 +25,6 @@ sealed class ReadIt {
 
   /// The future when [T] is ready.
   FutureOr<void> isReady<T>({Object? key});
-
-  /// Calls [listener] when [T] value changes.
-  void listen<T>(void listener(T value), {Object? key});
-
-  /// Calls [listener] when [R] value returned by [selector] changes.
-  void listenSelect<T, R>(
-    R selector(T value),
-    void listener(R previous, R next), {
-    Object? key,
-  });
 }
 
 extension ReadItProviders on ReadIt {
@@ -45,7 +35,7 @@ extension ReadItProviders on ReadIt {
   void provide<T>(
     Function create, {
     void dispose(T value)?,
-    Map<String, dynamic>? parameters,
+    Map<Symbol, dynamic>? parameters,
     Object? key,
   }) {
     bind(ProvideRef<T>(
@@ -61,7 +51,7 @@ extension ReadItProviders on ReadIt {
   void provideLazy<T>(
     Function create, {
     void dispose(T value)?,
-    Map<String, dynamic>? parameters,
+    Map<Symbol, dynamic>? parameters,
     Object? key,
   }) {
     bind(ProvideRef(
@@ -77,7 +67,7 @@ extension ReadItProviders on ReadIt {
   void provideFactory<T>(
     Function create, {
     void dispose(T value)?,
-    Map<String, dynamic>? parameters,
+    Map<Symbol, dynamic>? parameters,
     Object? key,
   }) {
     bind(ProvideRef(

@@ -28,34 +28,6 @@ void main() {
       expect(value, 42);
     });
 
-    test('should call listener when value changes', () {
-      final readIt = ReadIt.asNewInstance();
-      int? listenerValue;
-      readIt.provide(Counter.new);
-      readIt.listen<Counter>((it) {
-        listenerValue = it.value;
-      });
-      readIt.read<Counter>().value = 43;
-      expect(listenerValue, 43);
-    });
-
-    test('should call listener when selected value changes', () {
-      final readIt = ReadIt.asNewInstance();
-      int? previous;
-      int? value;
-      readIt.provide(Counter.new);
-      readIt.listenSelect(
-        (Counter counter) => counter.value,
-        (int prev, int next) {
-          previous = prev;
-          value = next;
-        },
-      );
-      readIt.read<Counter>().value = 43;
-      expect(previous, 42);
-      expect(value, 43);
-    });
-
     test('should provide a value directly', () {
       final readIt = ReadIt.asNewInstance();
       readIt.provideValue(42);

@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provide_it/provide_it.dart';
 
+import 'injector_test.dart';
 import 'read_it_test.dart';
 
-Future<void> provideIt(WidgetTester tester, WidgetBuilder builder) {
-  return tester.pumpWidget(
+Future<void> provideIt(
+  WidgetTester tester,
+  WidgetBuilder builder, {
+  void Function(BuildContext context)? provide,
+}) async {
+  await tester.pumpWidget(
     ProvideIt(
       key: UniqueKey(),
+      provide: provide,
       scope: ReadIt.asNewInstance(),
       child: Builder(
         builder: builder,
@@ -291,6 +297,42 @@ void main() {
       await tester.pump();
 
       expect(listenedValue, 1);
+    });
+
+    testWidgets('nested async constructors/params', (tester) async {
+      Leaf? value;
+      NestedA? nestedA;
+
+      await provideIt(tester, provide: (context) {
+        context.provide(NestedA.init);
+        context.provide(NestedB.init);
+        context.provide(Nested.new); // needs NestedA and NestedB
+        context.provide(Async.init);
+        context.provide(Leaf.new); // needs Nested and Async
+      }, (context) {
+        value = context.watch<Leaf>();
+
+        return GestureDetector(
+          key: ObjectKey(value),
+          onTap: () {
+            nestedA = context.read();
+          },
+        );
+      });
+
+      expect(value, isNull);
+      expect(nestedA, isNull);
+      await tester.pumpAndSettle();
+
+      expect(nestedA, isNull);
+      expect(value, isA<Leaf>());
+      expect(value!.a, isA<Nested>());
+      expect(value!.b, isA<Async>());
+      expect(value!.a.a, isA<NestedA>());
+      expect(value!.a.b, isA<NestedB>());
+
+      await tester.tap(find.byType(GestureDetector));
+      expect(nestedA, isA<NestedA>());
     });
   });
 }

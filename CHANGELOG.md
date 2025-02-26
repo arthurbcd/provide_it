@@ -1,6 +1,22 @@
 # Changelog
 
-# 0.7.0
+## 0.8.1
+
+- Removed unnecessary `read` dependency on `ProvideIt`.
+- Improved context dependency asserts.
+
+## 0.8.0
+
+- Changed [Injector.parameters] to use [Symbol] instead of [String].
+- Improved [ReadIt] type resolution.
+- Improved [Injector.toString] 
+- Improved [Param.toString].
+- Improved async injections.
+- Updated example.
+- Updated `README.md`.
+- Bump min constraints to Dart 3.3.0 / Flutter 3.19.0.
+
+## 0.7.0
 
 - Improved lookup: O(1) for uniques binds, and O(n) for duplicates.
 - Removed the need for `BuildContext` in `RefState.read`.
@@ -9,7 +25,7 @@
 - Added `Benchmark` example.
 - Added unit-tests & widget-tests.
 
-# 0.6.0
+## 0.6.0
 
 - Added `context.init`.
 - Added `context.dispose`.
@@ -18,7 +34,7 @@
 - Added `AsyncRef.isReady`.
 - Added `AsyncRef.isReadySync`.
 
-# 0.5.0
+## 0.5.0
 
 - Added `MultiProvider` migration.
 - Added `Consumer` migration.

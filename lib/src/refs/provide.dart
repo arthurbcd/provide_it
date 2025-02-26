@@ -38,8 +38,14 @@ class ProvideRef<T> extends AsyncRef<T> {
   /// How to dispose the value.
   final void Function(T value)? dispose;
 
-  /// The [Injector.parameters] to pass to [create].
-  final Map<String, dynamic>? parameters;
+  /// The [Injector.parameters] to manually pass to [create].
+  /// Ex:
+  /// ```dart
+  /// context.provide(ProductNotifier.new, parameters: {
+  ///   #productId: '123',
+  /// });
+  /// ```
+  final Map<Symbol, dynamic>? parameters;
 
   /// Whether to create the value only when it's first called.
   final bool lazy;

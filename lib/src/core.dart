@@ -17,7 +17,7 @@ extension ContextProviders on BuildContext {
   void provide<T>(
     Function create, {
     void dispose(T value)?,
-    Map<String, dynamic>? parameters,
+    Map<Symbol, dynamic>? parameters,
     Object? key,
   }) {
     ProvideRef<T>(
@@ -33,7 +33,7 @@ extension ContextProviders on BuildContext {
   void provideLazy<T>(
     Function create, {
     void dispose(T value)?,
-    Map<String, dynamic>? parameters,
+    Map<Symbol, dynamic>? parameters,
     Object? key,
   }) {
     ProvideRef(
@@ -49,7 +49,7 @@ extension ContextProviders on BuildContext {
   void provideFactory<T>(
     Function create, {
     void dispose(T value)?,
-    Map<String, dynamic>? parameters,
+    Map<Symbol, dynamic>? parameters,
     Object? key,
   }) {
     ProvideRef(
@@ -61,10 +61,10 @@ extension ContextProviders on BuildContext {
     ).bind(this);
   }
 
-  /// Directly provides a value. See [ProvideRef.value].
+  /// Directly provides a value. See [ProvideRef].
   T provideValue<T>(
     T value, {
-    bool Function(T, T)? updateShouldNotify,
+    bool Function(T prev, T next)? updateShouldNotify, // prev != next
     Object? key,
   }) {
     return ProvideRef.value(
@@ -222,7 +222,7 @@ extension ContextReaders on BuildContext {
   ///
   /// Does not read a lazy bind.
   void listen<T>(void listener(T value), {Object? key}) {
-    scope.listen<T>(listener, context: this, key: key);
+    scope.listen<T>(this, listener, key: key);
   }
 
   /// Listens to a previously bound value by [T], [selector] and [key].
@@ -233,7 +233,7 @@ extension ContextReaders on BuildContext {
     void listener(R previous, R next), {
     Object? key,
   }) {
-    scope.listenSelect<T, R>(selector, listener, context: this, key: key);
+    scope.listenSelect<T, R>(this, selector, listener, key: key);
   }
 
   Future<void> reload<T>({Object? key}) {

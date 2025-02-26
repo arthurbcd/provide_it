@@ -15,9 +15,6 @@ extension on ReadItMixin {
   }
 
   _State<T> _state<T>(Element? context, Ref<T> ref) {
-    // we depend so we can get notified by [removeDependent].
-    context?.dependOnInheritedElement(_element!);
-
     final branch = _tree[context] ??= TreeMap<int, _State>();
     final index = _treeIndex[context] ??= _initTreeIndex(context);
     _treeIndex[context] = index + 1;

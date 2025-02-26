@@ -158,18 +158,139 @@ void main() {
       expect(injector.type, 'Map<String, List<int>>');
     });
 
-    test('async constructors', () {
-      final injector = Injector(SomeClass.newAsync);
+    test('async constructors', () async {
+      locator(Param param) {
+        if (param.type == 'String') return 'a';
+        if (param.type == 'int') return 1;
+        return null;
+      }
+
+      final injector = Injector(SomeClass.newAsync, locator: locator);
       expect(injector.type, 'SomeClass');
       expect(injector.rawType, 'Future<SomeClass>');
-      expect(injector.params.length, 2);
-      expect(injector.params.first.rawType, 'String');
-      expect(injector.params.last.rawType, 'int');
+
+      final future = injector();
+      expect(future, isA<Future>());
+
+      final value = await future;
+      expect(value, isA<SomeClass>());
+    });
+
+    test('sync constructors with async params', () async {
+      locator(Param param) {
+        if (param.type == 'String') return Future.value('a');
+        if (param.type == 'int') return Future.value(1);
+        return null;
+      }
+
+      final injector = Injector(SomeClass.new, locator: locator);
+      expect(injector.type, 'SomeClass');
+      expect(injector.rawType, 'SomeClass');
+
+      final future = injector();
+      expect(future, isA<Future>());
+
+      final value = await future;
+      expect(value, isA<SomeClass>());
+    });
+
+    test('async constructors with async params', () async {
+      locator(Param param) {
+        if (param.type == 'String') return Future.value('a');
+        if (param.type == 'int') return Future.value(1);
+        return null;
+      }
+
+      final injector = Injector(SomeClass.newAsync, locator: locator);
+      expect(injector.type, 'SomeClass');
+      expect(injector.rawType, 'Future<SomeClass>');
+
+      final future = injector();
+      expect(future, isA<Future>());
+
+      final value = await future;
+      expect(value, isA<SomeClass>());
+    });
+
+    test('nested async constructors/params', () async {
+      final map = {
+        'Leaf': Injector(Leaf.new), // needs Nested and Async
+        'Async': Injector(Async.init), // -
+        'Nested': Injector(Nested.new), // needs NestedA and NestedB
+        'NestedA': Injector(NestedA.init), // -
+        'NestedB': Injector(NestedB.init), // -
+      };
+      locator(Param param) => map[param.type]?.call();
+      Injector.defaultLocator = locator;
+
+      final injector = Injector(Leaf.new);
+      expect(injector.type, '$Leaf');
+      expect(injector.rawType, '$Leaf');
+
+      final future = injector();
+      expect(future, isA<Future>());
+
+      final value = await future;
+      expect(value, isA<Leaf>());
+      expect(value.a, isA<Nested>());
+      expect(value.b, isA<Async>());
+      expect(value.a.a, isA<NestedA>());
+      expect(value.a.b, isA<NestedB>());
+    });
+
+    test('shold manually provide some parameters', () {
+      final injector = Injector(({String? a = '', int? b}) => (a, b));
+      expect(injector(), ('', null));
+      expect(injector({#a: 'a'}), ('a', null));
+      expect(injector({#b: 1}), ('', 1));
+      expect(injector({#a: 'a', #b: 1}), ('a', 1));
     });
   });
 }
 
 abstract class _PrivateType {}
+
+class NestedA {
+  NestedA(this.value);
+  final String value;
+
+  static Future<NestedA> init() async {
+    await Future.delayed(Duration(seconds: 1));
+    return NestedA('a');
+  }
+}
+
+class NestedB {
+  NestedB(this.value);
+  final int value;
+
+  static Future<NestedB> init() async {
+    await Future.delayed(Duration(seconds: 1));
+    return NestedB(0);
+  }
+}
+
+class Nested {
+  Nested(this.a, this.b);
+  final NestedA a;
+  final NestedB b;
+}
+
+class Async {
+  Async(this.value);
+  final bool value;
+
+  static Future<Async> init() async {
+    await Future.delayed(Duration(seconds: 1));
+    return Async(true);
+  }
+}
+
+class Leaf {
+  Leaf(this.a, this.b);
+  final Nested a;
+  final Async b;
+}
 
 class SomeClass {
   SomeClass(this.a, this.b);

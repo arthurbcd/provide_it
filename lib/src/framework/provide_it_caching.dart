@@ -12,15 +12,13 @@ extension on ReadItMixin {
   }
 
   _State? _stateOf<T>(BuildContext? context, {String? type, Object? key}) {
-    // we depend so we can get notified by [removeDependent].
-    context?.dependOnInheritedElement(_element!);
     type ??= T.type;
 
     final states = _treeCache[(type, key)];
     assert(states != null, 'Ref<$type> not found, key: $key.');
 
     final state = states?.firstOrNull;
-    assert(states?.length == 1, 'Duplicate Ref<$T> found, key: $key.');
+    assert(states?.length == 1, 'Duplicate Ref<$type> found, key: $key.');
 
     if (state?.type == type) {
       final index = _cacheIndex[context] ??= _initCacheIndex(context);

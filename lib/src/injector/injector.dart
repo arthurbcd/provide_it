@@ -33,10 +33,10 @@ class Injector<T> {
   ///
   Injector(
     this.create, {
+    this.locator,
     this.parameters,
-    ParamLocator? locator,
     this.ignorePrivateTypes = true,
-  }) : locator = locator ?? defaultLocator;
+  });
 
   /// The default locator to use while injecting.
   ///
@@ -49,8 +49,8 @@ class Injector<T> {
   /// The locate args by [Param] while injecting.
   final ParamLocator? locator;
 
-  /// The arguments by name/type [String] to use while injecting.
-  final Map<String, dynamic>? parameters;
+  /// The named arguments by [Symbol] to use while injecting.
+  final Map<Symbol, dynamic>? parameters;
 
   /// Whether to ignore private types.
   final bool ignorePrivateTypes;
@@ -99,54 +99,44 @@ class Injector<T> {
   late final hasParams = !_createText.startsWith('() => ');
 
   /// All parameters of the constructor.
-  List<Param> get params => List.of(_params);
+  List<Param> get params => List.unmodifiable(_params);
 
   /// Named parameters of the constructor.
-  List<NamedParam> get namedParams => List.of(_named);
+  List<NamedParam> get namedParams => List.unmodifiable(_named);
 
   /// Positional parameters of the constructor.
-  List<PositionalParam> get positionalParams => List.of(_positional);
+  List<PositionalParam> get positionalParams => List.unmodifiable(_positional);
 
   /// Performs the injection.
   ///
   /// You can add locators on top of pre-existing ones. No overriding.
   /// - Use [locator] to locate args by [Param].
-  /// - Use [parameters] to manually provide args by name/type [String].
+  /// - Use [parameters] to manually provide named args by [Symbol].
   ///
   /// Example:
   /// ```dart
   /// final userInjector = Injector(User.new, parameters: userJson);
-  /// final user = userInjector(parameters: {'id': 1, 'Role': Role.admin});
+  /// final user = userInjector({#id: 1, #name: 'John'});
   /// ```
   ///
-  FutureOr<T> call({
-    ParamLocator? locator,
-    Map<String, dynamic>? parameters,
-  }) {
+  FutureOr<T> call([Map<Symbol, dynamic>? parameters]) {
+    parameters = {...?this.parameters, ...?parameters};
     final futures = <Future>[];
 
     locate(Param param) {
-      var arg = parameters?[param.type];
-      final errors = [];
+      Object? arg;
+      Object? error;
 
       try {
-        if (locator != null) {
-          arg ??= locator(param);
-        }
+        arg = locator?.call(param) ?? defaultLocator?.call(param);
       } catch (e) {
-        errors.add(e);
+        error = e;
       }
 
-      try {
-        if (this.locator != null) arg ??= this.locator!(param);
-      } catch (e) {
-        errors.add(e);
-      }
-
-      if (arg == null && !param.isNullable && param.isRequired) {
+      if (arg == null && !param.hasDefaultValue) {
         throw ArgumentError(
-          'Injector got null. Expected ${param.type}\n${errors.join('\n')}',
-          param.name,
+          '${param.type} not found. Expected $param. \n$error',
+          param is NamedParam ? param.name : null,
         );
       }
 
@@ -156,11 +146,12 @@ class Injector<T> {
     final positionalArgs = [];
 
     for (final param in _positional) {
-      final arg = locate(param);
+      final arg = parameters[param.symbol] ?? locate(param);
 
       if (arg == null && param.hasDefaultValue) continue;
 
       if (arg is Future && !param.isFuture) {
+        // we cant use `param.index` here because of optionals
         final index = (positionalArgs.length += 1) - 1;
         futures.add(Future(() async => positionalArgs[index] = await arg));
       } else {
@@ -171,7 +162,7 @@ class Injector<T> {
     final namedArgs = <Symbol, dynamic>{};
 
     for (final param in _named) {
-      final arg = parameters?[param.name] ?? locate(param);
+      final arg = parameters[param.symbol] ?? locate(param);
 
       if (arg == null && param.hasDefaultValue) continue;
 
@@ -183,7 +174,7 @@ class Injector<T> {
     }
 
     if (futures.isNotEmpty) {
-      return Future.wait(futures).then(
+      return futures.wait.then(
         (_) => Function.apply(create, positionalArgs, namedArgs),
       );
     }
@@ -222,11 +213,16 @@ class Injector<T> {
       final parts = paramText.split(' '); // ex: required Type name
       final isRequired = parts.remove('required');
       final name = parts.removeLast();
-      final type = parts.join(' '); // for: () => void
+      final rawType = parts.join(' '); // for: () => void
 
-      if (ignorePrivateTypes && type.startsWith('_')) continue;
+      if (ignorePrivateTypes && rawType.startsWith('_')) continue;
 
-      list.add(NamedParam(type, name: name, isRequired: isRequired));
+      list.add(NamedParam(
+        rawType,
+        name: name,
+        isRequired: isRequired,
+        owner: this,
+      ));
     }
 
     return list;
@@ -241,24 +237,29 @@ class Injector<T> {
 
     var inBrackets = false;
     for (final paramText in paramList) {
-      var type = paramText;
+      var rawType = paramText;
       var isRequired = !inBrackets;
 
       if (paramText.startsWith('[')) {
         inBrackets = true;
         isRequired = false;
-        type = paramText.substring(1).trim();
+        rawType = paramText.substring(1).trim();
       }
 
       if (paramText.endsWith(']')) {
         inBrackets = false;
         isRequired = false;
-        type = paramText.substring(0, paramText.length - 1).trim();
+        rawType = paramText.substring(0, paramText.length - 1).trim();
       }
 
-      if (ignorePrivateTypes && type.startsWith('_')) continue;
+      if (ignorePrivateTypes && rawType.startsWith('_')) continue;
 
-      list.add(PositionalParam(type, isRequired: isRequired));
+      list.add(PositionalParam(
+        rawType,
+        index: list.length,
+        isRequired: isRequired,
+        owner: this,
+      ));
     }
 
     return list;
@@ -294,6 +295,11 @@ class Injector<T> {
     addCurrent(); // add the last param, if any
 
     return list;
+  }
+
+  @override
+  String toString() {
+    return 'Injector<$type>${rawType == type ? '' : ' Raw: $rawType'}';
   }
 }
 
