@@ -99,6 +99,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void initState() {
+    if (_scope!.isAttached) context.dependOnRefState(this, 'bind');
     final cache = _scope!._treeCache[(type, ref.key)] ??= {};
     cache.add(this);
   }
@@ -162,8 +163,8 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void listen<L>(BuildContext? context, int index, Function listener) {
-    _assert(context, 'listen');
+  void listen<L>(BuildContext context, int index, Function listener) {
+    context.dependOnRefState(this, 'listen');
 
     tryListen(value) {
       if (value is! L) return;
@@ -177,12 +178,12 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void listenSelect<L, S>(
-    BuildContext? context,
+    BuildContext context,
     int index,
     Function selector,
     Function listener,
   ) {
-    _assert(context, 'listenSelect');
+    context.dependOnRefState(this, 'listenSelect');
 
     trySelect(value) {
       if (value is! L) return null;
@@ -202,7 +203,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   S select<L, S>(BuildContext context, int index, Function selector) {
-    _assert(context, 'select');
+    context.dependOnRefState(this, 'select');
 
     trySelect(value) {
       if (value is! L) return null;
@@ -219,7 +220,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   T watch(BuildContext context) {
-    _assert(context, 'watch', 'Use `read()` instead.');
+    context.dependOnRefState(this, 'watch', 'Use `read()` instead.');
 
     _watchers.add(context as Element);
     return _value;

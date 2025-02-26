@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.2
+
+- Improved [RefState.removeDependent]. Now O(1).
+- Added internal [BuildContext.dependOnRefState].
+
 ## 0.8.1
 
 - Removed unnecessary `read` dependency on `ProvideIt`.

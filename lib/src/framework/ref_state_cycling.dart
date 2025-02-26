@@ -1,14 +1,6 @@
 part of '../framework.dart';
 
 extension<T, R extends Ref<T>> on RefState<T, R> {
-  void _assert(BuildContext? context, String method, [String? extra]) {
-    if (context == null) return;
-    assert(
-      context.debugDoingBuild,
-      '$method() can only be called during build. ${extra ?? ''}',
-    );
-  }
-
   void _markNeedsBuild(Element el) {
     assert(el.mounted);
     el.markNeedsBuild();

@@ -2,8 +2,6 @@ part of '../framework.dart';
 
 class ProvideItScope with ReadItMixin {
   T watch<T>(BuildContext context, {Object? key}) {
-    _depend(context, 'watch');
-
     final state = _stateOf<T>(context, key: key);
     final value = state?.watch(context);
 
@@ -12,22 +10,19 @@ class ProvideItScope with ReadItMixin {
   }
 
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
-    _depend(context, 'select');
-
     final state = _stateOf<T>(context, key: key);
-    final value = state?.select<T, R>(context, _cacheIndex[context]!, selector);
+    final value =
+        state?.select<T, R>(context, _dependentIndex[context]!, selector);
 
     if (value is R) return value;
     throw ArgumentError.notNull('select');
   }
 
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
-    _depend(context, 'listen');
-
     final state = _stateOf<T>(context, key: key);
     _assertState<T>(state, 'listen', key);
 
-    state?.listen(context, _cacheIndex[context]!, listener);
+    state?.listen(context, _dependentIndex[context]!, listener);
   }
 
   void listenSelect<T, R>(
@@ -36,10 +31,8 @@ class ProvideItScope with ReadItMixin {
     void listener(R previous, R next), {
     Object? key,
   }) {
-    _depend(context, 'listenSelect');
-
     final state = _stateOf<T>(context, key: key);
-    final index = _cacheIndex[context]!;
+    final index = _dependentIndex[context]!;
     _assertState<T>(state, 'listenSelect', key);
 
     state?.listenSelect<T, R>(context, index, selector, listener);
@@ -61,7 +54,10 @@ mixin ReadItMixin implements ReadIt {
   final _treeCache = HashMap<(String, Object?), Set<RefState>>(
     equals: (a, b) => a.$1 == b.$1 && Ref.equals(a.$2, b.$2),
   );
-  final _cacheIndex = <BuildContext?, int>{};
+
+  // dependents and the state they depend on.
+  final _dependents = <BuildContext?, Set<RefState>>{};
+  final _dependentIndex = <BuildContext?, int>{};
 
   /// Iterates over all [Ref] states. Leaf to root.
   Iterable<RefState> get states sync* {
@@ -108,8 +104,6 @@ mixin ReadItMixin implements ReadIt {
       context != null || _element == null,
       'ReadIt cannot bind after ProvideIt initialization.',
     );
-
-    if (context != null) _depend(context, 'bind');
     final state = _state(context as Element?, ref);
 
     // we return `state.value` as some binds might need it.

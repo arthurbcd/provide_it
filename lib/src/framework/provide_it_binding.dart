@@ -48,9 +48,4 @@ extension on ReadItMixin {
       _ => create(),
     };
   }
-
-  void _disposeBinds(Element dependent) {
-    _tree.remove(dependent)?.values.forEach((state) => state.dispose());
-    _treeIndex.remove(dependent);
-  }
 }

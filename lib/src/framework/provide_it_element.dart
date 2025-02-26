@@ -35,8 +35,13 @@ class ProvideItElement extends InheritedElement {
     scope._tree[dependent]?.values.forEach((state) => state.deactivate());
 
     void dispose() {
-      scope._disposeBinds(dependent);
-      scope._disposeCache(dependent);
+      scope._tree.remove(dependent)?.values.forEach((state) => state.dispose());
+      scope._treeIndex.remove(dependent);
+
+      scope._dependentIndex.remove(dependent);
+      scope._dependents
+          .remove(dependent)
+          ?.forEach((s) => s.removeDependent(dependent));
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,17 +74,28 @@ class ProvideItElement extends InheritedElement {
   }
 }
 
-extension on ReadItMixin {
-  void _depend(BuildContext context, String method) {
+extension on BuildContext {
+  /// Stablishes a dependency between this `context` and [RefState]/[ProvideItElement].
+  ///
+  /// [ProvideItElement.removeDependent] will be called when this `context` is unmounted.
+  /// Then, any [RefState] this `context` depends on will call [RefState.removeDependent].
+  void dependOnRefState(RefState state, String method, [String? instead]) {
     assert(
-      context is Element && context.debugDoingBuild,
-      '$method() should be called within the build() method of a widget.',
+      this is Element && debugDoingBuild,
+      '$method() should be called within the build(). ${instead ?? ''}',
     );
+    final ProvideItScope scope = state._scope!;
 
     // we depend so we can get notified by [removeDependent].
-    context.dependOnInheritedElement(_element!);
-  }
+    dependOnInheritedElement(scope._element!);
 
+    // we register the dependent so we can remove it when unmounted.
+    final dependents = scope._dependents[this] ??= {};
+    dependents.add(state);
+  }
+}
+
+extension on ReadItMixin {
   void _assertState<T>(_State? state, String method, Object? key) {
     assert(
       state != null,
