@@ -58,7 +58,7 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
   }
 
   @override
-  AsyncSnapshot<T> bind(BuildContext context) => snapshot;
+  AsyncSnapshot<T> bind() => snapshot;
 
   @override
   T read() => snapshot.data as T;

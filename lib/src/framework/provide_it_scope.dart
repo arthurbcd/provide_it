@@ -12,7 +12,7 @@ class ProvideItScope with ReadItMixin {
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
     final value =
-        state?.select<T, R>(context, _dependentIndex[context]!, selector);
+        state?.select<T, R>(context, _dependencyIndex[context]!, selector);
 
     if (value is R) return value;
     throw ArgumentError.notNull('select');
@@ -22,7 +22,7 @@ class ProvideItScope with ReadItMixin {
     final state = _stateOf<T>(context, key: key);
     _assertState<T>(state, 'listen', key);
 
-    state?.listen(context, _dependentIndex[context]!, listener);
+    state?.listen(context, _dependencyIndex[context]!, listener);
   }
 
   void listenSelect<T, R>(
@@ -32,7 +32,7 @@ class ProvideItScope with ReadItMixin {
     Object? key,
   }) {
     final state = _stateOf<T>(context, key: key);
-    final index = _dependentIndex[context]!;
+    final index = _dependencyIndex[context]!;
     _assertState<T>(state, 'listenSelect', key);
 
     state?.listenSelect<T, R>(context, index, selector, listener);
@@ -55,9 +55,9 @@ mixin ReadItMixin implements ReadIt {
     equals: (a, b) => a.$1 == b.$1 && Ref.equals(a.$2, b.$2),
   );
 
-  // dependents and the state they depend on.
-  final _dependents = <BuildContext?, Set<RefState>>{};
-  final _dependentIndex = <BuildContext?, int>{};
+  // state dependencies by the dependent `context`.
+  final _dependencies = <Element, Set<RefState>>{};
+  final _dependencyIndex = <Element, int>{};
 
   /// Iterates over all [Ref] states. Leaf to root.
   Iterable<RefState> get states sync* {
@@ -99,15 +99,15 @@ mixin ReadItMixin implements ReadIt {
   }
 
   @override
-  void bind<T>(Ref<T> ref, {BuildContext? context}) {
+  R bind<R, T>(Ref<T> ref, {BuildContext? context}) {
     assert(
-      context != null || _element == null,
-      'ReadIt cannot bind after ProvideIt initialization.',
+      context != null || isAttached,
+      'ReadIt cannot bind after ProvideIt is attached to the widget tree.',
     );
     final state = _state(context as Element?, ref);
 
-    // we return `state.value` as some binds might need it.
-    return context == null ? state.value : state.bind(context);
+    // we return it, as some binds have return types.
+    return state.bind() as R;
   }
 
   Future<void> reload<T>(BuildContext context, {Object? key}) async {

@@ -36,7 +36,7 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   }
 
   @override
-  (T, void Function(T)) bind(BuildContext context) => (value, setValue);
+  (T, void Function(T)) bind() => (value, setValue);
 
   @override
   T read() => value;

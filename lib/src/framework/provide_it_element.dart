@@ -1,8 +1,6 @@
 part of '../framework.dart';
 
 class ProvideItElement extends InheritedElement {
-  late final scope = (widget.scope ?? ReadIt.instance) as ProvideItScope;
-
   ProvideItElement(ProvideIt super.widget) {
     // attach scope to the widget tree.
     scope._element = this;
@@ -18,7 +16,7 @@ class ProvideItElement extends InheritedElement {
 
   @override
   ProvideIt get widget => super.widget as ProvideIt;
-
+  late final scope = (widget.scope ?? ReadIt.instance) as ProvideItScope;
   bool _reassembled = false;
 
   @override
@@ -35,19 +33,21 @@ class ProvideItElement extends InheritedElement {
     scope._tree[dependent]?.values.forEach((state) => state.deactivate());
 
     void dispose() {
-      scope._tree.remove(dependent)?.values.forEach((state) => state.dispose());
+      // binds
       scope._treeIndex.remove(dependent);
+      scope._tree.remove(dependent)?.values.forEach((state) => state.dispose());
 
-      scope._dependentIndex.remove(dependent);
-      scope._dependents
+      // dependencies
+      scope._dependencyIndex.remove(dependent);
+      scope._dependencies
           .remove(dependent)
           ?.forEach((s) => s.removeDependent(dependent));
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // we need to check if the dependent is still mounted
-      // because it could have been removed from the tree.
-      // if it's still mounted, we reactivate.
+      // because it could have been displaced from the tree.
+      // if it's still mounted, we reactivate it.
       dependent.mounted
           ? scope._tree[dependent]?.values.forEach((state) => state.activate())
           : dispose();
@@ -60,12 +60,13 @@ class ProvideItElement extends InheritedElement {
   Widget build() {
     _reassembled = false;
 
-    // we bind the provided states
+    // we bind the provided states to the tree.
     widget.provide?.call(this);
 
-    // if `allReady` is void, we immediately return `super.build`.
+    // we use [FutureRef] a.k.a `context.future` to wait for all async states.
     final snapshot = future(allReady);
 
+    // if `allReady` is void (ready), we immediately return `super.build`.
     return snapshot.maybeWhen(
       loading: () => widget.loadingBuilder(this),
       error: (e, s) => widget.errorBuilder(this, e, s),
@@ -75,10 +76,10 @@ class ProvideItElement extends InheritedElement {
 }
 
 extension on BuildContext {
-  /// Stablishes a dependency between this `context` and [RefState]/[ProvideItElement].
+  /// Stablishes a dependency between this `context` and [RefState].
   ///
-  /// [ProvideItElement.removeDependent] will be called when this `context` is unmounted.
-  /// Then, any [RefState] this `context` depends on will call [RefState.removeDependent].
+  /// When unmounted, [RefState.removeDependent] will be called for each
+  /// state dependency that this `context` depends on.
   void dependOnRefState(RefState state, String method, [String? instead]) {
     assert(
       this is Element && debugDoingBuild,
@@ -90,8 +91,8 @@ extension on BuildContext {
     dependOnInheritedElement(scope._element!);
 
     // we register the dependent so we can remove it when unmounted.
-    final dependents = scope._dependents[this] ??= {};
-    dependents.add(state);
+    final dependencies = scope._dependencies[this as Element] ??= {};
+    dependencies.add(state);
   }
 }
 

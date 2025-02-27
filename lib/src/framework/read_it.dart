@@ -12,7 +12,7 @@ sealed class ReadIt {
   static final I = instance;
 
   /// Binds a [ProvideRef] without context.
-  void bind<T>(ProvideRef<T> ref);
+  R bind<R, T>(ProvideRef<T> ref);
 
   /// Reads the value of a [Ref].
   T read<T>({Object? key});
@@ -87,7 +87,7 @@ extension ReadItProviders on ReadIt {
     return bind(ProvideRef.value(
       value,
       key: key,
-    )) as T;
+    ));
   }
 }
 

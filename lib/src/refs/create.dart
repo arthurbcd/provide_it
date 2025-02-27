@@ -40,7 +40,7 @@ class CreateRefState<T> extends RefState<T, CreateRef<T>> {
   }
 
   @override
-  T bind(BuildContext context) => value;
+  T bind() => value;
 
   @override
   T read() => value;

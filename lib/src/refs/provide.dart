@@ -152,7 +152,7 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   }
 
   @override
-  void bind(BuildContext context) => snapshot.data;
+  void bind() => snapshot.data;
 
   @override
   T watch(BuildContext context) {

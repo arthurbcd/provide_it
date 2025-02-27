@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+
+- Removed the need for `BuildContext` in `RefState.bind`. Simply use `Ref.context`, instead.
+
 ## 0.8.2
 
 - Improved [RefState.removeDependent]. Now O(1).

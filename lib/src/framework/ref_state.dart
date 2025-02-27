@@ -241,7 +241,7 @@ abstract class RefState<T, R extends Ref<T>> {
   /// Some [Ref] may not need to override this method.
   /// See: [ProvideRef].
   @protected
-  void bind(BuildContext context) {}
+  void bind() {}
 
   /// The method to construct the value of this [Ref].
   void create();

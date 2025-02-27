@@ -50,7 +50,7 @@ class StreamRefState<T> extends AsyncRefState<T, StreamRef<T>> {
   }
 
   @override
-  AsyncSnapshot<T> bind(BuildContext context) => snapshot;
+  AsyncSnapshot<T> bind() => snapshot;
 
   @override
   T read() => snapshot.data as T;

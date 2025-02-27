@@ -1,4 +1,3 @@
-import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/refs/provider/provider.dart';
 
 import '../../framework.dart';
@@ -22,7 +21,7 @@ class MultiProvider extends RefWidget<void> {
 
 class MultiProviderState extends RefState<void, MultiProvider> {
   @override
-  void bind(BuildContext context) {
+  void bind() {
     for (var provider in ref.providers) {
       provider.bind(context);
     }

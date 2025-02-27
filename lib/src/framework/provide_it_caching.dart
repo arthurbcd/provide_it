@@ -1,11 +1,10 @@
 part of '../framework.dart';
 
 extension on ReadItMixin {
-  int _initCacheIndex(BuildContext? context) {
-    if (context == null) return 0;
+  int _initCacheIndex(BuildContext context) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the indexes for the next build.
-      _dependentIndex.remove(context);
+      _dependencyIndex.remove(context);
     });
 
     return 0;
@@ -20,15 +19,15 @@ extension on ReadItMixin {
     final state = states?.firstOrNull;
     assert(states?.length == 1, 'Duplicate Ref<$type> found, key: $key.');
 
-    if (state?.type == type) {
-      final index = _dependentIndex[context] ??= _initCacheIndex(context);
-      _dependentIndex[context] = index + 1;
+    if (state?.type == type && context is Element) {
+      final index = _dependencyIndex[context] ??= _initCacheIndex(context);
+      _dependencyIndex[context] = index + 1;
 
       return state!;
     }
 
     // case it's a global ref, we can auto-bind it.
     if (key case Ref<T> ref) return _state(context as Element?, ref);
-    return null;
+    return state;
   }
 }
