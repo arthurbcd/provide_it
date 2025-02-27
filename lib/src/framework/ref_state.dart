@@ -46,8 +46,8 @@ abstract class RefState<T, R extends Ref<T>> {
   // dependents
   final _watchers = <Element>{};
   final _selectors = <Element, Selectors>{};
-  final _listeners = <Element?, Listeners>{};
-  final _listenSelectors = <Element?, ListenSelectors>{};
+  final _listeners = <Element, Listeners>{};
+  final _listenSelectors = <Element, ListenSelectors>{};
 
   // value watchers
   final _valueWatchers = <Watcher>{};
@@ -66,6 +66,14 @@ abstract class RefState<T, R extends Ref<T>> {
 
   /// The [Ref] that this state is associated with.
   R get ref => _ref!;
+
+  /// A set of [Element] that depends on this [RefState].
+  Set<Element> get dependents => {
+        ..._watchers,
+        ..._selectors.keys,
+        ..._listeners.keys,
+        ..._listenSelectors.keys,
+      };
 
   /// The [context] of [Ref.bind].
   BuildContext get context {
@@ -171,7 +179,7 @@ abstract class RefState<T, R extends Ref<T>> {
       listener(value);
     }
 
-    final listeners = _listeners[context as Element?] ??= {};
+    final listeners = _listeners[context as Element] ??= {};
     listeners[index] = tryListen;
   }
 
@@ -196,7 +204,7 @@ abstract class RefState<T, R extends Ref<T>> {
     }
 
     final value = trySelect(this.value);
-    final listenSelectors = _listenSelectors[context as Element?] ??= {};
+    final listenSelectors = _listenSelectors[context as Element] ??= {};
     listenSelectors[index] = (value, trySelect, tryListen);
   }
 

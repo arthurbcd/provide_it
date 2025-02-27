@@ -14,7 +14,7 @@ extension on ReadItMixin {
     type ??= T.type;
 
     final states = _treeCache[(type, key)];
-    assert(states != null, 'Ref<$type> not found, key: $key.');
+    assert(null is T || states != null, 'Ref<$type> not found, key: $key.');
 
     final state = states?.firstOrNull;
     assert(states?.length == 1, 'Duplicate Ref<$type> found, key: $key.');

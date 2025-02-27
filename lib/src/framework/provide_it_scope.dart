@@ -5,24 +5,22 @@ class ProvideItScope with ReadItMixin {
     final state = _stateOf<T>(context, key: key);
     final value = state?.watch(context);
 
-    if (value is T) return value;
-    throw ArgumentError.notNull('watch');
+    return value as T;
   }
 
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
-    final value =
-        state?.select<T, R>(context, _dependencyIndex[context]!, selector);
+    final index = _dependencyIndex[context]!;
+    final value = state?.select<T, R>(context, index, selector);
 
-    if (value is R) return value;
-    throw ArgumentError.notNull('select');
+    return value as R;
   }
 
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
-    _assertState<T>(state, 'listen', key);
+    final index = _dependencyIndex[context]!;
 
-    state?.listen(context, _dependencyIndex[context]!, listener);
+    state?.listen(context, index, listener);
   }
 
   void listenSelect<T, R>(
@@ -33,9 +31,12 @@ class ProvideItScope with ReadItMixin {
   }) {
     final state = _stateOf<T>(context, key: key);
     final index = _dependencyIndex[context]!;
-    _assertState<T>(state, 'listenSelect', key);
 
     state?.listenSelect<T, R>(context, index, selector, listener);
+  }
+
+  RefState? findRefStateOfType<T>({Object? key}) {
+    return _treeCache[(T.type, key)]?.firstOrNull;
   }
 }
 
@@ -82,7 +83,7 @@ mixin ReadItMixin implements ReadIt {
     }
     if (futures.isEmpty) return null;
 
-    return futures.wait.then((_) {});
+    return futures.wait as Future<void>;
   }
 
   /// The future when a [AsyncRefState.isReady] is completed.
@@ -101,28 +102,31 @@ mixin ReadItMixin implements ReadIt {
   @override
   R bind<R, T>(Ref<T> ref, {BuildContext? context}) {
     assert(
-      context != null || isAttached,
+      context != null || !isAttached,
       'ReadIt cannot bind after ProvideIt is attached to the widget tree.',
     );
-    final state = _state(context as Element?, ref);
+    final state = _state<T>(context as Element?, ref);
 
-    // we return it, as some binds have return types.
     return state.bind() as R;
   }
 
   Future<void> reload<T>(BuildContext context, {Object? key}) async {
     final state = _stateOf<T>(context, key: key);
-    assert(state is AsyncRefState, 'AsyncRef<$T> not found, key: $key.');
+    assert(state is AsyncRefState?, 'AsyncRef<$T> not found, key: $key.');
 
-    (state as AsyncRefState).load();
+    await (state as AsyncRefState?)?.load();
   }
 
   @override
   T read<T>({BuildContext? context, Object? key}) {
-    final value = _stateOf<T>(context, key: key)?._value;
-    if (value is T) return value;
+    final state = _stateOf<T>(context, key: key);
+    final value = state?._value;
 
-    throw StateError('Ref<$T> not found, key: $key');
+    if (value is! T && state is AsyncRefState) {
+      throw StateError('AsyncRef<$T> not ready, key: $key.');
+    }
+
+    return value as T;
   }
 
   @override
@@ -130,9 +134,9 @@ mixin ReadItMixin implements ReadIt {
     type ??= T.type;
 
     final state = _stateOf(context, type: type, key: key);
-    assert(state is AsyncRefState, 'AsyncRef<$type> not found, key: $key.');
+    assert(state is AsyncRefState?, 'AsyncRef<$type> not found, key: $key.');
 
-    final value = (state as AsyncRefState).readAsync();
+    final value = (state as AsyncRefState?)?.readAsync();
     if (value is Future) return value.then((it) => it as T);
 
     return value as T;

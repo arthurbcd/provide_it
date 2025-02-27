@@ -67,7 +67,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
     if (!_hasLoaded) return null;
     if (snapshot.hasData) return null;
 
-    return _completer.future.then((_) {});
+    return _completer.future as Future<void>;
   }
 
   /// Loads the value. Creates a new [future] or [snapshot].
@@ -77,29 +77,33 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   Future<void> load() async {
     _hasLoaded = true;
     _completer = Completer<T>();
-    _subscription?.cancel();
 
+    final old = (future: future, stream: stream);
     create();
-    assert(future == null || stream == null);
+    assert(future == null || stream == null, 'No async operations created');
 
-    if (future case var future?) {
+    if (future case var future? when old.future != future) {
       snapshot = _snapshot.inState(ConnectionState.waiting);
 
       future.then((value) {
+        if (this.future != future) return;
         snapshot = AsyncSnapshot.withData(ConnectionState.done, value);
       }).catchError((e, s) {
+        if (this.future != future) return;
         snapshot = AsyncSnapshot.withError(ConnectionState.done, e, s);
       });
     }
 
-    if (stream case var stream?) {
+    if (stream case var stream? when old.stream != stream) {
       snapshot = _snapshot.inState(ConnectionState.waiting);
 
+      _subscription?.cancel();
       _subscription = stream.listen((value) {
         snapshot = AsyncSnapshot.withData(ConnectionState.active, value);
       }, onError: (e, s) {
         snapshot = AsyncSnapshot.withError(ConnectionState.active, e, s);
       }, onDone: () {
+        if (this.stream != stream) return;
         snapshot = _snapshot.inState(ConnectionState.done);
       });
     }

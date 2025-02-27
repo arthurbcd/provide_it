@@ -241,6 +241,15 @@ extension ContextReaders on BuildContext {
   }
 }
 
+extension ContextFindRefState on BuildContext {
+  /// Finds a [RefState] of [T] type.
+  ///
+  /// The return type is `dynamic` on purpose as some [RefState] types are inferred by [Injector].
+  RefState? findRefStateOfType<T>({Object? key}) {
+    return scope.findRefStateOfType<T>(key: key);
+  }
+}
+
 extension ContextVsync on BuildContext {
   /// Creates a single [TickerProvider] for the current [BuildContext].
   ///

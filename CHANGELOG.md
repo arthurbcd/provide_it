@@ -2,7 +2,13 @@
 
 ## 0.9.0
 
+- Improved `AsyncRefState.load` to unsubscribe old futures/streams.
 - Removed the need for `BuildContext` in `RefState.bind`. Simply use `Ref.context`, instead.
+- Now it's possible to read using T?, if not found, returns null instead of throwing.
+- Exposed `RefState.dependents` api.
+- Exposed `BuildContext.findRefStateOfType` api.
+- Improved asserts.
+- Added tests.
 
 ## 0.8.2
 

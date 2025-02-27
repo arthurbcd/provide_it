@@ -335,4 +335,78 @@ void main() {
       expect(nestedA, isA<NestedA>());
     });
   });
+
+  testWidgets('Ref.bind should be disposed', (tester) async {
+    bool disposed = false;
+    int count = 0;
+    final contexts = <int, BuildContext>{};
+
+    await provideIt(tester, (context) {
+      final counter = context.value(0);
+      count = counter.value;
+
+      return Builder(
+        key: Key(count.toString()),
+        builder: (context) {
+          contexts[counter.value] = context;
+
+          context.provide(() => Counter(0), dispose: (_) => disposed = true);
+          return GestureDetector(
+            onTap: () => counter.value++,
+          );
+        },
+      );
+    });
+
+    expect(count, 0);
+    expect(disposed, isFalse);
+
+    await tester.tap(find.byType(GestureDetector));
+    await tester.pump();
+
+    expect(count, 1);
+    expect(disposed, isTrue);
+    expect(contexts[0] != contexts[1], true);
+    expect(contexts[0]!.mounted, false);
+    expect(contexts[1]!.mounted, true);
+  });
+
+  testWidgets('RefState dependent should be disposed', (tester) async {
+    int count = 0;
+    final contexts = <int, BuildContext>{};
+    RefState? refState;
+
+    await provideIt(tester, (context) {
+      context.provide(() => Counter(0));
+      final counter = context.value(0);
+      count = counter.value;
+
+      return Builder(
+        key: Key(count.toString()),
+        builder: (context) {
+          contexts[counter.value] = context;
+          context.watch<Counter>();
+          refState = context.findRefStateOfType<Counter>();
+
+          return GestureDetector(
+            onTap: () => counter.value++,
+          );
+        },
+      );
+    });
+
+    expect(count, 0);
+    expect(refState?.dependents.length, 1);
+    expect(refState?.dependents.first, contexts[0]);
+
+    await tester.tap(find.byType(GestureDetector));
+    await tester.pump();
+
+    expect(count, 1);
+    expect(refState?.dependents.length, 1);
+    expect(refState?.dependents.first, contexts[1]);
+    expect(contexts[0] != contexts[1], true);
+    expect(contexts[0]!.mounted, false);
+    expect(contexts[1]!.mounted, true);
+  });
 }

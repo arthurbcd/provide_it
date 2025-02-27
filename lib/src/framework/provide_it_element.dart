@@ -95,12 +95,3 @@ extension on BuildContext {
     dependencies.add(state);
   }
 }
-
-extension on ReadItMixin {
-  void _assertState<T>(_State? state, String method, Object? key) {
-    assert(
-      state != null,
-      'Failed to $method(). Ref<$T> not found, key: $key.',
-    );
-  }
-}
