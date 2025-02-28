@@ -20,26 +20,18 @@ class ValueRef<T> extends Ref<T> {
 
 class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   @override
-  late T value = ref.initialValue;
+  late T? value = ref.initialValue;
 
   @override
   bool get shouldNotifySelf => true;
 
-  void setValue(T value) {
-    this.value = value;
-    notifyDependents();
-  }
-
   @override
   void create() {
-    value = ref.initialValue;
+    write(ref.initialValue);
   }
 
   @override
-  (T, void Function(T)) bind() => (value, setValue);
-
-  @override
-  T read() => value;
+  (T, void Function(T)) bind() => (read(), write);
 }
 
 extension ValueRecordExtension<T> on (T, void Function(T)) {

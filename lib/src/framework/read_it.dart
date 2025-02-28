@@ -17,6 +17,9 @@ sealed class ReadIt {
   /// Reads the value of a [Ref].
   T read<T>({Object? key});
 
+  /// Writes the value of a [Ref].
+  void write<T>(T value, {Object? key});
+
   /// Async reads the value of a [AsyncRef].
   FutureOr<T> readAsync<T>({Object? key});
 

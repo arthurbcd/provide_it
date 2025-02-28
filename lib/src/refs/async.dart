@@ -49,9 +49,6 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
     notifyDependents();
   }
 
-  @override
-  T? get value => snapshot.data;
-
   /// The current [future] state.
   AsyncSnapshot<T> get snapshot => _snapshot;
 
@@ -121,5 +118,20 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   void dispose() {
     _subscription?.cancel();
     super.dispose();
+  }
+
+  @override
+  T? get value {
+    // even listen/read<T?> should init lazy values
+    stream;
+    future;
+    return snapshot.data;
+  }
+
+  @override
+  set value(T? value) {
+    value != null
+        ? snapshot = AsyncSnapshot.withData(ConnectionState.done, value)
+        : snapshot = AsyncSnapshot<T>.nothing().inState(ConnectionState.done);
   }
 }

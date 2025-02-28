@@ -14,7 +14,7 @@ extension on ReadItMixin {
     return 0;
   }
 
-  _State<T> _state<T>(Element? context, Ref<T> ref) {
+  _State<T> _state<T>(Element? context, Ref<T> ref, bool topLevel) {
     final branch = _tree[context] ??= TreeMap<int, _State>();
     final index = _treeIndex[context] ??= _initTreeIndex(context);
     _treeIndex[context] = index + 1;
@@ -26,6 +26,7 @@ extension on ReadItMixin {
         .._bind = (element: context, index: index)
         .._scope = this as ProvideItScope
         .._ref = ref
+        .._topLevel = topLevel
         ..initState();
 
       _doingInit = false;

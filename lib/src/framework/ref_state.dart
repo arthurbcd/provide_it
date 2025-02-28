@@ -33,14 +33,14 @@ abstract class RefState<T, R extends Ref<T>> {
   // binding states
   ProvideItScope? _scope;
   ({Element? element, int index})? _bind;
-  T? _lastReadValue;
   R? _lastRef;
   R? _ref;
+  bool _topLevel = false;
 
   /// Whether [RefState] is attached to the widget tree.
   bool get isAttached => _bind!.element != null;
 
-  /// Whether [notifyDependents] should also notify this [RefState.context].
+  /// Whether [notifyDependents] should also notify this [context].
   bool get shouldNotifySelf => false;
 
   // dependents
@@ -53,6 +53,7 @@ abstract class RefState<T, R extends Ref<T>> {
   final _valueWatchers = <Watcher>{};
 
   void _initWatching(Object value) {
+    if (!_scope!.isAttached) return;
     if (_valueWatchers.isNotEmpty) return;
 
     for (var watcher in _scope!.watchers.toSet()) {
@@ -66,14 +67,6 @@ abstract class RefState<T, R extends Ref<T>> {
 
   /// The [Ref] that this state is associated with.
   R get ref => _ref!;
-
-  /// A set of [Element] that depends on this [RefState].
-  Set<Element> get dependents => {
-        ..._watchers,
-        ..._selectors.keys,
-        ..._listeners.keys,
-        ..._listenSelectors.keys,
-      };
 
   /// The [context] of [Ref.bind].
   BuildContext get context {
@@ -94,21 +87,19 @@ abstract class RefState<T, R extends Ref<T>> {
     return type;
   }();
 
-  /// The last value read by [read].
-  T? get value => _lastReadValue;
-
   /// How a [RefState] should be displayed in debug output.
   String get debugLabel {
     final parts = runtimeType.toString().split('<');
     final ref = parts.first.replaceAll('RefState', '').toLowerCase();
-    return 'context.$ref<${_lastReadValue?.runtimeType ?? T}>';
+    return 'context.$ref<${value?.runtimeType ?? T}>';
   }
 
   @protected
   @mustCallSuper
   void initState() {
     if (_scope!.isAttached) context.dependOnRefState(this, 'bind');
-    final cache = _scope!._treeCache[(type, ref.key)] ??= {};
+    final key = _topLevel ? ref : ref.key;
+    final cache = _scope!._treeCache[(type, key)] ??= {};
     cache.add(this);
   }
 
@@ -159,7 +150,8 @@ abstract class RefState<T, R extends Ref<T>> {
     for (var watcher in _valueWatchers) {
       watcher.cancel();
     }
-    _scope!._treeCache.remove((type, ref.key));
+    final key = _topLevel ? ref : ref.key;
+    _scope!._treeCache.remove((type, key));
   }
 
   @protected
@@ -218,7 +210,7 @@ abstract class RefState<T, R extends Ref<T>> {
       return selector(value);
     }
 
-    final value = trySelect(_value);
+    final value = trySelect(read());
     final selectors = _selectors[context as Element] ??= {};
     selectors[index] = (value, trySelect);
 
@@ -231,39 +223,58 @@ abstract class RefState<T, R extends Ref<T>> {
     context.dependOnRefState(this, 'watch', 'Use `read()` instead.');
 
     _watchers.add(context as Element);
-    return _value;
+    return read();
   }
 
-  T get _value {
-    final value = _lastReadValue = read();
-    if (isAttached && value != null) _initWatching(value);
+  @protected
+  @mustCallSuper
+  void write(T value) {
+    this.value = value;
+    notifyDependents();
+  }
 
-    return value;
+  @protected
+  @mustCallSuper
+  T read() {
+    if (value == null) throw StateError('Ref<$type> is not ready.');
+
+    _initWatching(value!);
+    return value!;
   }
 
   /// The method called by [Ref.bind].
   ///
-  /// Override this method to make [Ref.bind] return a custom value.
+  /// Override to make it return a custom type.
   /// See: [CreateRef] or [ValueRef].
-  ///
-  /// Some [Ref] may not need to override this method.
-  /// See: [ProvideRef].
   @protected
-  void bind() {}
+  void bind() => value;
 
   /// The method to construct the value of this [Ref].
   void create();
 
-  /// How to locate the value of this [Ref].
-  /// Used by [watch], [select], [listen] and [listenSelect].
-  /// Ex: `context.read<MyClass>()`
-  T read();
+  /// The value to provide.
+  ///
+  /// Used by [read], [watch], [select], [listen] and [listenSelect].
+  T? get value;
+
+  /// Sets the value of this [Ref].
+  ///
+  /// Used by [write] to update the value.
+  set value(T? value);
 
   @override
   String toString() => _debugState();
 }
 
 extension RefStateExtension<T> on RefState<T, Ref<T>> {
+  @visibleForTesting
+  Set<Element> get dependents => {
+        ..._watchers,
+        ..._selectors.keys,
+        ..._listeners.keys,
+        ..._listenSelectors.keys,
+      };
+
   /// Attempts to dispose [value] by calling `value.dispose`.
   ///
   /// This won't throw an error if `value.dispose` is not a function.

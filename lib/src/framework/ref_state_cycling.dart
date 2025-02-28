@@ -3,12 +3,12 @@ part of '../framework.dart';
 extension<T, R extends Ref<T>> on RefState<T, R> {
   void _markNeedsBuild(Element el) {
     assert(el.mounted);
+
     el.markNeedsBuild();
   }
 
   void _listen(Element? el, Listeners listeners) {
-    assert(el?.mounted ?? true);
-    final value = _value;
+    assert(el!.mounted);
 
     for (final listener in listeners.values) {
       listener(value);
@@ -16,13 +16,10 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
   }
 
   void _listenSelect(Element? el, ListenSelectors listenSelectors) {
-    assert(el?.mounted ?? true);
-    final last = _lastReadValue;
-    final value = _value;
+    assert(el!.mounted);
 
     for (final e in listenSelectors.entries) {
-      final (prev, selector, listener) = e.value;
-      final previous = prev ?? selector(last);
+      final (previous, selector, listener) = e.value;
 
       final current = selector(value);
       final didChange = !Ref.equals(previous, current);
@@ -34,11 +31,10 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
 
   void _select(Element el, Selectors selectors) {
     assert(el.mounted);
-    final value = read();
 
     for (final e in selectors.entries) {
       final (previous, selector) = e.value;
-      final current = selector(value);
+      final current = selector(read());
       final didChange = !Ref.equals(previous, current);
 
       if (didChange) el.markNeedsBuild();

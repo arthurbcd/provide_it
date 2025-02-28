@@ -59,17 +59,19 @@ class Provider<T> extends RefWidget<T> {
 }
 
 class ProviderState<T> extends RefState<T, Provider<T>> {
-  late T _value = ref.create?.call(context) ?? ref.value as T;
-
-  @override
-  void create() {
-    _value = ref.create?.call(context) ?? ref.value as T;
-  }
+  bool _created = false;
 
   @override
   void initState() {
     if (ref.lazy == false) create();
     super.initState();
+  }
+
+  @override
+  void create() {
+    final value = ref.create != null ? ref.create!(context) : ref.value as T;
+    write(value);
+    _created = true;
   }
 
   @override
@@ -89,12 +91,20 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
 
   @override
   void dispose() {
-    ref.dispose?.call(context, _value);
+    if (value != null) {
+      ref.dispose?.call(context, value as T);
+    }
     super.dispose();
   }
 
   @override
-  T read() => _value;
+  T read() {
+    if (!_created) create();
+    return super.read();
+  }
+
+  @override
+  T? value;
 }
 
 typedef Create<T> = T Function(BuildContext context);

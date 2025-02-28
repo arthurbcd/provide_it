@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0
+
+- Added `context.write(T)`.
+- Added support to use `Ref` as top-level member.
+- Improved `RefState`, now overrides `T? value`.
+- Improved `RefState.dispose(T)` to not be called when a lazy was not yet used.
+- Improved errors/asserts.
+
 ## 0.9.0
 
 - Improved `AsyncRefState.load` to unsubscribe old futures/streams.

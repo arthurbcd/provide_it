@@ -48,7 +48,7 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
 
   @override
   void create() {
-    final value = ref.value ?? ref.create!();
+    final value = ref.create != null ? ref.create!() : ref.value as T;
 
     if (value is Future<T>) {
       _future = value;
@@ -59,7 +59,4 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
 
   @override
   AsyncSnapshot<T> bind() => snapshot;
-
-  @override
-  T read() => snapshot.data as T;
 }

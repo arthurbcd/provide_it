@@ -28,5 +28,5 @@ class InitRefState extends RefState<void, InitRef> {
   void create() {}
 
   @override
-  void read() {}
+  void value;
 }

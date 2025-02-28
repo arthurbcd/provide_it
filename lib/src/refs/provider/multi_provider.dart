@@ -31,5 +31,5 @@ class MultiProviderState extends RefState<void, MultiProvider> {
   void create() {}
 
   @override
-  void read() {}
+  void value;
 }

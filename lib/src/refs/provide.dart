@@ -152,9 +152,6 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   }
 
   @override
-  void bind() => snapshot.data;
-
-  @override
   T watch(BuildContext context) {
     assert(!ref.factory, 'Cannot watch factory values.');
     return super.watch(context);
@@ -167,11 +164,15 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   }
 
   @override
+  void write(T value) {
+    assert(!ref.factory, 'Cannot write to factory values.');
+    super.write(value);
+  }
+
+  @override
   T read() {
     if (ref.factory || !_created) load();
-    if (snapshot.data case T data) return data;
-
-    return snapshot.requireData;
+    return super.read();
   }
 
   @override

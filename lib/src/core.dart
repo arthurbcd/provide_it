@@ -164,18 +164,6 @@ extension ContextStates on BuildContext {
     ).bind(this);
   }
 
-  /// The future when all [AsyncRefState.isReady] are completed.
-  FutureOr<void> allReady() => scope.allReady();
-
-  /// Whether all [AsyncRefState.isReady] are completed.
-  bool allReadySync() => allReady() == null;
-
-  /// The future when [T] is ready.
-  FutureOr<void> isReady<T>({Object? key}) => scope.isReady<T>(key: key);
-
-  /// Whether [T] is ready.
-  bool isReadySync<T>({Object? key}) => isReady<T>(key: key) == null;
-
   /// Calls [init] when the [BuildContext] is mounted.
   ///
   /// Changing [key] re-calls [init].
@@ -189,21 +177,48 @@ extension ContextStates on BuildContext {
   }
 }
 
+/// Extension methods that DO NOT depend on [BuildContext].
+///
+/// Use them freely.
 extension ContextReaders on BuildContext {
   /// Reads a previously bound value by [T] and [key].
-  ///
-  /// Instantiates the bind if not already.
   T read<T>({Object? key}) {
-    return scope.read<T>(context: this, key: key);
+    return scope.read<T>(key: key);
+  }
+
+  /// Writes a previously bound value by [T] and [key].
+  void write<T>(T value, {Object? key}) {
+    scope.write<T>(value, key: key);
   }
 
   /// Reads a previously bound value by [T] and [key].
   ///
   /// Returns a [Future] if the value is not ready.
   FutureOr<T> readAsync<T>({Object? key}) {
-    return scope.readAsync<T>(context: this, key: key);
+    return scope.readAsync<T>(key: key);
   }
 
+  /// The future when all [AsyncRefState.isReady] are completed.
+  FutureOr<void> allReady() => scope.allReady();
+
+  /// Whether all [AsyncRefState.isReady] are completed.
+  bool allReadySync() => allReady() == null;
+
+  /// The future when [T] is ready.
+  FutureOr<void> isReady<T>({Object? key}) => scope.isReady<T>(key: key);
+
+  /// Whether [T] is ready.
+  bool isReadySync<T>({Object? key}) => isReady<T>(key: key) == null;
+
+  Future<void> reload<T>({Object? key}) {
+    return scope.reload<T>(key: key);
+  }
+}
+
+/// Extension methods that DO DEPEND on [BuildContext].
+///
+/// Use them directly in [Widget] `build` methods.
+extension ContextBinds on BuildContext {
   /// Watches a previously bound value by [T] and [key].
   ///
   /// Reads the bind if not already.
@@ -235,13 +250,9 @@ extension ContextReaders on BuildContext {
   }) {
     scope.listenSelect<T, R>(this, selector, listener, key: key);
   }
-
-  Future<void> reload<T>({Object? key}) {
-    return scope.reload<T>(this, key: key);
-  }
 }
 
-extension ContextFindRefState on BuildContext {
+extension ContextRefStateFinder on BuildContext {
   /// Finds a [RefState] of [T] type.
   ///
   /// The return type is `dynamic` on purpose as some [RefState] types are inferred by [Injector].

@@ -13,21 +13,27 @@ extension on ReadItMixin {
   _State? _stateOf<T>(BuildContext? context, {String? type, Object? key}) {
     type ??= T.type;
 
-    final states = _treeCache[(type, key)];
-    assert(null is T || states != null, 'Ref<$type> not found, key: $key.');
+    final state = findRefStateOfType<T>(type: type, key: key);
 
-    final state = states?.firstOrNull;
-    assert(states?.length == 1, 'Duplicate Ref<$type> found, key: $key.');
+    if (key case Ref<T> ref) {
+      final bind = (element: context, index: _treeIndex[context] ?? 0);
+      if (state == null || state._bind == bind) {
+        return _state<T>(context as Element?, ref, true);
+      }
+    }
 
     if (state?.type == type && context is Element) {
       final index = _dependencyIndex[context] ??= _initCacheIndex(context);
       _dependencyIndex[context] = index + 1;
 
-      return state!;
+      return state;
     }
 
     // case it's a global ref, we can auto-bind it.
-    if (key case Ref<T> ref) return _state(context as Element?, ref);
+    // if (key case Ref<T> ref) {
+    //   return _state(context as Element?, ref);
+    // }
+
     return state;
   }
 }

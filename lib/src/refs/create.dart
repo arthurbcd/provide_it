@@ -26,22 +26,16 @@ class CreateRef<T> extends Ref<T> {
 
 class CreateRefState<T> extends RefState<T, CreateRef<T>> {
   @override
-  late T value = ref.create();
+  late T? value = ref.create();
 
   @override
   void create() {
-    value = ref.create();
+    write(ref.create());
   }
 
   @override
   void dispose() {
-    (ref.dispose ?? tryDispose)(value);
+    if (value != null) (ref.dispose ?? tryDispose)(value as T);
     super.dispose();
   }
-
-  @override
-  T bind() => value;
-
-  @override
-  T read() => value;
 }

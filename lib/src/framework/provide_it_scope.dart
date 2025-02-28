@@ -1,6 +1,7 @@
 part of '../framework.dart';
 
 class ProvideItScope with ReadItMixin {
+  @protected
   T watch<T>(BuildContext context, {Object? key}) {
     final state = _stateOf<T>(context, key: key);
     final value = state?.watch(context);
@@ -8,6 +9,7 @@ class ProvideItScope with ReadItMixin {
     return value as T;
   }
 
+  @protected
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
     final index = _dependencyIndex[context]!;
@@ -16,6 +18,7 @@ class ProvideItScope with ReadItMixin {
     return value as R;
   }
 
+  @protected
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
     final index = _dependencyIndex[context]!;
@@ -23,6 +26,7 @@ class ProvideItScope with ReadItMixin {
     state?.listen(context, index, listener);
   }
 
+  @protected
   void listenSelect<T, R>(
     BuildContext context,
     R selector(T value),
@@ -33,10 +37,6 @@ class ProvideItScope with ReadItMixin {
     final index = _dependencyIndex[context]!;
 
     state?.listenSelect<T, R>(context, index, selector, listener);
-  }
-
-  RefState? findRefStateOfType<T>({Object? key}) {
-    return _treeCache[(T.type, key)]?.firstOrNull;
   }
 }
 
@@ -105,41 +105,62 @@ mixin ReadItMixin implements ReadIt {
       context != null || !isAttached,
       'ReadIt cannot bind after ProvideIt is attached to the widget tree.',
     );
-    final state = _state<T>(context as Element?, ref);
+    final state = _state<T>(context as Element?, ref, false);
 
     return state.bind() as R;
   }
 
-  Future<void> reload<T>(BuildContext context, {Object? key}) async {
-    final state = _stateOf<T>(context, key: key);
+  Future<void> reload<T>({Object? key}) async {
+    final state = findRefStateOfType<T>(key: key);
     assert(state is AsyncRefState?, 'AsyncRef<$T> not found, key: $key.');
 
     await (state as AsyncRefState?)?.load();
   }
 
   @override
-  T read<T>({BuildContext? context, Object? key}) {
-    final state = _stateOf<T>(context, key: key);
-    final value = state?._value;
+  T read<T>({Object? key}) {
+    final state = findRefStateOfType<T>(key: key);
+    if (null is T) return state?.value;
+    if (state != null) return state.read();
 
-    if (value is! T && state is AsyncRefState) {
-      throw StateError('AsyncRef<$T> not ready, key: $key.');
-    }
-
-    return value as T;
+    throw StateError('Ref<$T> not found, key: $key.');
   }
 
   @override
-  FutureOr<T> readAsync<T>({BuildContext? context, String? type, Object? key}) {
+  void write<T>(T value, {Object? key}) {
+    final state = findRefStateOfType<T>(key: key);
+    if (null is T) return;
+    if (state != null) return state.write(value);
+
+    throw StateError('Ref<$T> not found, key: $key.');
+  }
+
+  @override
+  FutureOr<T> readAsync<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final state = _stateOf(context, type: type, key: key);
-    assert(state is AsyncRefState?, 'AsyncRef<$type> not found, key: $key.');
+    final state = findRefStateOfType(type: type, key: key);
 
-    final value = (state as AsyncRefState?)?.readAsync();
-    if (value is Future) return value.then((it) => it as T);
+    if (state is AsyncRefState) {
+      final value = state.readAsync();
 
-    return value as T;
+      // we need to cast the future/value to T.
+      if (value is Future) return value.then((it) => it as T);
+      return value as T;
+    }
+
+    throw StateError('AsyncRef<$type> not found, key: $key.');
+  }
+
+  @protected
+  RefState? findRefStateOfType<T>({String? type, Object? key}) {
+    type ??= T.type;
+
+    final states = _treeCache[(type, key)] ?? {};
+    final state = states.firstOrNull;
+
+    assert(states.length <= 1, 'Duplicate Ref<$type> found, key: $key.');
+    return state;
   }
 
   @override
