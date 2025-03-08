@@ -30,18 +30,27 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 /// - [ValueRef]
 ///
 abstract class RefState<T, R extends Ref<T>> {
-  // binding states
-  ProvideItScope? _scope;
-  ({Element? element, int index})? _bind;
+  // binding
+  late final ProvideItScope _scope;
+  late final ({Element? element, int index}) _bind;
+  late final bool _topLevel;
+  late final Watcher? _watcher = () {
+    if (!context.mounted) return null;
+
+    final value = ArgumentError.checkNotNull(this.value);
+
+    for (var watcher in _scope.watchers) {
+      if (watcher.canWatch(value)) {
+        return watcher..init(value, notifyDependents);
+      }
+    }
+
+    return null;
+  }();
+
+  // state
+  late R _ref;
   R? _lastRef;
-  R? _ref;
-  bool _topLevel = false;
-
-  /// Whether [RefState] is attached to the widget tree.
-  bool get isAttached => _bind!.element != null;
-
-  /// Whether [notifyDependents] should also notify this [context].
-  bool get shouldNotifySelf => false;
 
   // dependents
   final _watchers = <Element>{};
@@ -49,32 +58,22 @@ abstract class RefState<T, R extends Ref<T>> {
   final _listeners = <Element, Listeners>{};
   final _listenSelectors = <Element, ListenSelectors>{};
 
-  // value watchers
-  final _valueWatchers = <Watcher>{};
-
-  void _initWatching(Object value) {
-    if (!_scope!.isAttached) return;
-    if (_valueWatchers.isNotEmpty) return;
-
-    for (var watcher in _scope!.watchers.toSet()) {
-      if (watcher.canWatch(value)) {
-        _valueWatchers.add(watcher
-          .._state = this
-          ..init());
-      }
-    }
-  }
-
   /// The [Ref] that this state is associated with.
-  R get ref => _ref!;
+  R get ref => _ref;
+
+  /// Whether [RefState] is attached to the widget tree.
+  bool get isAttached => _bind.element != null;
+
+  /// Whether [notifyDependents] should also notify this [context].
+  bool get shouldNotifySelf => false;
 
   /// The [context] of [Ref.bind].
   BuildContext get context {
     assert(
-      _scope!.isAttached,
+      _scope.isAttached,
       'ProvideIt is not attached to the widget tree, `context` is not available.',
     );
-    return _bind!.element ?? _scope!._element!;
+    return _bind.element ?? _scope._element!;
   }
 
   /// The type used to [Ref.bind] this state.
@@ -97,9 +96,9 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void initState() {
-    if (_scope!.isAttached) context.dependOnRefState(this, 'bind');
+    if (_scope.isAttached) context.dependOnRefState(this, 'bind');
     final key = _topLevel ? ref : ref.key;
-    final cache = _scope!._treeCache[(type, key)] ??= {};
+    final cache = _scope._treeCache[(type, key)] ??= {};
     cache.add(this);
   }
 
@@ -116,7 +115,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void notifyDependents() {
-    if (value != null) _initWatching(value!);
+    if (value != null && _scope.isAttached) _watcher;
 
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
@@ -124,8 +123,8 @@ abstract class RefState<T, R extends Ref<T>> {
     _listenSelectors.forEach(_listenSelect);
 
     if (isAttached && shouldNotifySelf) {
-      assert(_bind!.element!.mounted);
-      _bind!.element!.markNeedsBuild();
+      assert(_bind.element!.mounted);
+      _bind.element!.markNeedsBuild();
     }
   }
 
@@ -147,11 +146,10 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void dispose() {
-    for (var watcher in _valueWatchers) {
-      watcher.cancel();
-    }
+    _watcher?.cancel(value, notifyDependents);
+
     final key = _topLevel ? ref : ref.key;
-    _scope!._treeCache.remove((type, key));
+    _scope._treeCache.remove((type, key));
   }
 
   @protected
@@ -236,10 +234,12 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   T read() {
-    if (value == null) throw StateError('Ref<$type> is not ready.');
+    if (value case var value?) {
+      if (_scope.isAttached) _watcher;
+      return value;
+    }
 
-    _initWatching(value!);
-    return value!;
+    throw StateError('Ref<$type> is not ready.');
   }
 
   /// The method called by [Ref.bind].
@@ -282,17 +282,13 @@ extension RefStateExtension<T> on RefState<T, Ref<T>> {
     if (value is num || value is String || value is bool) return;
     if (value is Iterable || value is Map) return;
 
-    // if there is a proper watcher, we let it dispose the value
-    if (_valueWatchers.isNotEmpty) {
-      for (var watcher in _valueWatchers) {
-        watcher.dispose();
-      }
-      _valueWatchers.clear();
-      return;
+    // if there is a watcher, we let it dispose the value
+    if (_watcher case var watcher?) {
+      final didDispose = watcher.dispose(value) as dynamic;
+      if (didDispose != false) return;
     }
 
-    // well, you should have provided a dispose function, but I'll try
-    // to dispose it for you 🫡
+    // else, we try to dispose it ourselves
     runZonedGuarded(
       () => value.dispose(),
       (e, s) {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.0
+
+- Improved `Watcher` api & docs.
+- Improved hot-reload experience when changing binds.
+- Updated `README.md`.
+
 ## 0.10.0
 
 - Added `context.write(T)`.

@@ -1,48 +1,41 @@
 part of '../framework.dart';
 
-/// An abstract class that represents a watcher for a value of type [T].
+/// A class that tells how to watch an observable [T].
 ///
-/// The [Watcher] class provides a mechanism to watch a value and notify
-/// dependents when the value changes.
+/// The [Watcher] class provides a mechanism to watch an observable
+/// and notify observers when the it changes.
 ///
 /// See also:
-/// - [DefaultWatchers].
 /// - [ListenableWatcher].
 /// - [ChangeNotifierWatcher].
 abstract class Watcher<T> {
-  RefState? _state;
-
-  /// The value to watch.
-  T get value => _state?.value;
-
+  /// Whether this watcher can watch [observable].
   @protected
-  void notify() {
-    _state?.notifyDependents();
+  bool canWatch(observable) {
+    return observable is T;
   }
 
-  /// Whether this watcher can watch [value].
-  @protected
-  bool canWatch(value) {
-    return value is T;
-  }
-
-  /// Starts watching [value].
+  /// Starts watching [observable].
   ///
-  /// Called lazily when [value] is first read.
+  /// Called when first read and ready to notify.
+  /// - [observable]: The observable to start watching.
+  /// - [notify]: The unique callback to register notifications.
   @protected
-  void init();
+  void init(T observable, VoidCallback notify);
 
-  /// Stops watching [value].
+  /// Stops watching [observable].
   ///
-  /// Called when [value] is no longer being watched.
+  /// Called when [observable] should stop notifying.
+  /// - [observable]: The observable to stop watching.
+  /// - [notify]: The unique callback to unregister notifications.
   @protected
-  void cancel();
+  void cancel(T observable, VoidCallback notify);
 
   /// Disposes this watcher.
   ///
-  /// Called when the [Ref] that created this [value] is disposed.
+  /// Called when the [Ref] that created this [observable] is disposed.
   @protected
-  void dispose();
+  void dispose(T observable) => false;
 
   @override
   operator ==(Object other) => runtimeType == other.runtimeType;

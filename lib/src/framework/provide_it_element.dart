@@ -26,6 +26,7 @@ class ProvideItElement extends InheritedElement {
     }
     super.reassemble();
     _reassembled = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) => _reassembled = false);
   }
 
   @override
@@ -58,8 +59,6 @@ class ProvideItElement extends InheritedElement {
 
   @override
   Widget build() {
-    _reassembled = false;
-
     // we bind the provided states to the tree.
     widget.provide?.call(this);
 
@@ -80,12 +79,12 @@ extension on BuildContext {
   ///
   /// When unmounted, [RefState.removeDependent] will be called for each
   /// state dependency that this `context` depends on.
-  void dependOnRefState(RefState state, String method, [String? instead]) {
+  void dependOnRefState(RefState state, String method, [String? useInstead]) {
     assert(
       this is Element && debugDoingBuild,
-      '$method() should be called within the build(). ${instead ?? ''}',
+      '$method() should be called within the build(). ${useInstead ?? ''}',
     );
-    final ProvideItScope scope = state._scope!;
+    final ProvideItScope scope = state._scope;
 
     // we depend so we can get notified by [removeDependent].
     dependOnInheritedElement(scope._element!);

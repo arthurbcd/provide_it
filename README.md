@@ -193,4 +193,45 @@ context.listenSelect((CounterNotifier it) => it.count, (prev, next) {
 });
 ```
 
+### 4. Additional Watchers
+
+You can implement a custom [Watcher] to tell the framework how to watch a state.
+
+```dart
+import 'package:bloc/bloc.dart';
+
+class CubitWatcher extends Watcher<Cubit> {
+  final subscriptions = <Object, StreamSubscription>{};
+
+  @override
+  void init(Cubit observable, VoidCallback notify) {
+    subscriptions[notify] = observable.stream.listen((_) => notify());
+  }
+
+  @override
+  void cancel(Cubit observable, VoidCallback notify) {
+    subscriptions.remove(notify)?.cancel();
+  }
+
+  @override
+  void dispose(Cubit observable) {
+    observable.close();
+  }
+}
+```
+
+Then you can add it:
+
+```dart
+ProvideIt(
+  additionalWatchers: [CubitWatcher()],
+);
+```
+
+And now you can `watch`, `select` and `listen` as usual:
+
+```dart
+final state = context.watch<MyCubit>().state;
+```
+
 **This is a proof of concept and is not recommended for production use.**

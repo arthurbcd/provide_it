@@ -4,17 +4,17 @@ import '../framework.dart';
 
 class ChangeNotifierWatcher extends Watcher<ChangeNotifier> {
   @override
-  void init() {
-    value.addListener(notify);
+  void init(ChangeNotifier observable, VoidCallback notify) {
+    observable.addListener(notify);
   }
 
   @override
-  void cancel() {
-    value.removeListener(notify);
+  void cancel(ChangeNotifier observable, VoidCallback notify) {
+    observable.removeListener(notify);
   }
 
   @override
-  void dispose() {
-    value.dispose();
+  void dispose(ChangeNotifier observable) {
+    observable.dispose();
   }
 }

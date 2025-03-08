@@ -60,7 +60,7 @@ mixin ReadItMixin implements ReadIt {
   final _dependencies = <Element, Set<RefState>>{};
   final _dependencyIndex = <Element, int>{};
 
-  /// Iterates over all [Ref] states. Leaf to root.
+  /// Iterates over all [Ref] states. Depth-first.
   Iterable<RefState> get states sync* {
     for (var branch in _tree.values) {
       for (var state in branch.values) {
@@ -120,7 +120,9 @@ mixin ReadItMixin implements ReadIt {
   @override
   T read<T>({Object? key}) {
     final state = findRefStateOfType<T>(key: key);
-    if (null is T) return state?.value;
+    final value = state?.value;
+
+    if (value == null && null is T) return value;
     if (state != null) return state.read();
 
     throw StateError('Ref<$T> not found, key: $key.');
@@ -129,7 +131,6 @@ mixin ReadItMixin implements ReadIt {
   @override
   void write<T>(T value, {Object? key}) {
     final state = findRefStateOfType<T>(key: key);
-    if (null is T) return;
     if (state != null) return state.write(value);
 
     throw StateError('Ref<$T> not found, key: $key.');

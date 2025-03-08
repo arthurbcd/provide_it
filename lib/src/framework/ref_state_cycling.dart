@@ -52,7 +52,7 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
       /// on reassemble, [didUpdateRef] should always be called.
       /// null implies that the ref was removed, allowing safe disposal.
       if (_lastRef == null) {
-        _scope!._tree[_bind!.element]![_bind!.index]?.dispose();
+        _scope._tree[_bind.element]![_bind.index]?.dispose();
       }
     });
   }

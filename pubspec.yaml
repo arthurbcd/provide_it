@@ -11,7 +11,7 @@ topics:
  - injection
 
 environment:
-  flutter: '>=3.19.0' # InheritedElement.removeDependent()
+  flutter: ^3.19.0 # InheritedElement.removeDependent
   sdk: ^3.3.0
 
 dependencies:

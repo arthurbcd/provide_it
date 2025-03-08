@@ -4,17 +4,12 @@ import '../framework.dart';
 
 class ListenableWatcher extends Watcher<Listenable> {
   @override
-  void init() {
-    value.addListener(notify);
+  void init(Listenable observable, VoidCallback notify) {
+    observable.addListener(notify);
   }
 
   @override
-  void cancel() {
-    value.removeListener(notify);
-  }
-
-  @override
-  void dispose() {
-    // Listenable is not disposable.
+  void cancel(Listenable observable, VoidCallback notify) {
+    observable.removeListener(notify);
   }
 }

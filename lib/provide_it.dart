@@ -41,9 +41,9 @@ class ProvideIt extends InheritedWidget {
     required super.child,
   });
 
-  /// Default watchers to use with [ContextReaders].
+  /// Default watchers to use when providing an observable value.
   ///
-  /// Set to `[]` to disable the default watchers.
+  /// To disable, set: `ProvideIt.defaultWatchers = []`.
   static List<Watcher> defaultWatchers = [
     ListenableWatcher(),
     ChangeNotifierWatcher(),
@@ -69,7 +69,14 @@ class ProvideIt extends InheritedWidget {
   /// The builder to use if an error occurs during [provide].
   final ErrorBuilder errorBuilder;
 
-  /// Extra watchers to use with [ProvideIt.defaultWatchers].
+  /// Extra watchers to use:
+  /// - [ProvideIt.defaultWatchers] + [additionalWatchers].
+  ///
+  /// A [RefState] can have exactly one [Watcher]. Starting from last,
+  /// returns the first watcher that [Watcher.canWatch]. So [additionalWatchers]
+  /// can override [defaultWatchers].
+  ///
+  /// To disable [defaultWatchers], set: `ProvideIt.defaultWatchers = []`.
   final List<Watcher> additionalWatchers;
 
   /// List of types allowed to have duplicate values on read.

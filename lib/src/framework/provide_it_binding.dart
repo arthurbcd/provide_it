@@ -25,8 +25,8 @@ extension on ReadItMixin {
       final state = branch[index] = ref.createState()
         .._bind = (element: context, index: index)
         .._scope = this as ProvideItScope
-        .._ref = ref
         .._topLevel = topLevel
+        .._ref = ref
         ..initState();
 
       _doingInit = false;
