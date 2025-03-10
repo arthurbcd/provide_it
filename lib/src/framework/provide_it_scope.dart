@@ -129,14 +129,6 @@ mixin ReadItMixin implements ReadIt {
   }
 
   @override
-  void write<T>(T value, {Object? key}) {
-    final state = findRefStateOfType<T>(key: key);
-    if (state != null) return state.write(value);
-
-    throw StateError('Ref<$T> not found, key: $key.');
-  }
-
-  @override
   FutureOr<T> readAsync<T>({String? type, Object? key}) {
     type ??= T.type;
 

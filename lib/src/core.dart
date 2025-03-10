@@ -186,11 +186,6 @@ extension ContextReaders on BuildContext {
     return scope.read<T>(key: key);
   }
 
-  /// Writes a previously bound value by [T] and [key].
-  void write<T>(T value, {Object? key}) {
-    scope.write<T>(value, key: key);
-  }
-
   /// Reads a previously bound value by [T] and [key].
   ///
   /// Returns a [Future] if the value is not ready.

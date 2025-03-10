@@ -226,13 +226,6 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void write(T value) {
-    this.value = value;
-    notifyDependents();
-  }
-
-  @protected
-  @mustCallSuper
   T read() {
     if (value case var value?) {
       if (_scope.isAttached) _watcher;
@@ -256,11 +249,6 @@ abstract class RefState<T, R extends Ref<T>> {
   ///
   /// Used by [read], [watch], [select], [listen] and [listenSelect].
   T? get value;
-
-  /// Sets the value of this [Ref].
-  ///
-  /// Used by [write] to update the value.
-  set value(T? value);
 
   @override
   String toString() => _debugState();

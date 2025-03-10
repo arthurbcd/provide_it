@@ -30,7 +30,8 @@ class CreateRefState<T> extends RefState<T, CreateRef<T>> {
 
   @override
   void create() {
-    write(ref.create());
+    value = ref.create();
+    notifyDependents();
   }
 
   @override

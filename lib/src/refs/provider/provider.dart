@@ -69,9 +69,9 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
 
   @override
   void create() {
-    final value = ref.create != null ? ref.create!(context) : ref.value as T;
-    write(value);
+    value = ref.create != null ? ref.create!(context) : ref.value as T;
     _created = true;
+    notifyDependents();
   }
 
   @override

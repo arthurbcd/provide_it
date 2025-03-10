@@ -127,11 +127,4 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
     future;
     return snapshot.data;
   }
-
-  @override
-  set value(T? value) {
-    value != null
-        ? snapshot = AsyncSnapshot.withData(ConnectionState.done, value)
-        : snapshot = AsyncSnapshot<T>.nothing().inState(ConnectionState.done);
-  }
 }

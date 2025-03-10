@@ -27,11 +27,16 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
 
   @override
   void create() {
-    write(ref.initialValue);
+    setValue(ref.initialValue);
+  }
+
+  void setValue(T value) {
+    this.value = value;
+    notifyDependents();
   }
 
   @override
-  (T, void Function(T)) bind() => (read(), write);
+  (T, void Function(T)) bind() => (read(), setValue);
 }
 
 extension ValueRecordExtension<T> on (T, void Function(T)) {

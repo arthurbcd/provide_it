@@ -164,12 +164,6 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   }
 
   @override
-  void write(T value) {
-    assert(!ref.factory, 'Cannot write to factory values.');
-    super.write(value);
-  }
-
-  @override
   T read() {
     if (ref.factory || !_created) load();
     return super.read();

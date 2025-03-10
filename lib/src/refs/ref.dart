@@ -49,11 +49,6 @@ extension RefReaders<T> on Ref<T> {
     return context.read(key: this);
   }
 
-  /// Writes the value of this [Ref].
-  void write(BuildContext context, T value) {
-    context.write(value, key: this);
-  }
-
   /// Watches the value of this [Ref]. Auto-binds if not already.
   T watch(BuildContext context) {
     return context.watch(key: this);

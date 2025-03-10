@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.0
+
+- Simplified `ProvideIt` api.
+- Removed `context.write(T)`.
+
 ## 0.11.0
 
 - Improved `Watcher` api & docs.
