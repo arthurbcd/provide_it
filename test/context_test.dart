@@ -386,7 +386,7 @@ void main() {
         builder: (context) {
           contexts[counter.value] = context;
           context.watch<Counter>();
-          refState = context.findRefStateOfType<Counter>();
+          refState = context.getRefStateOfType<Counter>();
 
           return GestureDetector(
             onTap: () => counter.value++,

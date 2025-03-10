@@ -17,7 +17,7 @@ class FutureProvider<T> extends AsyncRefWidget<T> {
     super.child,
   }) : future = null;
 
-  /// How to create the value.
+  @override
   final Create<Future<T>>? create;
 
   /// The internal [Future.catchError].

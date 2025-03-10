@@ -10,7 +10,7 @@ class StreamRef<T> extends AsyncRef<T> {
     super.key,
   }) : value = null;
 
-  /// How to create the stream.
+  @override
   final Stream<T> Function()? create;
 
   const StreamRef.value(
@@ -19,7 +19,7 @@ class StreamRef<T> extends AsyncRef<T> {
     super.key,
   }) : create = null;
 
-  /// The stream to use.
+  /// An already created [Stream].
   final Stream<T>? value;
 
   @override

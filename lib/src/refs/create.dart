@@ -11,10 +11,10 @@ class CreateRef<T> extends Ref<T> {
     super.key,
   });
 
-  /// How to create the value.
+  @override
   final T Function() create;
 
-  /// How to dispose the value.
+  /// How to dispose the created value.
   final void Function(T value)? dispose;
 
   @override
@@ -26,17 +26,17 @@ class CreateRef<T> extends Ref<T> {
 
 class CreateRefState<T> extends RefState<T, CreateRef<T>> {
   @override
-  late T? value = ref.create();
+  late T value = ref.create();
 
   @override
   void create() {
     value = ref.create();
-    notifyDependents();
+    notifyObservers();
   }
 
   @override
   void dispose() {
-    if (value != null) (ref.dispose ?? tryDispose)(value as T);
+    ref.dispose?.call(value);
     super.dispose();
   }
 }

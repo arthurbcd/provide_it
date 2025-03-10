@@ -2,8 +2,13 @@
 
 ## 0.12.0
 
-- Simplified `ProvideIt` api.
-- Removed `context.write(T)`.
+- Added `ValueRef.debounce`.
+- Added `ValueRef.throttle`.
+- Limited `write` to `ValueRef.write`.
+- Removed `RefState.tryDispose`.
+- Renamed `context.findRefStateOfType` to `context.getRefStateOfType` (as it's O(1)).
+- Renamed `notifyDependents` to `notifyObservers` (reflects `Watcher` api).
+- Improved `Injector` type resolution.
 
 ## 0.11.0
 

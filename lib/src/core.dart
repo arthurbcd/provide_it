@@ -248,11 +248,11 @@ extension ContextBinds on BuildContext {
 }
 
 extension ContextRefStateFinder on BuildContext {
-  /// Finds a [RefState] of [T] type.
+  /// Gets a [RefState] of [T] type. O(1).
   ///
   /// The return type is `dynamic` on purpose as some [RefState] types are inferred by [Injector].
-  RefState? findRefStateOfType<T>({Object? key}) {
-    return scope.findRefStateOfType<T>(key: key);
+  RefState? getRefStateOfType<T>({Object? key}) {
+    return scope.getRefStateOfType<T>(key: key);
   }
 }
 

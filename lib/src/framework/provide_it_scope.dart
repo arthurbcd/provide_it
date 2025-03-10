@@ -111,7 +111,7 @@ mixin ReadItMixin implements ReadIt {
   }
 
   Future<void> reload<T>({Object? key}) async {
-    final state = findRefStateOfType<T>(key: key);
+    final state = getRefStateOfType<T>(key: key);
     assert(state is AsyncRefState?, 'AsyncRef<$T> not found, key: $key.');
 
     await (state as AsyncRefState?)?.load();
@@ -119,7 +119,7 @@ mixin ReadItMixin implements ReadIt {
 
   @override
   T read<T>({Object? key}) {
-    final state = findRefStateOfType<T>(key: key);
+    final state = getRefStateOfType<T>(key: key);
     final value = state?.value;
 
     if (value == null && null is T) return value;
@@ -132,7 +132,7 @@ mixin ReadItMixin implements ReadIt {
   FutureOr<T> readAsync<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final state = findRefStateOfType(type: type, key: key);
+    final state = getRefStateOfType(type: type, key: key);
 
     if (state is AsyncRefState) {
       final value = state.readAsync();
@@ -146,7 +146,7 @@ mixin ReadItMixin implements ReadIt {
   }
 
   @protected
-  RefState? findRefStateOfType<T>({String? type, Object? key}) {
+  RefState? getRefStateOfType<T>({String? type, Object? key}) {
     type ??= T.type;
 
     final states = _treeCache[(type, key)] ?? {};

@@ -8,6 +8,9 @@ class InitRef extends Ref<void> {
   final VoidCallback? dispose;
 
   @override
+  Function? get create => init;
+
+  @override
   RefState<void, Ref<void>> createState() => InitRefState();
 }
 
@@ -25,7 +28,9 @@ class InitRefState extends RefState<void, InitRef> {
   }
 
   @override
-  void create() {}
+  void create() {
+    ref.init?.call();
+  }
 
   @override
   void value;

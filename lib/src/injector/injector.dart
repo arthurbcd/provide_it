@@ -64,8 +64,6 @@ class Injector<T> {
   late final rawType = _rawType();
 
   String _type() {
-    if (T != dynamic) return T.type;
-
     if (rawType.startsWith('Future') || rawType.startsWith('Stream')) {
       return rawType.split('<').last.split('>').first.replaceAll('?', '');
     }
@@ -74,8 +72,8 @@ class Injector<T> {
   }
 
   String _rawType() {
-    const types = [dynamic, Future, Stream];
-    if (!types.contains(T)) return T.toString();
+    const types = ['dynamic', 'Object'];
+    if (!types.contains(T.type)) return T.toString();
 
     final typeLine = _createTexts.last.replaceFirst(' => ', '');
     final buffer = StringBuffer();

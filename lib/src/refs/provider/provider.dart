@@ -25,7 +25,7 @@ class Provider<T> extends RefWidget<T> {
   /// Whether to create the value only when it's first called.
   final bool? lazy;
 
-  /// How to create the value.
+  @override
   final Create<T>? create;
 
   /// How to dispose the value.
@@ -42,7 +42,7 @@ class Provider<T> extends RefWidget<T> {
         lazy = null,
         dispose = null;
 
-  /// The value to provide.
+  /// An already created [value].
   final T? value;
 
   /// Whether to notify dependents when the value changes.
@@ -71,7 +71,7 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
   void create() {
     value = ref.create != null ? ref.create!(context) : ref.value as T;
     _created = true;
-    notifyDependents();
+    notifyObservers();
   }
 
   @override

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../framework.dart';
 import '../injector/injector.dart';
 import 'async.dart';
 
@@ -32,7 +31,7 @@ class ProvideRef<T> extends AsyncRef<T> {
         updateShouldNotify = null,
         assert(!lazy || !factory, 'Cannot be both lazy and factory.');
 
-  /// How to create the value.
+  @override
   final Function? create;
 
   /// How to dispose the value.
@@ -71,7 +70,7 @@ class ProvideRef<T> extends AsyncRef<T> {
         dispose = null,
         parameters = null;
 
-  /// The value to provide.
+  /// An already created [value].
   final T? value;
 
   /// Whether to notify dependents when the value changes.
@@ -88,9 +87,6 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
       : null;
   Future<T>? _future;
   Stream<T>? _stream;
-
-  @override
-  String get type => _injector?.type ?? T.type;
 
   @override
   Future<T>? get future => _future;
@@ -146,7 +142,7 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   @override
   void dispose() {
     if (!ref.factory && ref.create != null && snapshot.data is T) {
-      (ref.dispose ?? tryDispose)(snapshot.data as T);
+      ref.dispose?.call(snapshot.data as T);
     }
     super.dispose();
   }

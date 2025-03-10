@@ -16,6 +16,9 @@ class MultiProvider extends RefWidget<void> {
   final List<Provider> providers;
 
   @override
+  Function? get create => null;
+
+  @override
   RefState<void, MultiProvider> createState() => MultiProviderState();
 }
 

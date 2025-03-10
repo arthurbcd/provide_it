@@ -14,9 +14,12 @@ abstract class Ref<T> {
   /// Similar to [Widget.key].
   final Object? key;
 
+  /// How to create the value to provide.
+  Function? get create;
+
   /// The default equality for comparing [Ref.key] & [RefState.select] values.
   ///
-  /// Obs: `provider` library uses `DeepCollectionEquality.equals` as default.
+  /// Obs: Opposed to this, `provider` library uses `DeepCollectionEquality.equals` as default.
   static var defaultEquality = (a, b) => switch ((a, b)) {
         (List a, List b) => listEquals(a, b),
         (Set a, Set b) => setEquals(a, b),
@@ -30,7 +33,7 @@ abstract class Ref<T> {
         equals(oldRef.key, newRef.key);
   }
 
-  /// The collection equality for [Ref] keys.
+  /// The equality used for [Ref] keys.
   static bool equals(Object? a, Object? b) => defaultEquality(a, b);
 
   /// Binds this [Ref] to the [context].

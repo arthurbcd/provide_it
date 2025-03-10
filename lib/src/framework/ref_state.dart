@@ -41,7 +41,7 @@ abstract class RefState<T, R extends Ref<T>> {
 
     for (var watcher in _scope.watchers) {
       if (watcher.canWatch(value)) {
-        return watcher..init(value, notifyDependents);
+        return watcher..init(value, notifyObservers);
       }
     }
 
@@ -52,7 +52,7 @@ abstract class RefState<T, R extends Ref<T>> {
   late R _ref;
   R? _lastRef;
 
-  // dependents
+  // observers
   final _watchers = <Element>{};
   final _selectors = <Element, Selectors>{};
   final _listeners = <Element, Listeners>{};
@@ -64,7 +64,7 @@ abstract class RefState<T, R extends Ref<T>> {
   /// Whether [RefState] is attached to the widget tree.
   bool get isAttached => _bind.element != null;
 
-  /// Whether [notifyDependents] should also notify this [context].
+  /// Whether [notifyObservers] should also notify this [context].
   bool get shouldNotifySelf => false;
 
   /// The [context] of [Ref.bind].
@@ -78,7 +78,7 @@ abstract class RefState<T, R extends Ref<T>> {
 
   /// The type used to [Ref.bind] this state.
   late final type = () {
-    final type = T.type;
+    final type = ref.create != null ? Injector<T>(ref.create!).type : T.type;
     assert(
       type != 'dynamic' && type != 'Object',
       'This is likely a mistake. Provide a non-generic type.',
@@ -93,6 +93,14 @@ abstract class RefState<T, R extends Ref<T>> {
     return 'context.$ref<${value?.runtimeType ?? T}>';
   }
 
+  @visibleForTesting
+  Set<Element> get dependents => {
+        ..._watchers,
+        ..._selectors.keys,
+        ..._listeners.keys,
+        ..._listenSelectors.keys,
+      };
+
   @protected
   @mustCallSuper
   void initState() {
@@ -105,7 +113,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void didUpdateRef(R oldRef) {
-    if (updateShouldNotify(oldRef)) notifyDependents();
+    if (updateShouldNotify(oldRef)) notifyObservers();
     _lastRef = oldRef;
   }
 
@@ -114,7 +122,7 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void notifyDependents() {
+  void notifyObservers() {
     if (value != null && _scope.isAttached) _watcher;
 
     _watchers.forEach(_markNeedsBuild);
@@ -146,10 +154,14 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void dispose() {
-    _watcher?.cancel(value, notifyDependents);
+    _watcher?.cancel(value, notifyObservers);
 
     final key = _topLevel ? ref : ref.key;
     _scope._treeCache.remove((type, key));
+
+    if (ref.create != null) {
+      _watcher?.dispose(value);
+    }
   }
 
   @protected
@@ -252,41 +264,4 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @override
   String toString() => _debugState();
-}
-
-extension RefStateExtension<T> on RefState<T, Ref<T>> {
-  @visibleForTesting
-  Set<Element> get dependents => {
-        ..._watchers,
-        ..._selectors.keys,
-        ..._listeners.keys,
-        ..._listenSelectors.keys,
-      };
-
-  /// Attempts to dispose [value] by calling `value.dispose`.
-  ///
-  /// This won't throw an error if `value.dispose` is not a function.
-  void tryDispose(value) {
-    if (value is num || value is String || value is bool) return;
-    if (value is Iterable || value is Map) return;
-
-    // if there is a watcher, we let it dispose the value
-    if (_watcher case var watcher?) {
-      final didDispose = watcher.dispose(value) as dynamic;
-      if (didDispose != false) return;
-    }
-
-    // else, we try to dispose it ourselves
-    runZonedGuarded(
-      () => value.dispose(),
-      (e, s) {
-        if (e is NoSuchMethodError) return;
-        final message = e.toString();
-        if (!message.contains('dispose\$0 is not a function') &&
-            !message.contains('has no instance method \'dispose\'')) {
-          throw e;
-        }
-      },
-    );
-  }
 }

@@ -46,7 +46,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
           ? _completer.completeError(snapshot.error!, snapshot.stackTrace!)
           : _completer.complete(snapshot.data as T);
     }
-    notifyDependents();
+    notifyObservers();
   }
 
   /// The current [future] state.

@@ -12,7 +12,7 @@ class FutureRef<T> extends AsyncRef<T> {
     super.key,
   }) : value = null;
 
-  /// How to create the value.
+  @override
   final FutureOr<T> Function()? create;
 
   const FutureRef.value(
@@ -21,7 +21,7 @@ class FutureRef<T> extends AsyncRef<T> {
     super.key,
   }) : create = null;
 
-  /// How to create the value.
+  /// An already created [value].
   final FutureOr<T>? value;
 
   @override

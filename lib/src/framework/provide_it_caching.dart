@@ -13,7 +13,7 @@ extension on ReadItMixin {
   _State? _stateOf<T>(BuildContext? context, {String? type, Object? key}) {
     type ??= T.type;
 
-    final state = findRefStateOfType<T>(type: type, key: key);
+    final state = getRefStateOfType<T>(type: type, key: key);
 
     if (key case Ref<T> ref) {
       final bind = (element: context, index: _treeIndex[context] ?? 0);
