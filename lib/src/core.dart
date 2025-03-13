@@ -9,15 +9,16 @@ import 'framework.dart';
 @Deprecated('Use `readIt` instead.')
 final getIt = readIt;
 
-/// A contextless version of [ContextReaders.read].
+/// A contextless version of [ContextReaders].
 final readIt = ReadIt.instance;
 
 extension ContextProviders on BuildContext {
-  /// Immediately calls [create] and provides its value. See [ProvideRef].
+  /// Provides the value of [create]. See [ProvideRef].
   void provide<T>(
     Function create, {
     void dispose(T value)?,
     Map<Symbol, dynamic>? parameters,
+    bool? lazy,
     Object? key,
   }) {
     ProvideRef<T>(
@@ -25,43 +26,11 @@ extension ContextProviders on BuildContext {
       create,
       dispose: dispose,
       parameters: parameters,
-      lazy: false,
+      lazy: lazy,
     ).bind(this);
   }
 
-  /// Calls [create] on first read and then provides its value. See [ProvideRef].
-  void provideLazy<T>(
-    Function create, {
-    void dispose(T value)?,
-    Map<Symbol, dynamic>? parameters,
-    Object? key,
-  }) {
-    ProvideRef(
-      key: key,
-      create,
-      dispose: dispose,
-      parameters: parameters,
-      lazy: true,
-    ).bind(this);
-  }
-
-  /// Calls [create] on every read and returns its value. See [ProvideRef].
-  void provideFactory<T>(
-    Function create, {
-    void dispose(T value)?,
-    Map<Symbol, dynamic>? parameters,
-    Object? key,
-  }) {
-    ProvideRef(
-      key: key,
-      create,
-      dispose: dispose,
-      parameters: parameters,
-      factory: true,
-    ).bind(this);
-  }
-
-  /// Directly provides a value. See [ProvideRef].
+  /// Directly provides [value]. See [ProvideRef].
   T provideValue<T>(
     T value, {
     bool Function(T prev, T next)? updateShouldNotify, // prev != next

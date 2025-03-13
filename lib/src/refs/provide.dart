@@ -5,6 +5,9 @@ import 'package:flutter/widgets.dart';
 import '../injector/injector.dart';
 import 'async.dart';
 
+//// Signature to determine whether the provider should be lazy or not.
+typedef LazyPredicate<T> = bool Function(ProvideRefState<T> state);
+
 class ProvideRef<T> extends AsyncRef<T> {
   /// A reference to a provider with various configuration options.
   ///
@@ -24,12 +27,10 @@ class ProvideRef<T> extends AsyncRef<T> {
     Function this.create, {
     this.dispose,
     this.lazy = false,
-    this.factory = false,
     this.parameters,
     super.key,
   })  : value = null,
-        updateShouldNotify = null,
-        assert(!lazy || !factory, 'Cannot be both lazy and factory.');
+        updateShouldNotify = null;
 
   @override
   final Function? create;
@@ -46,11 +47,22 @@ class ProvideRef<T> extends AsyncRef<T> {
   /// ```
   final Map<Symbol, dynamic>? parameters;
 
-  /// Whether to create the value only when it's first called.
-  final bool lazy;
+  /// How to create the value.
+  ///
+  /// - true, is created when first read.
+  /// - false, is immediately created.
+  /// - null, defined by
+  final bool? lazy;
 
-  /// Whether to create a new instance each time.
-  final bool factory;
+  /// How [lazy] should behave when `null`.
+  ///
+  /// - By default, sync providers are lazy and async are not.
+  ///
+  /// You can override this behavior:
+  /// ```dart
+  /// ProvideRef.lazyPredicate = (_) => true; // always lazy
+  /// ```
+  static LazyPredicate lazyPredicate = (state) => !state.isAsync;
 
   /// Creates a [ProvideRef] with a constant value.
   ///
@@ -66,7 +78,6 @@ class ProvideRef<T> extends AsyncRef<T> {
     super.key,
   })  : create = null,
         lazy = false,
-        factory = false,
         dispose = null,
         parameters = null;
 
@@ -88,6 +99,15 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   Future<T>? _future;
   Stream<T>? _stream;
 
+  /// Whether value is created lazily.
+  bool get lazy => ref.lazy ?? ProvideRef.lazyPredicate(this);
+
+  /// Whether the [ref] is async.
+  bool get isAsync {
+    if (ref.value is Future || ref.value is Stream) return true;
+    return _injector?.isAsync == true;
+  }
+
   @override
   Future<T>? get future => _future;
 
@@ -96,6 +116,12 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
 
   @override
   bool get shouldNotifySelf => ref.create == null;
+
+  @override
+  void initState() {
+    if (!lazy) load();
+    super.initState();
+  }
 
   @override
   bool updateShouldNotify(ProvideRef<T> oldRef) {
@@ -134,34 +160,16 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   }
 
   @override
-  void initState() {
-    if (!ref.lazy && !ref.factory) load();
-    super.initState();
-  }
-
-  @override
   void dispose() {
-    if (!ref.factory && ref.create != null && snapshot.data is T) {
+    if (snapshot.data is T) {
       ref.dispose?.call(snapshot.data as T);
     }
     super.dispose();
   }
 
   @override
-  T watch(BuildContext context) {
-    assert(!ref.factory, 'Cannot watch factory values.');
-    return super.watch(context);
-  }
-
-  @override
-  S select<L, S>(BuildContext context, int index, Function selector) {
-    assert(!ref.factory, 'Cannot select factory values.');
-    return super.select(context, index, selector);
-  }
-
-  @override
   T read() {
-    if (ref.factory || !_created) load();
+    if (!_created) load();
     return super.read();
   }
 
@@ -171,12 +179,6 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
     if (future != null) async = '(future)';
     if (stream != null) async = '(stream)';
 
-    final label = switch ((ref.lazy, ref.factory)) {
-      (_, true) => 'provideFactory',
-      (true, _) => 'provideLazy',
-      _ => 'provide',
-    };
-
-    return 'context.$label<$type> $async';
+    return 'context.provide<$type> $async';
   }
 }

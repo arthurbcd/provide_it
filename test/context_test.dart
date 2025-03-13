@@ -31,7 +31,7 @@ void main() {
         context.provide<int>(() {
           createCalled = true;
           return 42;
-        });
+        }, lazy: false);
         return Container();
       });
 
@@ -42,10 +42,10 @@ void main() {
       int createCount = 0;
 
       await provideIt(tester, (context) {
-        context.provideLazy<int>(() {
+        context.provide<int>(() {
           createCount++;
           return 42;
-        });
+        }, lazy: true);
         return GestureDetector(
           onTap: () => context.read<int>(),
         );
@@ -59,31 +59,6 @@ void main() {
       await tester.tap(find.byType(GestureDetector));
       await tester.pump();
       expect(createCount, 1);
-    });
-
-    testWidgets('provideFactory should call create on every read',
-        (tester) async {
-      int createCount = 0;
-
-      await provideIt(tester, (context) {
-        context.provideFactory<int>(() {
-          createCount++;
-          return 42;
-        });
-        return GestureDetector(
-          onTap: () => context.read<int>(),
-        );
-      });
-
-      await tester.tap(find.byType(GestureDetector));
-      await tester.pump();
-
-      expect(createCount, 1);
-
-      await tester.tap(find.byType(GestureDetector));
-      await tester.pump();
-
-      expect(createCount, 2);
     });
 
     testWidgets('provideValue should directly provide a value', (tester) async {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.13.0
+
+- Removed the need for `provideLazy` & `provideFactory` in favor of `provide`.
+- Added `ProvideRef.lazyPredicate`. Defaults to lazy when sync, not lazy when async.
+
 ## 0.12.0
 
 - Added `ValueRef.debounce`.

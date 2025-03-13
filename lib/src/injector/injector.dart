@@ -63,12 +63,15 @@ class Injector<T> {
   /// The type of [create] function.
   late final rawType = _rawType();
 
-  String _type() {
-    if (rawType.startsWith('Future') || rawType.startsWith('Stream')) {
-      return rawType.split('<').last.split('>').first.replaceAll('?', '');
-    }
+  /// Whether the [create] function is async.
+  bool get isAsync {
+    return rawType.startsWith('Future') || rawType.startsWith('Stream');
+  }
 
-    return rawType.replaceAll('?', '');
+  String _type() {
+    if (!isAsync) return rawType.replaceAll('?', '');
+
+    return rawType.split('<').last.split('>').first.replaceAll('?', '');
   }
 
   String _rawType() {

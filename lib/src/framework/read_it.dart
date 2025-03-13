@@ -36,6 +36,7 @@ extension ReadItProviders on ReadIt {
     Function create, {
     void dispose(T value)?,
     Map<Symbol, dynamic>? parameters,
+    bool? lazy,
     Object? key,
   }) {
     bind(ProvideRef<T>(
@@ -43,39 +44,7 @@ extension ReadItProviders on ReadIt {
       create,
       dispose: dispose,
       parameters: parameters,
-      lazy: false,
-    ));
-  }
-
-  /// Calls [create] on first read and then provides its value. See [ProvideRef].
-  void provideLazy<T>(
-    Function create, {
-    void dispose(T value)?,
-    Map<Symbol, dynamic>? parameters,
-    Object? key,
-  }) {
-    bind(ProvideRef(
-      key: key,
-      create,
-      dispose: dispose,
-      parameters: parameters,
-      lazy: true,
-    ));
-  }
-
-  /// Calls [create] on every read and returns its value. See [ProvideRef].
-  void provideFactory<T>(
-    Function create, {
-    void dispose(T value)?,
-    Map<Symbol, dynamic>? parameters,
-    Object? key,
-  }) {
-    bind(ProvideRef(
-      key: key,
-      create,
-      dispose: dispose,
-      parameters: parameters,
-      factory: true,
+      lazy: lazy,
     ));
   }
 
@@ -121,7 +90,7 @@ extension GetItProviders on GetIt {
     void dispose(T value)?,
     Object? instanceName,
   }) =>
-      provideLazy<T>(create, dispose: dispose, key: instanceName);
+      provide<T>(create, dispose: dispose, key: instanceName, lazy: true);
 
   @Deprecated('Use `ReadIt.provideLazy` instead.')
   void registerLazySingletonAsync<T>(
@@ -129,21 +98,5 @@ extension GetItProviders on GetIt {
     void dispose(T value)?,
     Object? instanceName,
   }) =>
-      provideLazy<T>(create, dispose: dispose, key: instanceName);
-
-  @Deprecated('Use `ReadIt.provideFactory` instead.')
-  void registerFactory<T>(
-    T create(), {
-    void dispose(T value)?,
-    Object? instanceName,
-  }) =>
-      provideFactory<T>(create, dispose: dispose, key: instanceName);
-
-  @Deprecated('Use `ReadIt.provideFactory` instead.')
-  void registerFactoryAsync<T>(
-    Future<T> create(), {
-    void dispose(T value)?,
-    Object? instanceName,
-  }) =>
-      provideFactory<T>(create, dispose: dispose, key: instanceName);
+      provide<T>(create, dispose: dispose, key: instanceName, lazy: true);
 }
