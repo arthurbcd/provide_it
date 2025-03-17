@@ -3,13 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provide_it/provide_it.dart';
 
 extension on WidgetTester {
-  Future<void> provideIt(Widget widget) {
-    return pumpWidget(
+  Future<BuildContext> provideIt(Widget widget) async {
+    BuildContext? context;
+    await pumpWidget(
       ProvideIt(
         scope: ReadIt.asNewInstance(),
-        child: widget,
+        child: Builder(builder: (ctx) {
+          context = ctx;
+          return widget;
+        }),
       ),
     );
+    return context!;
   }
 }
 
@@ -161,6 +166,88 @@ void main() {
       await tester.pump();
 
       expect(value, 2);
+    });
+
+    testWidgets('should update when context.watch is used', (tester) async {
+      int value = 0;
+
+      await tester.provideIt(
+        Provider<int>(
+          create: (context) => 42,
+          builder: (context, child) {
+            return Consumer<int>(
+              builder: (context, val, child) {
+                value = val;
+                return Text('$val', textDirection: TextDirection.ltr);
+              },
+            );
+          },
+        ),
+      );
+
+      expect(find.text('42'), findsOneWidget);
+      expect(value, 42);
+    });
+  });
+
+  group('MultiProvider', () {
+    testWidgets('should bind multiple providers', (tester) async {
+      bool provider1Called = false;
+      bool provider2Called = false;
+
+      final context = await tester.provideIt(
+        MultiProvider(
+          providers: [
+            Provider<int>(
+              create: (context) {
+                provider1Called = true;
+                return 42;
+              },
+              builder: (context, child) => Container(),
+            ),
+            Provider<String>(
+              create: (context) {
+                provider2Called = true;
+                return 'Hello';
+              },
+              builder: (context, child) => Container(),
+            ),
+          ],
+          builder: (context, child) => Container(),
+        ),
+      );
+
+      expect(provider1Called, isFalse);
+      expect(provider2Called, isFalse);
+
+      context.read<int>();
+      context.read<String>();
+
+      expect(provider1Called, isTrue);
+      expect(provider2Called, isTrue);
+    });
+
+    testWidgets('ValueListenableProvider should update when value changes',
+        (tester) async {
+      final valueNotifier = ValueNotifier<int>(0);
+
+      await tester.provideIt(
+        ValueListenableProvider<int>.value(
+          value: valueNotifier,
+          builder: (context, child) {
+            final value = context.watch<int>();
+            return Text('$value', textDirection: TextDirection.ltr);
+          },
+        ),
+      );
+
+      expect(find.text('0'), findsOneWidget);
+
+      // Update ValueNotifier
+      valueNotifier.value = 1;
+      await tester.pump();
+
+      expect(find.text('1'), findsOneWidget);
     });
   });
 }

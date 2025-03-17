@@ -105,7 +105,7 @@ void main() {
     testWidgets('create should bind created value to context', (tester) async {
       int createCount = 0;
       await provideIt(tester, (context) {
-        final value = context.create<int>(() {
+        final value = context.create<int>((_) {
           createCount++;
           return 42;
         });

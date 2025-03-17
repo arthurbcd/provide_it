@@ -26,16 +26,17 @@ class ValueRef<T> extends Ref<T> {
   @override
   Function? get create => null;
 
-  @override
-  (T, void Function(T)) bind(BuildContext context) => context.bind(this);
-
   /// Writes a new [value] and notify all observers.
   ///
   /// - [ValueRef] must be bound to a [BuildContext].
-  /// To bind a [ValueRef] use [bind] or [watch].
+  /// To bind a [ValueRef] use [watch].
   void write(BuildContext context, T value) {
     final state = context.getRefStateOfType<T>(key: this) as ValueRefState<T>;
     state.write(value);
+  }
+
+  (T, void Function(T)) watch(BuildContext context) {
+    return bindOf(context).watch(context) as (T, void Function(T));
   }
 
   @override
@@ -47,14 +48,6 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
 
   @override
   late T? value = ref.initialValue;
-
-  @override
-  bool get shouldNotifySelf => true;
-
-  @override
-  void create() {
-    write(ref.initialValue);
-  }
 
   @protected
   void write(T newValue) {
@@ -78,7 +71,18 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   }
 
   @override
-  (T, void Function(T)) bind() => (read(), write);
+  (T, void Function(T)) watch(BuildContext context) {
+    super.watch(context);
+
+    return (read(), write);
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _throttleTimer?.cancel();
+    super.dispose();
+  }
 }
 
 extension ValueRecordExtension<T> on (T, void Function(T)) {

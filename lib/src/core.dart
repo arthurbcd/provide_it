@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../provide_it.dart';
@@ -40,21 +39,7 @@ extension ContextProviders on BuildContext {
       value,
       key: key,
       updateShouldNotify: updateShouldNotify,
-    ).bind(this) as T;
-  }
-}
-
-extension RefBinder on BuildContext {
-  /// Shortcut to bind a [Ref] to this [BuildContext].
-  ///
-  /// Use it to override [Ref.bind] to declare a custom [R] return type:
-  /// ```dart
-  /// @override
-  /// T bind(BuildContext context) => context.bind(this);
-  /// ```
-  /// See: [CreateRef] or [ValueRef].
-  R bind<R, T>(Ref<T> ref) {
-    return scope.bind(ref, context: this) as R;
+    ).bind(this).read();
   }
 }
 
@@ -65,20 +50,24 @@ extension ContextStates on BuildContext {
   /// You can use the record to manage the value state.
   (T, void Function(T)) value<T>(T initialValue, {Object? key}) {
     return ValueRef(
-      key: key,
       initialValue,
-    ).bind(this);
+      key: key,
+    ).bind(this).watch(this) as (T, void Function(T));
   }
 
   /// Binds [create] to this [BuildContext].
   ///
   /// You can use the value directly.
-  T create<T>(T create(), {void dispose(T value)?, Object? key}) {
+  T create<T>(
+    T create(CreateContext context), {
+    void dispose(T value)?,
+    Object? key,
+  }) {
     return CreateRef<T>(
-      key: key,
       create,
       dispose: dispose,
-    ).bind(this);
+      key: key,
+    ).bind(this).watch(this) as T;
   }
 
   /// Subscribes to a [Future] function and returns its snapshot.
@@ -88,10 +77,10 @@ extension ContextStates on BuildContext {
     Object? key,
   }) {
     return FutureRef(
-      key: key,
       create,
       initialData: initialData,
-    ).bind(this);
+      key: key,
+    ).bind(this).watch(this);
   }
 
   /// Subscribes to a [Future] value and returns its snapshot.
@@ -101,10 +90,10 @@ extension ContextStates on BuildContext {
     Object? key,
   }) {
     return FutureRef.value(
-      key: key,
       value,
       initialData: initialData,
-    ).bind(this);
+      key: key,
+    ).bind(this).watch(this);
   }
 
   /// Subscribes to a [Stream] function and returns its snapshot.
@@ -114,10 +103,10 @@ extension ContextStates on BuildContext {
     Object? key,
   }) {
     return StreamRef(
-      key: key,
       create,
       initialData: initialData,
-    ).bind(this);
+      key: key,
+    ).bind(this).watch(this);
   }
 
   /// Subscribes to a [Stream] value and returns its snapshot.
@@ -127,10 +116,10 @@ extension ContextStates on BuildContext {
     Object? key,
   }) {
     return StreamRef.value(
-      key: key,
       value,
       initialData: initialData,
-    ).bind(this);
+      key: key,
+    ).bind(this).watch(this);
   }
 
   /// Calls [init] when the [BuildContext] is mounted.
@@ -225,35 +214,21 @@ extension ContextRefStateFinder on BuildContext {
   }
 }
 
-extension ContextVsync on BuildContext {
-  /// Creates a single [TickerProvider] for the current [BuildContext].
-  ///
-  /// Must be used exactly once, preferably within [Ref.create].
-  TickerProvider get vsync {
-    assert(
-      scope.debugDoingInit,
-      'context.vsync must be used within Ref.create/initState method.',
-    );
-
-    return _TickerProvider(this);
+extension RefBinder on BuildContext {
+  /// Shortcut to bind a [Ref] to this [BuildContext].
+  @protected
+  RefState<T, Ref<T>> bind<T>(Ref<T> ref) {
+    return scope.bind(ref, context: this);
   }
-}
 
-class _TickerProvider implements TickerProvider {
-  _TickerProvider(this.context);
-  final BuildContext context;
-
-  @override
-  Ticker createTicker(TickerCallback onTick) {
-    return Ticker(onTick, debugLabel: 'created by $context');
+  /// Shortcut to get a [Ref] of this [BuildContext].
+  @protected
+  RefState? bindOf<T>({Object? key}) {
+    return scope.bindOf<T>(context: this, key: key);
   }
 }
 
 extension on BuildContext {
   @protected
-  ProvideItScope get scope {
-    final it = getElementForInheritedWidgetOfExactType<ProvideIt>();
-    assert(it != null, 'You must set `ProvideIt` in your app.');
-    return (it as ProvideItElement).scope;
-  }
+  ProvideItScope get scope => ProvideItScope.of(this);
 }

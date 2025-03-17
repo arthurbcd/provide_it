@@ -115,10 +115,19 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   }
 
   @override
+  AsyncSnapshot<T> watch(BuildContext context) {
+    super.watch(context);
+
+    return snapshot;
+  }
+
+  @override
   void dispose() {
     _subscription?.cancel();
     super.dispose();
   }
+
+  void create();
 
   @override
   T? get value {

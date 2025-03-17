@@ -18,6 +18,7 @@ export 'src/refs/provider/consumer.dart';
 export 'src/refs/provider/future_provider.dart';
 export 'src/refs/provider/multi_provider.dart';
 export 'src/refs/provider/provider.dart';
+export 'src/refs/provider/value_listenable_provider.dart';
 export 'src/refs/ref.dart';
 export 'src/refs/stream.dart';
 export 'src/refs/value.dart';

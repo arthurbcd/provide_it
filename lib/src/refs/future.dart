@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 
 import 'async.dart';
 
@@ -25,9 +24,6 @@ class FutureRef<T> extends AsyncRef<T> {
   final FutureOr<T>? value;
 
   @override
-  AsyncSnapshot<T> bind(BuildContext context) => context.bind(this);
-
-  @override
   AsyncRefState<T, FutureRef<T>> createState() => FutureRefState<T>();
 }
 
@@ -36,9 +32,6 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
 
   @override
   Future<T>? get future => _future;
-
-  @override
-  bool get shouldNotifySelf => true;
 
   @override
   void initState() {
@@ -56,7 +49,4 @@ class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
       snapshot = AsyncSnapshot.withData(ConnectionState.done, value);
     }
   }
-
-  @override
-  AsyncSnapshot<T> bind() => snapshot;
 }

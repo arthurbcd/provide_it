@@ -69,15 +69,15 @@ class ProvideRef<T> extends AsyncRef<T> {
   /// The [value] parameter is the constant value to be provided.
   ///
   /// The [updateShouldNotify] parameter is an optional callback that determines
-  /// whether listeners should be notified when the value changes.
+  /// whether listeners should be notified when [value] changes.
   ///
   /// The [key] parameter is an optional key for the ref.
   const ProvideRef.value(
     T this.value, {
     this.updateShouldNotify,
     super.key,
-  })  : create = null,
-        lazy = false,
+  })  : lazy = false,
+        create = null,
         dispose = null,
         parameters = null;
 
@@ -85,7 +85,7 @@ class ProvideRef<T> extends AsyncRef<T> {
   final T? value;
 
   /// Whether to notify dependents when the value changes.
-  final bool Function(T, T)? updateShouldNotify;
+  final bool Function(T prev, T next)? updateShouldNotify;
 
   @override
   AsyncRefState<T, ProvideRef<T>> createState() => ProvideRefState<T>();
@@ -113,9 +113,6 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
 
   @override
   Stream<T>? get stream => _stream;
-
-  @override
-  bool get shouldNotifySelf => ref.create == null;
 
   @override
   void initState() {
@@ -175,10 +172,11 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
 
   @override
   String get debugLabel {
-    var async = '';
-    if (future != null) async = '(future)';
-    if (stream != null) async = '(stream)';
+    var lazy = this.lazy ? 'lazy ' : '';
+    if (isAsync) lazy += 'async';
+    lazy = lazy.trim();
+    if (lazy.isNotEmpty) lazy = '($lazy)';
 
-    return 'context.provide<$type> $async';
+    return 'context.provide<$type> $lazy';
   }
 }

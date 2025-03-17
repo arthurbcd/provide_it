@@ -42,24 +42,31 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
     }
   }
 
-  void _removeDependents() {
-    _lastRef = null;
+  // we check if developer removed any ref/observer
+  void _removeDirty() {
+    // they'll be re-added in the next build phase.
     _watchers.clear();
     _listeners.clear();
     _selectors.clear();
     _listenSelectors.clear();
+
+    // it'll be re-set in the next build phase.
+    _lastRef = null;
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      /// on reassemble, [didUpdateRef] should always be called.
-      /// null implies that the ref was removed, allowing safe disposal.
+      // null implies that the ref was removed
       if (_lastRef == null) {
-        _scope._tree[_bind.element]![_bind.index]?.dispose();
+        _scope._tree[_bind.element]!.remove(_bind.index)!.dispose();
       }
     });
   }
 
   String _debugState() {
     final keyText = ref.key == null ? '' : '#${ref.key}';
-    final valueText = '${value ?? 'null'}'.replaceAll('Instance of ', '');
+    var valueText = type == 'void' ? "'void'" : null;
+    valueText ??= '${value ?? 'null'}'.replaceAll('Instance of ', '');
+    if (valueText.length > 30) {
+      valueText = '${valueText.substring(0, 30)}...';
+    }
     final desc = [
       if (_watchers.isNotEmpty) 'watchers: ${_watchers.length}',
       if (_listeners.isNotEmpty) 'listeners: ${_listeners.lengthExpanded}',

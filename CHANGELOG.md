@@ -2,18 +2,29 @@
 
 ## 0.13.0
 
-- Removed the need for `provideLazy` & `provideFactory` in favor of `provide`.
-- Added `ProvideRef.lazyPredicate`. Defaults to lazy when sync, not lazy when async.
+- Removed `provideLazy`. Use `provide(lazy: true)`.
+- Removed `provideFactory`. Use `provide` in context scopes.
+- Removed `shouldNotifySelf`. Use `watch` explicitly.
+- Removed `RefState.bind`. Use `ReadIt.bind` new signature.
+- Moved `RefState.create` to `AsyncRefState.create`.
+- Moved `BuildContext.vsync` to `CreateContext.vsync`.
+- Updated `CreateRef.create` to use `CreateContext` extension type.
+- Added `ProvideRef.lazyPredicate` fallback behavior when `lazy=null`. Defaults to `lazy=true`, unless the provider is async.
+- Added `ValueListenableProvider` migration.
+- Improved hot-reload experience when removing single binds.
+- Updated `README.md`.
+
+Thanks to `almeidajuan`.
 
 ## 0.12.0
 
-- Added `ValueRef.debounce`.
-- Added `ValueRef.throttle`.
-- Limited `write` to `ValueRef.write`.
 - Removed `RefState.tryDispose`.
 - Renamed `context.findRefStateOfType` to `context.getRefStateOfType` (as it's O(1)).
 - Renamed `notifyDependents` to `notifyObservers` (reflects `Watcher` api).
+- Limited `write` to `ValueRef.write`.
 - Improved `Injector` type resolution.
+- Added `ValueRef.debounce`.
+- Added `ValueRef.throttle`.
 
 ## 0.11.0
 
@@ -140,3 +151,4 @@
 ## 0.0.1
 
 - Initial release.
+</file>

@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 
 import 'ref.dart';
 
@@ -12,9 +11,6 @@ abstract class RefWidget<T> extends Widget implements Ref<T> {
 
   final TransitionBuilder? builder;
   final Widget? child;
-
-  @override
-  void bind(BuildContext context) => context.bind(this);
 
   @override
   Element createElement() => RefElement(this);

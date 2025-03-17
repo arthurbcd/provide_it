@@ -1,6 +1,3 @@
-import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
-
 import 'async.dart';
 
 class StreamRef<T> extends AsyncRef<T> {
@@ -23,9 +20,6 @@ class StreamRef<T> extends AsyncRef<T> {
   final Stream<T>? value;
 
   @override
-  AsyncSnapshot<T> bind(BuildContext context) => context.bind(this);
-
-  @override
   AsyncRefState<T, StreamRef<T>> createState() => StreamRefState<T>();
 }
 
@@ -34,9 +28,6 @@ class StreamRefState<T> extends AsyncRefState<T, StreamRef<T>> {
 
   @override
   Stream<T>? get stream => _stream;
-
-  @override
-  bool get shouldNotifySelf => true;
 
   @override
   void initState() {
@@ -48,7 +39,4 @@ class StreamRefState<T> extends AsyncRefState<T, StreamRef<T>> {
   void create() {
     _stream = ref.value ?? ref.create!();
   }
-
-  @override
-  AsyncSnapshot<T> bind() => snapshot;
 }

@@ -2,78 +2,103 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 
-import '../framework.dart';
-import 'async.dart';
+import '../../provide_it.dart';
 
+/// The base class for all [Ref] types.
+///
+/// Refs are used to provide values to the widget tree.
+/// They are similar to [InheritedWidget] but with more features.
+/// - They are not limited to the current widget tree.
+/// - As long as the [Ref] is bound to a [BuildContext], it can be used anywhere.
+/// - They can be used to manage the lifecycle of values with [RefState].
+/// - They automatically dispose when the [BuildContext] is unmounted.
+/// - You can `read`, `watch`, `listen`, and `select` values.
+///
+/// You must set [ProvideIt] in the root of your app.
+///
+/// See [RefState] for more details.
 abstract class Ref<T> {
-  const Ref({this.key});
+  const Ref({this.key = id});
 
   /// The unique identifier for the [Ref] instance.
   /// Similar to [Widget.key].
   final Object? key;
 
-  /// How to create the value to provide.
+  /// Creates a [T] value to provide.
+  /// Can return a deferred [T], e.g. a [Future] or [Stream].
   Function? get create;
 
-  /// The default equality for comparing [Ref.key] & [RefState.select] values.
-  ///
-  /// Obs: Opposed to this, `provider` library uses `DeepCollectionEquality.equals` as default.
-  static var defaultEquality = (a, b) => switch ((a, b)) {
+  /// The default equality to use in [equals]. Defaults to one-depth collections equality.
+  /// Override it to `DeepCollectionEquality.equals` to mimic lib `provider` behavior.
+  static var defaultEquals = (a, b) => switch ((a, b)) {
         (List a, List b) => listEquals(a, b),
         (Set a, Set b) => setEquals(a, b),
         (Map a, Map b) => mapEquals(a, b),
-        (var a, var b) => a == b,
+        _ => a == b,
       };
 
   /// A [Widget.canUpdate] implementation for [Ref] with [equals].
-  static bool canUpdate(Ref oldRef, Ref newRef) {
-    return oldRef.runtimeType == newRef.runtimeType &&
-        equals(oldRef.key, newRef.key);
-  }
+  static bool canUpdate(Ref oldRef, Ref newRef) =>
+      identical(oldRef, newRef) ||
+      (oldRef.runtimeType == newRef.runtimeType &&
+          equals(oldRef.key, newRef.key));
 
-  /// The equality used for [Ref] keys.
-  static bool equals(Object? a, Object? b) => defaultEquality(a, b);
+  /// The equality used for [Ref.key] & [RefState.select].
+  static bool equals(Object? a, Object? b) => defaultEquals(a, b);
 
-  /// Binds this [Ref] to the [context].
-  ///
-  /// Will internally call [RefState.bind].
-  /// When overridden, both must have the same signature.
-  void bind(BuildContext context) => context.bind(this);
+  /// Signature for using [Ref] own identity as [key].
+  /// Only available for a top-level [Ref].
+  @protected
+  static void id() {}
 
   @protected
   RefState<T, Ref<T>> createState();
 }
 
 extension RefReaders<T> on Ref<T> {
-  /// Reads the value of this [Ref]. Auto-binds if not already.
+  /// Binds this [Ref] to the [BuildContext].
+  @protected
+  RefState<T, Ref<T>> bind(BuildContext context) => context.bind(this);
+
+  /// Gets the [RefState] of this [Ref].
+  @protected
+  RefState bindOf(BuildContext context) => context.bindOf<T>(key: this)!;
+
+  /// Reads a previously bound [T] value.
   T read(BuildContext context) {
     return context.read(key: this);
   }
 
-  /// Watches the value of this [Ref]. Auto-binds if not already.
+  /// Watches this [T] value. Auto-binds.
   T watch(BuildContext context) {
     return context.watch(key: this);
   }
 
-  /// Selects a value from this [Ref] using [selector].
+  /// Selects this [R] value using [selector]. Auto-binds.
   R select<R>(BuildContext context, R selector(T value)) {
     return context.select(selector, key: this);
   }
 
-  /// Listens to the value of this [Ref] using [listener].
+  /// Listens this [T] value using [listener]. Auto-binds.
   void listen(BuildContext context, void listener(T value)) {
     context.listen(listener, key: this);
   }
 
-  /// Listens to the value of this [Ref] using [selector] and [listener].
+  /// Listens this [R] value using [selector] and [listener]. Auto-binds.
   void listenSelect<R>(
     BuildContext context,
     R selector(T value),
     void listener(R? previous, R next),
   ) {
     context.listenSelect(selector, listener, key: this);
+  }
+}
+
+extension AsyncRefBinder<T> on AsyncRef<T> {
+  /// Binds the [AsyncRef] to the [BuildContext].
+  AsyncRefState<T, AsyncRef<T>> bind(BuildContext context) {
+    return context.bind(this) as AsyncRefState<T, AsyncRef<T>>;
   }
 }
 

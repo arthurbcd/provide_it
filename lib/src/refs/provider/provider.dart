@@ -63,27 +63,27 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
 
   @override
   void initState() {
-    if (ref.lazy == false) create();
+    if (ref.lazy == false) _create();
     super.initState();
   }
 
-  @override
-  void create() {
+  void _create() {
     value = ref.create != null ? ref.create!(context) : ref.value as T;
+
     _created = true;
     notifyObservers();
   }
 
   @override
   bool updateShouldNotify(Provider<T> oldRef) {
-    var didChange = oldRef.value != ref.value;
+    bool didChange = oldRef.value != ref.value;
 
     if ((oldRef.value, ref.value) case (var prev?, var next?)) {
       didChange = ref.updateShouldNotify?.call(prev, next) ?? prev != next;
     }
 
     if (didChange) {
-      create();
+      _create();
     }
 
     return didChange;
@@ -99,7 +99,7 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
 
   @override
   T read() {
-    if (!_created) create();
+    if (!_created) _create();
     return super.read();
   }
 

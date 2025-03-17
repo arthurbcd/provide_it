@@ -1,9 +1,10 @@
 import 'package:provide_it/src/refs/provider/provider.dart';
+import 'package:provide_it/src/refs/ref.dart';
 
 import '../../framework.dart';
 import '../ref_widget.dart';
 
-@Deprecated('Use `context` extensions instead.')
+@Deprecated('Use `context.provide` instead.')
 class MultiProvider extends RefWidget<void> {
   const MultiProvider({
     super.key,
@@ -23,15 +24,23 @@ class MultiProvider extends RefWidget<void> {
 }
 
 class MultiProviderState extends RefState<void, MultiProvider> {
-  @override
-  void bind() {
+  void _bind() {
     for (var provider in ref.providers) {
       provider.bind(context);
     }
   }
 
   @override
-  void create() {}
+  void initState() {
+    super.initState();
+    _bind();
+  }
+
+  @override
+  void didUpdateRef(MultiProvider oldRef) {
+    super.didUpdateRef(oldRef);
+    _bind();
+  }
 
   @override
   void value;

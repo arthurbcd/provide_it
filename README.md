@@ -21,7 +21,7 @@ void main() {
 
       // ProvideIt will take care of loading/error, but you can customize it:
       // - loadingBuilder: (context) => (...),
-      // - errorBuilder: (context, error, stackTrae) =>ce(...),
+      // - errorBuilder: (context, error, trace) => (...),
       child: MaterialApp(
         home: Builder(
           builder: (context) {
@@ -75,25 +75,17 @@ class CounterProvider extends StatelessWidget {
   Widget build(BuildContext context) {
     context.provide(Counter.new);
 
-      return ElevatedButton(
-        onPressed: () => context.read<Counter>().increment(),
-        child: Text('Count: ${context.watch<Counter>().count}'),
-      );
+    return ElevatedButton(
+      onPressed: () => context.read<Counter>().increment(),
+      child: Text('Count: ${context.watch<Counter>().count}'),
+    );
   }
 }
 ```
 
-Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound.
+Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound. All of them support the `.new` auto-injection, no matter if `async` or not.
 
-In addition to `context.provide`, there are several other methods available:
-
-- `context.provideFactory`
-- `context.provideValue`
-- `context.provideLazy`
-
-All of them support the `.new` auto-injection, no matter if `async` or not.
-
-For manually providing a single named paramater, use flutter's [Symbol]:
+For manually providing a single named parameter, use flutter's [Symbol]:
 
 ```dart
  context.provide(Counter.new, parameters: {
@@ -101,11 +93,11 @@ For manually providing a single named paramater, use flutter's [Symbol]:
  });
 ```
 
-All of these methods are equivalent to the respective methods in the `get_it` package, deprecations were included for help in migration.
+All of these methods are equivalent to their respective methods in the `get_it` package, deprecations were included to help in migration.
 
 #### `context.value` & `context.create`
 
-Those were common properties you would find in the `Provider` widgets.
+Those were common constructors you would find in the `Provider` widgets.
 
 Now you can use them directly from the context, for simple state management.
 
@@ -131,16 +123,14 @@ class CounterProvider extends StatelessWidget {
 
 When using complex objects, you can use the `create` method to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
 
-You can recreate.
-
 ```dart
 class CounterProvider extends StatelessWidget {
   const CounterProvider({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // yes! `context.vsync` is a thing, but only available inside `create`.
-    final controller = context.create(() => AnimationController(vsync: context.vsync));
+    // yes! `CreateContext.vsync` is a thing, but only inside `create`.
+    final controller = context.create((c) => AnimationController(vsync: c.vsync));
 
     return ElevatedButton(
       onPressed: () => controller.forward(),
@@ -167,10 +157,8 @@ You can access contextlessly using `ReadIt.intance`, `ReadIt.I` or simply `readI
 `ReadIt` is contextless, and can be used in tests or outside of widgets. `watch`, `select` and etc are not available in `ReadIt`.
 
 ```dart
+final count = readIt<CounterNotifier>().count; // <- callable
 final count = readIt.read<CounterNotifier>().count;
-final count = readIt.listen<CounterNotifier>((counter) {
-  print('Counter changed: ${counter.count}');
-});
 ```
 
 ### 3. Listening

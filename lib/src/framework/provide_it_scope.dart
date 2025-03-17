@@ -1,19 +1,28 @@
 part of '../framework.dart';
 
 class ProvideItScope with ReadItMixin {
+  static ProvideItScope of(BuildContext context) {
+    final it = context.getElementForInheritedWidgetOfExactType<ProvideIt>();
+    assert(it != null, 'You must set `ProvideIt` in your app.');
+    return (it as ProvideItElement).scope;
+  }
+
   @protected
   T watch<T>(BuildContext context, {Object? key}) {
     final state = _stateOf<T>(context, key: key);
-    final value = state?.watch(context);
+    final value = state?.value;
+    state?.watch(context);
 
-    return value as T;
+    if (value == null && null is T) return value;
+    if (state != null) return state.read();
+
+    throw StateError('Ref<$T> not found, key: $key.');
   }
 
   @protected
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
-    final index = _dependencyIndex[context]!;
-    final value = state?.select<T, R>(context, index, selector);
+    final value = state?.select<T, R>(context, selector);
 
     return value as R;
   }
@@ -21,9 +30,8 @@ class ProvideItScope with ReadItMixin {
   @protected
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
-    final index = _dependencyIndex[context]!;
 
-    state?.listen(context, index, listener);
+    state?.listen(context, listener);
   }
 
   @protected
@@ -34,9 +42,8 @@ class ProvideItScope with ReadItMixin {
     Object? key,
   }) {
     final state = _stateOf<T>(context, key: key);
-    final index = _dependencyIndex[context]!;
 
-    state?.listenSelect<T, R>(context, index, selector, listener);
+    state?.listenSelect<T, R>(context, selector, listener);
   }
 }
 
@@ -47,7 +54,7 @@ mixin ReadItMixin implements ReadIt {
   final watchers = ProvideIt.defaultWatchers;
 
   /// Whether [ProvideIt] is attached to the widget tree.
-  bool get isAttached => _element != null;
+  bool get mounted => _element != null;
 
   // state binder tree by context and index.
   final _tree = TreeMap<Element?, TreeMap<int, RefState>>();
@@ -68,9 +75,6 @@ mixin ReadItMixin implements ReadIt {
       }
     }
   }
-
-  bool _doingInit = false;
-  bool get debugDoingInit => _doingInit;
 
   /// The future of [AsyncRefState.isReady].
   @override
@@ -100,14 +104,17 @@ mixin ReadItMixin implements ReadIt {
   }
 
   @override
-  R bind<R, T>(Ref<T> ref, {BuildContext? context}) {
+  RefState<T, Ref<T>> bind<T>(Ref<T> ref, {BuildContext? context}) {
     assert(
-      context != null || !isAttached,
+      context != null || !mounted,
       'ReadIt cannot bind after ProvideIt is attached to the widget tree.',
     );
-    final state = _state<T>(context as Element?, ref, false);
 
-    return state.bind() as R;
+    return _state<T>(context as Element?, ref);
+  }
+
+  RefState? bindOf<T>({Object? key, BuildContext? context}) {
+    return _stateOf<T>(context as Element?, key: key);
   }
 
   Future<void> reload<T>({Object? key}) async {
@@ -152,7 +159,7 @@ mixin ReadItMixin implements ReadIt {
     final states = _treeCache[(type, key)] ?? {};
     final state = states.firstOrNull;
 
-    assert(states.length <= 1, 'Duplicate Ref<$type> found, key: $key.');
+    assert(states.length < 2, 'Duplicate Ref<$type> found, key: $key.');
     return state;
   }
 

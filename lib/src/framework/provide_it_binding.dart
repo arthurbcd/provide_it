@@ -14,39 +14,30 @@ extension on ReadItMixin {
     return 0;
   }
 
-  _State<T> _state<T>(Element? context, Ref<T> ref, bool topLevel) {
+  _State<T> _state<T>(Element? context, Ref<T> ref) {
     final branch = _tree[context] ??= TreeMap<int, _State>();
     final index = _treeIndex[context] ??= _initTreeIndex(context);
     _treeIndex[context] = index + 1;
 
-    _State<T> create() {
-      _doingInit = true;
-
-      final state = branch[index] = ref.createState()
-        .._bind = (element: context, index: index)
-        .._scope = this as ProvideItScope
-        .._topLevel = topLevel
-        .._ref = ref
-        ..initState();
-
-      _doingInit = false;
-
-      return state;
-    }
+    _State<T> create() => branch[index] = ref.createState()
+      .._bind = (element: context, index: index)
+      .._scope = this as ProvideItScope
+      .._ref = ref
+      ..initState();
 
     _State<T> update(_State<T> old) => old
       .._ref = ref
       ..didUpdateRef(old.ref);
 
     _State<T> reset(_State<dynamic> old) {
-      if (_element!._reassembled) return create();
-      throw StateError('${old.ref.runtimeType} != ${ref.runtimeType}');
+      assert(_element!._reassembled || old.ref.runtimeType == ref.runtimeType);
+      return create();
     }
 
     return switch (branch[index]) {
-      var old? when old.ref.runtimeType != ref.runtimeType => reset(old),
+      null => create(),
       _State<T> old when Ref.canUpdate(old.ref, ref) => update(old),
-      _ => create(),
+      var old => reset(old), // reassemble or key changed
     };
   }
 }

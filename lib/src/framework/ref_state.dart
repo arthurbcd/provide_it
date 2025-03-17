@@ -33,7 +33,6 @@ abstract class RefState<T, R extends Ref<T>> {
   // binding
   late final ProvideItScope _scope;
   late final ({Element? element, int index}) _bind;
-  late final bool _topLevel;
   late final Watcher? _watcher = () {
     if (!context.mounted) return null;
 
@@ -61,22 +60,22 @@ abstract class RefState<T, R extends Ref<T>> {
   /// The [Ref] that this state is associated with.
   R get ref => _ref;
 
-  /// Whether [RefState] is attached to the widget tree.
-  bool get isAttached => _bind.element != null;
+  /// The [Ref] key used to bind this state.
+  Object? get key => ref.key == Ref.id ? ref : ref.key;
 
-  /// Whether [notifyObservers] should also notify this [context].
-  bool get shouldNotifySelf => false;
+  /// Whether [RefState] is bound to an [Element].
+  bool get mounted => _bind.element != null;
 
-  /// The [context] of [Ref.bind].
+  /// The [context] this [Ref] is bound to.
   BuildContext get context {
     assert(
-      _scope.isAttached,
+      _scope.mounted,
       'ProvideIt is not attached to the widget tree, `context` is not available.',
     );
     return _bind.element ?? _scope._element!;
   }
 
-  /// The type used to [Ref.bind] this state.
+  /// The type used to bind this state.
   late final type = () {
     final type = ref.create != null ? Injector<T>(ref.create!).type : T.type;
     assert(
@@ -90,7 +89,8 @@ abstract class RefState<T, R extends Ref<T>> {
   String get debugLabel {
     final parts = runtimeType.toString().split('<');
     final ref = parts.first.replaceAll('RefState', '').toLowerCase();
-    return 'context.$ref<${value?.runtimeType ?? T}>';
+
+    return 'context.$ref<$type>';
   }
 
   @visibleForTesting
@@ -104,10 +104,10 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void initState() {
-    if (_scope.isAttached) context.dependOnRefState(this, 'bind');
-    final key = _topLevel ? ref : ref.key;
-    final cache = _scope._treeCache[(type, key)] ??= {};
-    cache.add(this);
+    if (_scope.mounted) context.dependOnRefState(this, 'bind');
+
+    final states = _scope._treeCache[(type, key)] ??= {};
+    states.add(this);
   }
 
   @protected
@@ -123,17 +123,12 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void notifyObservers() {
-    if (value != null && _scope.isAttached) _watcher;
+    if (value != null && _scope.mounted) _watcher;
 
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
     _selectors.forEach(_select);
     _listenSelectors.forEach(_listenSelect);
-
-    if (isAttached && shouldNotifySelf) {
-      assert(_bind.element!.mounted);
-      _bind.element!.markNeedsBuild();
-    }
   }
 
   @protected
@@ -155,12 +150,13 @@ abstract class RefState<T, R extends Ref<T>> {
   @mustCallSuper
   void dispose() {
     _watcher?.cancel(value, notifyObservers);
-
-    final key = _topLevel ? ref : ref.key;
-    _scope._treeCache.remove((type, key));
-
     if (ref.create != null) {
       _watcher?.dispose(value);
+    }
+
+    if (_scope._treeCache[(type, key)] case var states?) {
+      states.remove(this);
+      if (states.isEmpty) _scope._treeCache.remove((type, key));
     }
   }
 
@@ -168,12 +164,12 @@ abstract class RefState<T, R extends Ref<T>> {
   @mustCallSuper
   void reassemble() {
     // only hot restart can reassemble [ReadIt] global bindings.
-    if (isAttached) _removeDependents();
+    if (mounted) _removeDirty();
   }
 
   @protected
   @mustCallSuper
-  void listen<L>(BuildContext context, int index, Function listener) {
+  void listen<L>(BuildContext context, Function listener) {
     context.dependOnRefState(this, 'listen');
 
     tryListen(value) {
@@ -182,6 +178,8 @@ abstract class RefState<T, R extends Ref<T>> {
     }
 
     final listeners = _listeners[context as Element] ??= {};
+    final index = _scope._dependencyIndex[context]!;
+
     listeners[index] = tryListen;
   }
 
@@ -189,7 +187,6 @@ abstract class RefState<T, R extends Ref<T>> {
   @mustCallSuper
   void listenSelect<L, S>(
     BuildContext context,
-    int index,
     Function selector,
     Function listener,
   ) {
@@ -207,12 +204,14 @@ abstract class RefState<T, R extends Ref<T>> {
 
     final value = trySelect(this.value);
     final listenSelectors = _listenSelectors[context as Element] ??= {};
+    final index = _scope._dependencyIndex[context]!;
+
     listenSelectors[index] = (value, trySelect, tryListen);
   }
 
   @protected
   @mustCallSuper
-  S select<L, S>(BuildContext context, int index, Function selector) {
+  S select<L, S>(BuildContext context, Function selector) {
     context.dependOnRefState(this, 'select');
 
     trySelect(value) {
@@ -222,6 +221,8 @@ abstract class RefState<T, R extends Ref<T>> {
 
     final value = trySelect(read());
     final selectors = _selectors[context as Element] ??= {};
+    final index = _scope._dependencyIndex[context]!;
+
     selectors[index] = (value, trySelect);
 
     return value;
@@ -229,33 +230,22 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  T watch(BuildContext context) {
-    context.dependOnRefState(this, 'watch', 'Use `read()` instead.');
+  void watch(BuildContext context) {
+    context.dependOnRefState(this, 'watch', 'Use `read` instead.');
 
     _watchers.add(context as Element);
-    return read();
   }
 
   @protected
   @mustCallSuper
   T read() {
     if (value case var value?) {
-      if (_scope.isAttached) _watcher;
+      if (_scope.mounted) _watcher;
       return value;
     }
 
-    throw StateError('Ref<$type> is not ready.');
+    throw StateError('Ref<$type> not ready.');
   }
-
-  /// The method called by [Ref.bind].
-  ///
-  /// Override to make it return a custom type.
-  /// See: [CreateRef] or [ValueRef].
-  @protected
-  void bind() => value;
-
-  /// The method to construct the value of this [Ref].
-  void create();
 
   /// The value to provide.
   ///

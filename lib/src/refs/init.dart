@@ -28,10 +28,5 @@ class InitRefState extends RefState<void, InitRef> {
   }
 
   @override
-  void create() {
-    ref.init?.call();
-  }
-
-  @override
   void value;
 }
