@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../injector/injector.dart';
 import 'async.dart';
 
-//// Signature to determine whether the provider should be lazy or not.
+/// Determines the fallback behavior when `lazy` is `null`.
 typedef LazyPredicate<T> = bool Function(ProvideRefState<T> state);
 
 class ProvideRef<T> extends AsyncRef<T> {
@@ -93,9 +93,6 @@ class ProvideRef<T> extends AsyncRef<T> {
 
 class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   var _created = false;
-  late Injector? _injector = ref.create != null
-      ? Injector<T>(ref.create!, parameters: ref.parameters)
-      : null;
   Future<T>? _future;
   Stream<T>? _stream;
 
@@ -105,7 +102,7 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   /// Whether the [ref] is async.
   bool get isAsync {
     if (ref.value is Future || ref.value is Stream) return true;
-    return _injector?.isAsync == true;
+    return injector?.isAsync == true;
   }
 
   @override
@@ -137,19 +134,15 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
 
   @override
   void create() {
-    _injector = _stream = _future = null;
+    _stream = _future = null;
 
-    if (ref.create != null) {
-      _injector = Injector<T>(ref.create!, parameters: ref.parameters);
-    }
+    final value = ref.value ?? injector!(ref.parameters);
 
-    final value = ref.value ?? _injector!();
-
-    if (value is Future) {
-      _future = value.then((it) => it);
+    if (value is Future<T>) {
+      _future = value;
     } else if (value is Stream<T>) {
       _stream = value;
-    } else if (value is T) {
+    } else {
       snapshot = AsyncSnapshot.withData(ConnectionState.none, value);
     }
 

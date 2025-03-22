@@ -63,7 +63,9 @@ extension RefReaders<T> on Ref<T> {
 
   /// Gets the [RefState] of this [Ref].
   @protected
-  RefState bindOf(BuildContext context) => context.bindOf<T>(key: this)!;
+  RefState<T, Ref<T>> bindOf(BuildContext context) {
+    return context.bindOf<T>(key: this) as RefState<T, Ref<T>>;
+  }
 
   /// Reads a previously bound [T] value.
   T read(BuildContext context) {
@@ -100,22 +102,31 @@ extension AsyncRefBinder<T> on AsyncRef<T> {
   AsyncRefState<T, AsyncRef<T>> bind(BuildContext context) {
     return context.bind(this) as AsyncRefState<T, AsyncRef<T>>;
   }
+
+  AsyncRefState<T, AsyncRef<T>> bindOf(BuildContext context) {
+    return context.bindOf<T>(key: this) as AsyncRefState<T, AsyncRef<T>>;
+  }
+
+  /// Watches the [AsyncSnapshot] of this async value.
+  AsyncSnapshot<T> watch(BuildContext context) {
+    return bindOf(context).watch(context);
+  }
 }
 
 extension AsyncRefReaders<T> on AsyncRef<T> {
   /// Reloads the value of this [Ref].
   Future<void> reload(BuildContext context) {
-    return context.reload(key: this);
+    return context.reload<T>(key: this);
   }
 
   /// Async reads the value of this [Ref].
   FutureOr<T> readAsync(BuildContext context) {
-    return context.readAsync(key: this);
+    return context.readAsync<T>(key: this);
   }
 
   /// The future when this [Ref] is ready to be read.
   FutureOr<void> isReady(BuildContext context) {
-    return context.readAsync(key: this);
+    return context.readAsync<T>(key: this);
   }
 
   /// Whether this [Ref] is ready to be read.

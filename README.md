@@ -83,17 +83,29 @@ class CounterProvider extends StatelessWidget {
 }
 ```
 
-Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound. All of them support the `.new` auto-injection, no matter if `async` or not.
+Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound, no matter if `async` or not.
 
-For manually providing a single named parameter, use flutter's [Symbol]:
+For manually locating a parameter, use:
+- `Symbol`/`String` for named parameters
+- `int` for positional parameters
+- `Type` to locate by parameter type
+
+By default, if you don't specify a parameter, it will be located by `read<Type>`.
+
+This also essentially overrides a previous provided instance.
 
 ```dart
  context.provide(Counter.new, parameters: {
-  #counterId: 'my-counter-id',
+  #counterId: 'my-id',
+  'counterId': 'my-id',
+  String: 'my-id',
+  0: 'my-id', // if it's positional
  });
 ```
 
-All of these methods are equivalent to their respective methods in the `get_it` package, deprecations were included to help in migration.
+You can also customize injections, with:
+- `ProvideIt.locator`
+- `ProvideIt.parameters`
 
 #### `context.value` & `context.create`
 
@@ -150,11 +162,11 @@ final count2 = context.read<int>();
 final count3 = context.select((CounterNotifier counter) => counter.count);
 ```
 
-All of these methods are equivalent to the respective methods in the `provider` package, deprecations were included for help in migration.
+You can contextlessly read using `ReadIt.intance`, `ReadIt.I` or simply `readIt`.
 
-You can access contextlessly using `ReadIt.intance`, `ReadIt.I` or simply `readIt`.
+Making them available outside of the widget-tree (ex: tests). Some context dependent methods such as `watch` and `select` are not available.
 
-`ReadIt` is contextless, and can be used in tests or outside of widgets. `watch`, `select` and etc are not available in `ReadIt`.
+Equivalent deprecations were included to help migrating from `provider`/`get_it` packages.
 
 ```dart
 final count = readIt<CounterNotifier>().count; // <- callable

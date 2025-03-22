@@ -4,7 +4,6 @@ import 'dart:collection';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/injector/injector.dart';
-import 'package:provide_it/src/injector/param.dart';
 
 import '../provide_it.dart';
 import 'utils/tree_map.dart';

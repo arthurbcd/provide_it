@@ -5,19 +5,21 @@ class ProvideItElement extends InheritedElement {
     // attach scope to the widget tree.
     scope._element = this;
     scope.watchers.addAll(widget.additionalWatchers);
-
-    // attach the default locator to the scope.
-    Injector.defaultLocator = (param) {
-      Object? value;
-      if (param is NamedParam) value = widget.namedLocator?.call(param);
-      return value ?? scope.readAsync(type: param.type);
-    };
   }
 
   @override
   ProvideIt get widget => super.widget as ProvideIt;
   late final scope = (widget.scope ?? ReadIt.instance) as ProvideItScope;
   bool _reassembled = false;
+
+  @protected
+  Injector<I> injector<I>(Function create) {
+    return Injector<I>(
+      create,
+      parameters: widget.parameters,
+      locator: (p) => widget.locator?.call(p) ?? scope.readAsync(type: p.type),
+    );
+  }
 
   @override
   void reassemble() {

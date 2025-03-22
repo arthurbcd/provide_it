@@ -13,6 +13,8 @@ class ValueRef<T> extends Ref<T> {
     this.throttle,
     super.key,
   });
+
+  /// The initial value of this [ValueRef].
   final T initialValue;
 
   /// The duration a write must wait before applying. Resets on each write.
@@ -26,17 +28,17 @@ class ValueRef<T> extends Ref<T> {
   @override
   Function? get create => null;
 
-  /// Writes a new [value] and notify all observers.
+  /// Watches and returns a record to (read, write) this value. Autobinds.
+  (T, void Function(T)) watch(BuildContext context) {
+    return bindOf(context).watch(context) as (T, void Function(T));
+  }
+
+  /// Writes a new [value] and notifies all observers.
   ///
-  /// - [ValueRef] must be bound to a [BuildContext].
-  /// To bind a [ValueRef] use [watch].
+  /// - [ValueRef] must be bound to a [BuildContext]. Bind it with [watch].
   void write(BuildContext context, T value) {
     final state = context.getRefStateOfType<T>(key: this) as ValueRefState<T>;
     state.write(value);
-  }
-
-  (T, void Function(T)) watch(BuildContext context) {
-    return bindOf(context).watch(context) as (T, void Function(T));
   }
 
   @override
@@ -85,7 +87,16 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
   }
 }
 
+/// Like a [ValueNotifier] but bounded to [ValueRef].
+/// Ex:
+/// ```dart
+/// final count = context.value(0);
+/// count.value = 1;
+/// ```
 extension ValueRecordExtension<T> on (T, void Function(T)) {
+  /// The [ValueRefState.read].
   T get value => $1;
+
+  /// The [ValueRefState.write].
   set value(T value) => $2(value);
 }

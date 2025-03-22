@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provide_it/src/injector/injector.dart';
@@ -238,12 +240,41 @@ void main() {
       expect(value.a.b, isA<NestedB>());
     });
 
-    test('shold manually provide some parameters', () {
+    test('should manually provide some parameters', () {
       final injector = Injector(({String? a = '', int? b}) => (a, b));
       expect(injector(), ('', null));
       expect(injector({#a: 'a'}), ('a', null));
       expect(injector({#b: 1}), ('', 1));
       expect(injector({#a: 'a', #b: 1}), ('a', 1));
+    });
+
+    test('should resolve parameters resolution', () {
+      Object? call(Map<Object, dynamic> parameters, Param param) {
+        Object? arg;
+
+        parameters = HashMap(
+          equals: (a, b) =>
+              a is Type && b is String ? a.toString() == b : a == b,
+          hashCode: (key) =>
+              key is Type ? key.toString().hashCode : key.hashCode,
+        )..addAll(parameters);
+
+        arg ??= parameters[param.symbol] ??
+            parameters[param.index] ??
+            parameters[param.type] ??
+            parameters['${param.name ?? param.index}'];
+
+        return arg;
+      }
+
+      final param = PositionalParam('String',
+          index: 3, isRequired: true, owner: Injector(() {}));
+
+      final result = call({3: 'by index'}, param);
+      expect(result, 'by index');
+
+      final result2 = call({String: 'by type'}, param);
+      expect(result2, 'by type');
     });
   });
 }

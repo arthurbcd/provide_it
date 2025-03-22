@@ -26,6 +26,21 @@ sealed class Param {
   /// Whether the parameter is required.
   final bool isRequired;
 
+  /// The [NamedParam.symbol] or null.
+  Symbol? get symbol => null;
+
+  /// The [NamedParam.name] or null.
+  String? get name => null;
+
+  /// The [PositionalParam.index] or null.
+  int? get index => null;
+
+  /// The type name, always without the nullable operator.
+  String get type {
+    if (isNullable) return rawType.substring(0, rawType.length - 1);
+    return rawType;
+  }
+
   /// Whether the type is nullable.
   bool get isNullable => rawType.endsWith('?');
 
@@ -37,15 +52,6 @@ sealed class Param {
 
   /// Whether the parameter has a default value.
   bool get hasDefaultValue => !isRequired || isNullable;
-
-  /// The symbol of the parameter.
-  Symbol get symbol;
-
-  /// The type name, always without the nullable operator.
-  String get type {
-    if (isNullable) return rawType.substring(0, rawType.length - 1);
-    return rawType;
-  }
 }
 
 /// Represents a named parameter in an instance constructor.
@@ -57,7 +63,7 @@ final class NamedParam extends Param {
     required super.owner,
   });
 
-  /// The name of the named parameter.
+  @override
   final String name;
 
   @override
@@ -79,11 +85,8 @@ final class PositionalParam extends Param {
     required super.owner,
   });
 
-  /// The position of the positional parameter.
-  final int index;
-
   @override
-  Symbol get symbol => Symbol('p$index');
+  final int index;
 
   @override
   String toString() {

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0
+
+- Now `Injector` is fully scoped.
+- Replaced `ProvideIt.namedLocator` for `ProvideIt.locator`.
+- Added `ProvideIt.parameters`.
+- Improved `Injector.parameters` to locate by `Symbol`/`String` (named), `int` (positional) or `Type` (both).
+- Improved `ReadIt.reload` assertions.
+- Updated `README.md`.
+
 ## 0.13.0
 
 - Removed `provideLazy`. Use `provide(lazy: true)`.

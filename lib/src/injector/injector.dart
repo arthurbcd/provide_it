@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
@@ -6,8 +7,8 @@ import 'param.dart';
 
 export 'injector.dart';
 
+/// Signature to locate dependencies by [Param].
 typedef ParamLocator = FutureOr Function(Param param);
-typedef NamedLocator = FutureOr Function(NamedParam param);
 
 /// A class that injects dependencies into a function.
 ///
@@ -38,9 +39,9 @@ class Injector<T> {
     this.ignorePrivateTypes = true,
   });
 
-  /// The default locator to use while injecting.
+  /// The default [ParamLocator] to use. Applied to all [Injector].
   ///
-  /// This is used when [locator] is not provided.
+  /// This is called when [locator] returns `null`.
   static ParamLocator? defaultLocator;
 
   /// The [T] function to inject.
@@ -50,7 +51,7 @@ class Injector<T> {
   final ParamLocator? locator;
 
   /// The named arguments by [Symbol] to use while injecting.
-  final Map<Symbol, dynamic>? parameters;
+  final Map<Object, dynamic>? parameters;
 
   /// Whether to ignore private types.
   final bool ignorePrivateTypes;
@@ -120,16 +121,25 @@ class Injector<T> {
   /// final user = userInjector({#id: 1, #name: 'John'});
   /// ```
   ///
-  FutureOr<T> call([Map<Symbol, dynamic>? parameters]) {
-    parameters = {...?this.parameters, ...?parameters};
+  FutureOr<T> call([Map<Object, dynamic>? parameters]) {
+    if (this.parameters != null || parameters != null) {
+      parameters = HashMap<Object, dynamic>(
+        equals: (a, b) => a is Type && b is String ? a.toString() == b : a == b,
+        hashCode: (key) => key is Type ? key.toString().hashCode : key.hashCode,
+        isValidKey: (k) => k is Type || k is String || k is Symbol || k is int,
+      )..addAll({...?this.parameters, ...?parameters});
+    }
+
     final futures = <Future>[];
 
     locate(Param param) {
-      Object? arg;
+      var arg = parameters?[param.name ?? param.index] ??
+          parameters?[param.type] ??
+          parameters?[param.symbol];
       Object? error;
 
       try {
-        arg = locator?.call(param) ?? defaultLocator?.call(param);
+        arg ??= locator?.call(param) ?? defaultLocator?.call(param);
       } catch (e) {
         error = e;
       }
@@ -137,7 +147,7 @@ class Injector<T> {
       if (arg == null && !param.hasDefaultValue) {
         throw ArgumentError(
           '${param.type} not found. Expected $param. \n$error',
-          param is NamedParam ? param.name : null,
+          '${param.name ?? param.index}',
         );
       }
 
@@ -147,7 +157,7 @@ class Injector<T> {
     final positionalArgs = [];
 
     for (final param in _positional) {
-      final arg = parameters[param.symbol] ?? locate(param);
+      final arg = locate(param);
 
       if (arg == null && param.hasDefaultValue) continue;
 
@@ -163,7 +173,7 @@ class Injector<T> {
     final namedArgs = <Symbol, dynamic>{};
 
     for (final param in _named) {
-      final arg = parameters[param.symbol] ?? locate(param);
+      final arg = locate(param);
 
       if (arg == null && param.hasDefaultValue) continue;
 

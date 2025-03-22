@@ -75,9 +75,13 @@ abstract class RefState<T, R extends Ref<T>> {
     return _bind.element ?? _scope._element!;
   }
 
+  /// The [Injector] of [Ref.create] in this scope.
+  Injector<T>? get injector =>
+      ref.create != null ? _scope.injector(ref.create!) : null;
+
   /// The type used to bind this state.
   late final type = () {
-    final type = ref.create != null ? Injector<T>(ref.create!).type : T.type;
+    final type = injector?.type ?? T.type;
     assert(
       type != 'dynamic' && type != 'Object',
       'This is likely a mistake. Provide a non-generic type.',

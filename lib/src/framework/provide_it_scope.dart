@@ -76,6 +76,11 @@ mixin ReadItMixin implements ReadIt {
     }
   }
 
+  @protected
+  Injector<I> injector<I>(Function create) {
+    return _element?.injector(create) ?? Injector<I>(create);
+  }
+
   /// The future of [AsyncRefState.isReady].
   @override
   FutureOr<void> allReady() {
@@ -119,7 +124,8 @@ mixin ReadItMixin implements ReadIt {
 
   Future<void> reload<T>({Object? key}) async {
     final state = getRefStateOfType<T>(key: key);
-    assert(state is AsyncRefState?, 'AsyncRef<$T> not found, key: $key.');
+    assert(state is AsyncRefState || null is T,
+        'AsyncRef<$T> not found, key: $key.');
 
     await (state as AsyncRefState?)?.load();
   }

@@ -32,13 +32,14 @@ typedef ErrorBuilder = Widget Function(
 class ProvideIt extends InheritedWidget {
   const ProvideIt({
     super.key,
+    this.scope,
     this.provide,
-    this.namedLocator,
+    this.locator,
+    this.parameters,
     this.allowedDuplicates = const [],
     this.additionalWatchers = const [],
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
-    this.scope,
     required super.child,
   });
 
@@ -103,15 +104,13 @@ class ProvideIt extends InheritedWidget {
   /// ```
   final List<Type>? allowedDuplicates;
 
-  /// Injects a [NamedParam] during creation.
-  /// - If not found, [ContextReaders.read] uses [Param.type].
-  /// - Only for named parameters, not positional.
+  /// Injects a [Param] during creation.
   ///
   /// Example with router path parameters:
   ///
   /// ```dart
   /// ProvideIt(
-  ///   namedLocator: (param) => myRouter.pathParameters[param.name],
+  ///   locator: (param) => myRouter.pathParameters[param.name],
   ///   child: MyApp(),
   /// );
   /// ```
@@ -124,7 +123,10 @@ class ProvideIt extends InheritedWidget {
   ///   final String myId; // auto-injected if pathParameters['myId'] exists.
   /// }
   /// ```
-  final NamedLocator? namedLocator;
+  final ParamLocator? locator;
+
+  /// The [Injector.parameters] to use in all injectors below this [ProvideIt].
+  final Map<Object, dynamic>? parameters;
 
   /// The [ReadIt] scope to use. Defaults to [ReadIt.instance].
   final ReadIt? scope;

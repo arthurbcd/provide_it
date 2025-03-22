@@ -15,7 +15,7 @@ void main() {
         context.provide(Counter.new);
       },
       // Auto-injects path parameters
-      namedLocator: (param) => pathParameters[param.name],
+      locator: (param) => pathParameters[param.name],
 
       // ProvideIt will take care of loading/error, but you can customize it:
       // - loadingBuilder: (context) => (...),
