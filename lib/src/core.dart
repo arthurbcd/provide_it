@@ -16,7 +16,7 @@ extension ContextProviders on BuildContext {
   void provide<T>(
     Function create, {
     void dispose(T value)?,
-    Map<Symbol, dynamic>? parameters,
+    Map<String, dynamic>? parameters,
     bool? lazy,
     Object? key,
   }) {

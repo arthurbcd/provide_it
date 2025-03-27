@@ -29,6 +29,8 @@ export 'src/watchers/listenable.dart';
 typedef ErrorBuilder = Widget Function(
     BuildContext context, Object error, StackTrace stackTrace);
 
+typedef _AsyncProvide = Future<void> Function(BuildContext context);
+
 class ProvideIt extends InheritedWidget {
   const ProvideIt({
     super.key,
@@ -41,15 +43,35 @@ class ProvideIt extends InheritedWidget {
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
     required super.child,
-  });
+  }) : assert(provide is! _AsyncProvide, _assert);
+
+  static const _assert = '''
+ProvideIt.provide must be void. 
+If you want need async, use it directly in a `provide`:
+
+ProvideIt(
+  provide: (context) {
+
+    // Use async operations here:
+    context.provide(() async {
+      final value = await MyAsyncValue.init();
+      return value;
+    });
+
+    // Or simply:
+    context.provide(MyAsyncValue.init);
+  },
+  child: MyApp(),
+);
+''';
 
   /// Default watchers to use when providing an observable value.
   ///
   /// To disable, set: `ProvideIt.defaultWatchers = []`.
-  static List<Watcher> defaultWatchers = [
+  static Set<Watcher> defaultWatchers = {
     ListenableWatcher(),
     ChangeNotifierWatcher(),
-  ];
+  };
 
   static Widget _loadingBuilder(BuildContext context) {
     return Center(child: CircularProgressIndicator.adaptive());
@@ -126,7 +148,7 @@ class ProvideIt extends InheritedWidget {
   final ParamLocator? locator;
 
   /// The [Injector.parameters] to use in all injectors below this [ProvideIt].
-  final Map<Object, dynamic>? parameters;
+  final Map<String, dynamic>? parameters;
 
   /// The [ReadIt] scope to use. Defaults to [ReadIt.instance].
   final ReadIt? scope;

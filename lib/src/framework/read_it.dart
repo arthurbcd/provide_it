@@ -11,6 +11,9 @@ sealed class ReadIt {
   static final ReadIt instance = ProvideItScope();
   static final I = instance;
 
+  /// Whether this is attached to a [ProvideIt] in the widget tree.
+  bool get mounted;
+
   /// Binds a [ProvideRef] without context.
   RefState<T, Ref<T>> bind<T>(ProvideRef<T> ref);
 
@@ -35,7 +38,7 @@ extension ReadItProviders on ReadIt {
   void provide<T>(
     Function create, {
     void dispose(T value)?,
-    Map<Symbol, dynamic>? parameters,
+    Map<String, dynamic>? parameters,
     bool? lazy,
     Object? key,
   }) {

@@ -1,15 +1,18 @@
 part of '../framework.dart';
 
 class ProvideItElement extends InheritedElement {
-  ProvideItElement(ProvideIt super.widget) {
-    // attach scope to the widget tree.
-    scope._element = this;
-    scope.watchers.addAll(widget.additionalWatchers);
-  }
+  ProvideItElement(super.widget);
 
   @override
   ProvideIt get widget => super.widget as ProvideIt;
-  late final scope = (widget.scope ?? ReadIt.instance) as ProvideItScope;
+
+  @protected
+  late final scope = () {
+    if (widget.scope case var scope?) return scope;
+    if (!ReadIt.instance.mounted) return ReadIt.instance;
+    return ReadIt.asNewInstance();
+  }() as ProvideItScope;
+
   bool _reassembled = false;
 
   @protected
@@ -19,6 +22,12 @@ class ProvideItElement extends InheritedElement {
       parameters: widget.parameters,
       locator: (p) => widget.locator?.call(p) ?? scope.readAsync(type: p.type),
     );
+  }
+
+  @override
+  void mount(Element? parent, Object? newSlot) {
+    scope._element = this;
+    super.mount(parent, newSlot);
   }
 
   @override
@@ -57,6 +66,12 @@ class ProvideItElement extends InheritedElement {
     });
 
     super.removeDependent(dependent);
+  }
+
+  @override
+  void unmount() {
+    super.unmount();
+    scope._element = null;
   }
 
   @override

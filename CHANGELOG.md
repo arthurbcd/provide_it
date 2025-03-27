@@ -1,11 +1,21 @@
 # Changelog
 
+## 0.15.0
+
+- `Injector.parameters` is now simply `Map<String, dynamic>`.
+- Added assertion to prevent async marked `ProvideIt.provide`.
+- Added `ReadIt.mounted`.
+- Fix `ProvideIt` to correctly disposes on test.
+- Fix duplicate scopes when using nested `ProvideIt`.
+- Updated `README.md`.
+- Added tests.
+
 ## 0.14.0
 
 - Now `Injector` is fully scoped.
 - Replaced `ProvideIt.namedLocator` for `ProvideIt.locator`.
 - Added `ProvideIt.parameters`.
-- Improved `Injector.parameters` to locate by `Symbol`/`String` (named), `int` (positional) or `Type` (both).
+- Improved `Injector.parameters` to locate by `String` (named), `int` (positional) or `Type` (either).
 - Improved `ReadIt.reload` assertions.
 - Updated `README.md`.
 

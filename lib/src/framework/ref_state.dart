@@ -34,7 +34,7 @@ abstract class RefState<T, R extends Ref<T>> {
   late final ProvideItScope _scope;
   late final ({Element? element, int index}) _bind;
   late final Watcher? _watcher = () {
-    if (!context.mounted) return null;
+    if (!mounted) return null;
 
     final value = ArgumentError.checkNotNull(this.value);
 
@@ -69,10 +69,10 @@ abstract class RefState<T, R extends Ref<T>> {
   /// The [context] this [Ref] is bound to.
   BuildContext get context {
     assert(
-      _scope.mounted,
-      'ProvideIt is not attached to the widget tree, `context` is not available.',
+      mounted,
+      '$ref not attached to the widget tree, `context` is not available.',
     );
-    return _bind.element ?? _scope._element!;
+    return _bind.element!;
   }
 
   /// The [Injector] of [Ref.create] in this scope.
@@ -108,7 +108,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void initState() {
-    if (_scope.mounted) context.dependOnRefState(this, 'bind');
+    if (mounted) context.dependOnRefState(this, 'bind');
 
     final states = _scope._treeCache[(type, key)] ??= {};
     states.add(this);
@@ -127,7 +127,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void notifyObservers() {
-    if (value != null && _scope.mounted) _watcher;
+    if (value != null && mounted) _watcher;
 
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
@@ -153,9 +153,11 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void dispose() {
-    _watcher?.cancel(value, notifyObservers);
-    if (ref.create != null) {
-      _watcher?.dispose(value);
+    if (value case var value?) {
+      _watcher?.cancel(value, notifyObservers);
+      if (ref.create != null) {
+        _watcher?.dispose(value);
+      }
     }
 
     if (_scope._treeCache[(type, key)] case var states?) {
@@ -244,7 +246,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @mustCallSuper
   T read() {
     if (value case var value?) {
-      if (_scope.mounted) _watcher;
+      if (mounted) _watcher;
       return value;
     }
 

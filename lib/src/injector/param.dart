@@ -26,9 +26,6 @@ sealed class Param {
   /// Whether the parameter is required.
   final bool isRequired;
 
-  /// The [NamedParam.symbol] or null.
-  Symbol? get symbol => null;
-
   /// The [NamedParam.name] or null.
   String? get name => null;
 
@@ -66,7 +63,6 @@ final class NamedParam extends Param {
   @override
   final String name;
 
-  @override
   Symbol get symbol => Symbol(name);
 
   @override

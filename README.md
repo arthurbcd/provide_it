@@ -2,7 +2,7 @@
 
 ProvideIt is a provider-like state binding, management, and injection using only context extensions.
 
-**This is a proof of concept and is not recommended for production use.**
+**`provide_it` is a proof of concept and is not recommended for production use.**
 
 ## Use
 
@@ -17,7 +17,7 @@ void main() {
         context.provide(Counter.new);
       },
       // Auto-injects path parameters
-      namedLocator: (param) => pathParameters[param.name], // e.g: go_router
+      locator: (param) => pathParameters[param.name], // e.g: go_router
 
       // ProvideIt will take care of loading/error, but you can customize it:
       // - loadingBuilder: (context) => (...),
@@ -83,29 +83,31 @@ class CounterProvider extends StatelessWidget {
 }
 ```
 
-Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound, no matter if `async` or not.
+Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound.
 
-For manually locating a parameter, use:
-- `Symbol`/`String` for named parameters
-- `int` for positional parameters
-- `Type` to locate by parameter type
+By default, its located by instance type: `read<Type>`.
 
-By default, if you don't specify a parameter, it will be located by `read<Type>`.
+You can manually specify one using `locator` parameter:
 
-This also essentially overrides a previous provided instance.
+```dart
+ProvideIt(
+  locator: (param) => pathParameters[param.name], // e.g: go_router
+)
+```
+
+This will automatically inject the parameters to the constructor.
+
+When needed, you can also specify the parameters using `parameters`:
 
 ```dart
  context.provide(Counter.new, parameters: {
-  #counterId: 'my-id',
-  'counterId': 'my-id',
-  String: 'my-id',
-  0: 'my-id', // if it's positional
+  'counterId': 'my-id', // by name
+  'String': 'my-id', // by type
+  '0': 'my-id', // by position
  });
 ```
 
-You can also customize injections, with:
-- `ProvideIt.locator`
-- `ProvideIt.parameters`
+> Both `locator` and `parameters` are optional and fallback to the default behavior when `null`.
 
 #### `context.value` & `context.create`
 
@@ -152,6 +154,8 @@ class CounterProvider extends StatelessWidget {
 }
 ```
 
+> Both `value` and `create` will watch the `context` and rebuilt on it. By default only watches `Listenable` objects. You can add a custom `Watcher` to watch other objects. See [Additional Watchers](#4-additional-watchers).
+
 ### 2. Accessing
 
 For accessing a state, several methods are available:
@@ -164,7 +168,7 @@ final count3 = context.select((CounterNotifier counter) => counter.count);
 
 You can contextlessly read using `ReadIt.intance`, `ReadIt.I` or simply `readIt`.
 
-Making them available outside of the widget-tree (ex: tests). Some context dependent methods such as `watch` and `select` are not available.
+They are available outside of the widget-tree (ex: tests). Some context dependent methods such as `watch` and `select` are not.
 
 Equivalent deprecations were included to help migrating from `provider`/`get_it` packages.
 
@@ -195,7 +199,7 @@ context.listenSelect((CounterNotifier it) => it.count, (prev, next) {
 
 ### 4. Additional Watchers
 
-You can implement a custom [Watcher] to tell the framework how to watch a state.
+You can implement a custom [Watcher] to tell the framework how to watch an observable.
 
 ```dart
 import 'package:bloc/bloc.dart';
@@ -234,4 +238,4 @@ And now you can `watch`, `select` and `listen` as usual:
 final state = context.watch<MyCubit>().state;
 ```
 
-**This is a proof of concept and is not recommended for production use.**
+**`provide_it` is a proof of concept and is not recommended for production use.**

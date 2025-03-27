@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
 
@@ -50,8 +49,16 @@ class Injector<T> {
   /// The locate args by [Param] while injecting.
   final ParamLocator? locator;
 
-  /// The named arguments by [Symbol] to use while injecting.
-  final Map<Object, dynamic>? parameters;
+  /// The arguments values to use while injecting.
+  /// Example:
+  /// ```dart
+  /// Injector(Text.new, parameters: {
+  ///   '0': 'Hello', // by index
+  ///   'style': TextStyle(), // by name
+  ///   '$TextAlign': TextAlign.center, // by type
+  /// });
+  /// ```
+  final Map<String, dynamic>? parameters;
 
   /// Whether to ignore private types.
   final bool ignorePrivateTypes;
@@ -118,27 +125,22 @@ class Injector<T> {
   /// Example:
   /// ```dart
   /// final userInjector = Injector(User.new, parameters: userJson);
-  /// final user = userInjector({#id: 1, #name: 'John'});
+  /// final user = userInjector({'id': 1, 'name': 'John'});
   /// ```
   ///
-  FutureOr<T> call([Map<Object, dynamic>? parameters]) {
+  FutureOr<T> call([Map<String, dynamic>? parameters]) {
     if (this.parameters != null || parameters != null) {
-      parameters = HashMap<Object, dynamic>(
-        equals: (a, b) => a is Type && b is String ? a.toString() == b : a == b,
-        hashCode: (key) => key is Type ? key.toString().hashCode : key.hashCode,
-        isValidKey: (k) => k is Type || k is String || k is Symbol || k is int,
-      )..addAll({...?this.parameters, ...?parameters});
+      parameters = {...?this.parameters, ...?parameters};
     }
 
     final futures = <Future>[];
 
     locate(Param param) {
-      var arg = parameters?[param.name ?? param.index] ??
-          parameters?[param.type] ??
-          parameters?[param.symbol];
-      Object? error;
+      Object? arg, error;
 
       try {
+        arg = parameters?['${param.name ?? param.index}'];
+        arg ??= parameters?[param.type];
         arg ??= locator?.call(param) ?? defaultLocator?.call(param);
       } catch (e) {
         error = e;
@@ -330,7 +332,7 @@ extension SplitBetweenExtension on String {
     int balance = 1;
     int currentIndex = startIndex + 1;
 
-    // Find matching closing delimiter
+    // find matching closing delimiter
     while (currentIndex < length && balance > 0) {
       if (this[currentIndex] == start) balance++;
       if (this[currentIndex] == end) balance--;
@@ -340,9 +342,9 @@ extension SplitBetweenExtension on String {
     if (balance != 0) throw ArgumentError('Unbalanced delimiters');
 
     return [
-      substring(0, startIndex), // Before
-      substring(startIndex + 1, currentIndex - 1), // Between
-      substring(currentIndex) // After
+      substring(0, startIndex), // before
+      substring(startIndex + 1, currentIndex - 1), // between
+      substring(currentIndex) // after
     ];
   }
 }

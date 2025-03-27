@@ -12,6 +12,8 @@ dependencies:
   provide_it: 
     path: ../
   performance: ^0.1.1
+  riverpod: ^2.6.1
+  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:

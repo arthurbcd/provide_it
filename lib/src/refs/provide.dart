@@ -42,10 +42,10 @@ class ProvideRef<T> extends AsyncRef<T> {
   /// Ex:
   /// ```dart
   /// context.provide(ProductNotifier.new, parameters: {
-  ///   #productId: '123',
+  ///   'productId': '123',
   /// });
   /// ```
-  final Map<Symbol, dynamic>? parameters;
+  final Map<String, dynamic>? parameters;
 
   /// How to create the value.
   ///

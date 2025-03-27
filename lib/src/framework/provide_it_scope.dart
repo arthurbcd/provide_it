@@ -50,10 +50,13 @@ class ProvideItScope with ReadItMixin {
 mixin ReadItMixin implements ReadIt {
   ProvideItElement? _element;
 
-  /// The watchers to use. [ProvideIt.additionalWatchers] will be added to this.
-  final watchers = ProvideIt.defaultWatchers;
+  /// The watchers to use. Including [ProvideIt.additionalWatchers].
+  Set<Watcher> get watchers => {
+        ...ProvideIt.defaultWatchers,
+        ...?_element?.widget.additionalWatchers,
+      };
 
-  /// Whether [ProvideIt] is attached to the widget tree.
+  @override
   bool get mounted => _element != null;
 
   // state binder tree by context and index.
@@ -119,7 +122,7 @@ mixin ReadItMixin implements ReadIt {
   }
 
   RefState? bindOf<T>({Object? key, BuildContext? context}) {
-    return _stateOf<T>(context as Element?, key: key);
+    return _stateOf<T>(context, key: key);
   }
 
   Future<void> reload<T>({Object? key}) async {
