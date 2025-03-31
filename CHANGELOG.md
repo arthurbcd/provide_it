@@ -5,6 +5,8 @@
 - Added `Injector.returnType`.
 - Injector now throws `InjectorError`.
 - Improved `context.provide` injection asserts.
+- Improved `provide` to ignore notifications before first read.
+- Updated example.
 
 ## 0.15.0
 

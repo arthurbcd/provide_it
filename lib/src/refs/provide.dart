@@ -92,7 +92,6 @@ class ProvideRef<T> extends AsyncRef<T> {
 }
 
 class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
-  var _created = false;
   Future<T>? _future;
   Stream<T>? _stream;
 
@@ -162,8 +161,6 @@ context.provide<${e.expectedT}>(...); // <- provide it
     } else {
       assert(false, 'Invalid type: ${value.runtimeType}.\n');
     }
-
-    _created = true;
   }
 
   @override
@@ -172,12 +169,6 @@ context.provide<${e.expectedT}>(...); // <- provide it
       ref.dispose?.call(snapshot.data as T);
     }
     super.dispose();
-  }
-
-  @override
-  T read() {
-    if (!_created) load();
-    return super.read();
   }
 
   @override

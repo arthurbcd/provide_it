@@ -1,11 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
 
+final messengerKey = GlobalKey<ScaffoldMessengerState>();
 final pathParameters = <String, String>{
   'counterId': 'my-counter-id',
 };
-
 void main() {
   runApp(
     ProvideIt(
@@ -22,45 +21,49 @@ void main() {
       // - loadingBuilder: (context) => (...),
       // - errorBuilder: (context, error, stackTrae) =>ce(...),
       child: MaterialApp(
-        home: Builder(
-          builder: (context) {
-            final counter = context.watch<Counter>();
+        scaffoldMessengerKey: messengerKey,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) {
+              context.listen<Counter>((counter) {
+                messengerKey.currentState?.hideCurrentSnackBar();
+                messengerKey.currentState?.showSnackBar(
+                  SnackBar(
+                    content: Text('Counter changed: ${counter.count}'),
+                  ),
+                );
+              });
 
-            context.listen<Counter>((counter) {
-              if (kDebugMode) {
-                print('Counter changed: ${counter.count}');
-              }
-            });
+              return Center(
+                child: ElevatedButton(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) {
+                        final counter = context.watch<Counter>();
 
-            return Center(
-              child: ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      final counter = context.watch<Counter>();
-
-                      return AlertDialog(
-                        title: Text('Works in a dialog!'),
-                        content: Text('${counter.count}'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => counter.increment(),
-                            child: const Text('Increment'),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Close'),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-                child: Text('${counter.count}'),
-              ),
-            );
-          },
+                        return AlertDialog(
+                          title: Text('Works in a dialog!'),
+                          content: Text('${counter.count}'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => counter.increment(),
+                              child: const Text('Increment'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text('Close'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                  child: Text('Open Counter dialog'),
+                ),
+              );
+            },
+          ),
         ),
       ),
     ),

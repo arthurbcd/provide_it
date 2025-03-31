@@ -36,7 +36,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   };
   StreamSubscription? _subscription;
   var _completer = Completer<T>();
-  bool _hasLoaded = false;
+  bool _didLoad = false;
 
   set snapshot(AsyncSnapshot<T> snapshot) {
     _snapshot = snapshot;
@@ -46,7 +46,9 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
           ? _completer.completeError(snapshot.error!, snapshot.stackTrace!)
           : _completer.complete(snapshot.data as T);
     }
-    notifyObservers();
+
+    // we prevent notifying when not ready
+    if (_didLoad) notifyObservers();
   }
 
   /// The current [future] state.
@@ -61,7 +63,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   /// The future when [read] is [isReady] to read it.
   /// Won't trigger lazy refs.
   FutureOr<void> isReady() {
-    if (!_hasLoaded) return null;
+    if (!_didLoad) return null;
     if (snapshot.hasData) return null;
 
     return _completer.future as Future<void>;
@@ -72,12 +74,12 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   /// Awaiting this will complete when [future] or [stream] is done.
   @protected
   Future<void> load() async {
-    _hasLoaded = true;
-    _completer = Completer<T>();
-
     final old = (future: future, stream: stream);
     create();
-    assert(future == null || stream == null, 'No async operations created');
+
+    assert(future == null || stream == null, 'Only one future/stream allowed');
+    _didLoad = true;
+    _completer = Completer<T>();
 
     if (future case var future? when old.future != future) {
       snapshot = _snapshot.inState(ConnectionState.waiting);
@@ -108,7 +110,7 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
 
   @protected
   FutureOr<T> readAsync() {
-    if (!_hasLoaded) load();
+    if (!_didLoad) load();
     if (snapshot.hasData) return snapshot.data as T;
 
     return _completer.future;
@@ -128,6 +130,12 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   }
 
   void create();
+
+  @override
+  T read() {
+    if (!_didLoad) load();
+    return super.read();
+  }
 
   @override
   T? get value {
