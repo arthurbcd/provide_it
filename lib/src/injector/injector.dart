@@ -71,6 +71,9 @@ class Injector<T> {
   /// The type of [create] function.
   late final rawType = _rawType();
 
+  /// The return type of [create] function.
+  late final returnType = _returnType();
+
   /// Whether the [create] function is async.
   bool get isAsync {
     return rawType.startsWith('Future') || rawType.startsWith('Stream');
@@ -86,6 +89,10 @@ class Injector<T> {
     const types = ['dynamic', 'Object'];
     if (!types.contains(T.type)) return T.toString();
 
+    return returnType;
+  }
+
+  String _returnType() {
     final typeLine = _createTexts.last.replaceFirst(' => ', '');
     final buffer = StringBuffer();
     var nestedLevel = 0;
@@ -135,26 +142,11 @@ class Injector<T> {
 
     final futures = <Future>[];
 
-    locate(Param param) {
-      Object? arg, error;
-
-      try {
-        arg = parameters?['${param.name ?? param.index}'];
-        arg ??= parameters?[param.type];
-        arg ??= locator?.call(param) ?? defaultLocator?.call(param);
-      } catch (e) {
-        error = e;
-      }
-
-      if (arg == null && !param.hasDefaultValue) {
-        throw ArgumentError(
-          '${param.type} not found. Expected $param. \n$error',
-          '${param.name ?? param.index}',
-        );
-      }
-
-      return arg;
-    }
+    locate(Param param) =>
+        parameters?['${param.name ?? param.index}'] ??
+        parameters?[param.type] ??
+        locator?.call(param) ??
+        defaultLocator?.call(param);
 
     final positionalArgs = [];
 
@@ -186,20 +178,17 @@ class Injector<T> {
       }
     }
 
-    if (futures.isNotEmpty) {
-      return futures.wait.then(
-        (_) => Function.apply(create, positionalArgs, namedArgs),
-      );
+    T create() {
+      try {
+        return Function.apply(this.create, positionalArgs, namedArgs);
+      } on TypeError catch (e) {
+        throw InjectorError.from(e, this);
+      }
     }
 
-    final value = Function.apply(create, positionalArgs, namedArgs);
+    if (futures.isEmpty) return create();
 
-    if (value is! T) {
-      final t = value.runtimeType;
-      throw ArgumentError.value(value, null, 'Injector got $t. Expected $T');
-    }
-
-    return value;
+    return Future.wait(futures).then((_) => create());
   }
 
   // lazy cache
@@ -314,6 +303,61 @@ class Injector<T> {
   String toString() {
     return 'Injector<$type>${rawType == type ? '' : ' Raw: $rawType'}';
   }
+}
+
+class InjectorError implements TypeError {
+  InjectorError._({
+    required this.resultT,
+    required this.expectedT,
+    required this.stackTrace,
+    required this.owner,
+    this.name,
+  });
+
+  factory InjectorError.from(TypeError e, Injector owner) {
+    final parts = '$e'.split("'").where((s) => !s.contains(' ')).take(3);
+    if (parts.length < 3) throw e;
+    final [resultT, expectedT, name] = parts.toList();
+
+    return InjectorError._(
+      resultT: resultT,
+      expectedT: expectedT,
+      stackTrace: e.stackTrace,
+      owner: owner,
+      name: name.isEmpty ? null : name.split('@').first,
+    );
+  }
+
+  /// The type of the result.
+  final String resultT;
+
+  /// The expected type.
+  final String expectedT;
+
+  /// The name of the parameter.
+  final String? name;
+
+  /// The [Injector] that caused the error.
+  final Injector owner;
+
+  @override
+  final StackTrace? stackTrace;
+
+  /// The error message.
+  String get message {
+    if (name == null) {
+      return '$resultT is! $expectedT. Expected: $expectedT';
+    }
+    final message = 'Expected: ${owner.returnType}($expectedT $name)';
+
+    if (resultT == 'Null') {
+      return '$expectedT not found. $message';
+    }
+    return '$resultT is! $expectedT. $message';
+  }
+
+  @override
+  String toString() => 'InjectorError: $message';
 }
 
 extension on String {

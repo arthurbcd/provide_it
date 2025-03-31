@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
 
@@ -26,12 +27,36 @@ void main() {
             final counter = context.watch<Counter>();
 
             context.listen<Counter>((counter) {
-              // do something
+              if (kDebugMode) {
+                print('Counter changed: ${counter.count}');
+              }
             });
 
             return Center(
               child: ElevatedButton(
-                onPressed: counter.increment,
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      final counter = context.watch<Counter>();
+
+                      return AlertDialog(
+                        title: Text('Works in a dialog!'),
+                        content: Text('${counter.count}'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => counter.increment(),
+                            child: const Text('Increment'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
                 child: Text('${counter.count}'),
               ),
             );

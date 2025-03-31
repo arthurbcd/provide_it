@@ -20,7 +20,9 @@ class ProvideItElement extends InheritedElement {
     return Injector<I>(
       create,
       parameters: widget.parameters,
-      locator: (p) => widget.locator?.call(p) ?? scope.readAsync(type: p.type),
+      locator: (p) {
+        return widget.locator?.call(p) ?? scope.readAsync<I?>(type: p.type);
+      },
     );
   }
 

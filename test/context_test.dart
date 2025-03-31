@@ -81,6 +81,51 @@ void main() {
       expect(find.byKey(Key('42')), findsOneWidget);
       expect(tappedValue, 42);
     });
+
+    testWidgets('provides multiples', (tester) async {
+      BuildContext? ctx;
+      await provideIt(tester, (context) {
+        ctx = context;
+        context.provide(() => 1);
+        context.provide(() => 'b');
+        context.provide((int a, String b) => (a, b));
+        return Container();
+      });
+
+      expect(ctx!.read<int>(), 1);
+      expect(ctx!.read<String>(), 'b');
+      expect(ctx!.read<(int, String)>(), (1, 'b'));
+    });
+
+    testWidgets('provides multiples un-ordered', (tester) async {
+      BuildContext? ctx;
+      await provideIt(tester, (context) {
+        ctx = context;
+        context.provide((int a, String b) => (a, b));
+        context.provide(() => 'b');
+        context.provide(() => 1);
+        return Container();
+      });
+
+      expect(ctx!.read<int>(), 1);
+      expect(ctx!.read<String>(), 'b');
+      expect(ctx!.read<(int, String)>(), (1, 'b'));
+    });
+
+    testWidgets('reading multiples un-ordered', (tester) async {
+      BuildContext? ctx;
+      await provideIt(tester, (context) {
+        ctx = context;
+        context.provide((int a, String b) => (a, b));
+        context.provide(() => 'b');
+        context.provide(() => 1);
+        return Container();
+      });
+
+      expect(ctx!.read<(int, String)>(), (1, 'b'));
+      expect(ctx!.read<String>(), 'b');
+      expect(ctx!.read<int>(), 1);
+    });
   });
 
   group('ContextStates', () {

@@ -276,6 +276,17 @@ void main() {
       expect(result, isA<DateTime>());
       expect(result, DateTime(2018, 12, 4, 18, 30, 60, 60, 60));
     });
+
+    test('throws InjectorError', () async {
+      final sizeA = await Injector(Size.new)({
+        '0': 100.0,
+        '1': 200.0,
+      });
+      expect(sizeA, isA<Size>());
+
+      final sizeB = Injector(Size.new);
+      expect(sizeB.call, throwsA(isA<InjectorError>()));
+    });
   });
 }
 

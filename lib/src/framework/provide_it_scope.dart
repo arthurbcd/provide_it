@@ -81,7 +81,7 @@ mixin ReadItMixin implements ReadIt {
 
   @protected
   Injector<I> injector<I>(Function create) {
-    return _element?.injector(create) ?? Injector<I>(create);
+    return _element?.injector<I>(create) ?? Injector<I>(create);
   }
 
   /// The future of [AsyncRefState.isReady].
@@ -157,7 +157,16 @@ mixin ReadItMixin implements ReadIt {
       if (value is Future) return value.then((it) => it as T);
       return value as T;
     }
+    if (null is T) return null as T;
+    assert(
+      false,
+      '''
+ReadError: '$type not found, key: $key.'.
 
+Did you provide the missing type?
+context.provide<$type>(...); // <- provide it
+''',
+    );
     throw StateError('AsyncRef<$type> not found, key: $key.');
   }
 

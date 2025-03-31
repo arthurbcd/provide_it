@@ -136,14 +136,31 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   void create() {
     _stream = _future = null;
 
-    final value = ref.value ?? injector!(ref.parameters);
+    Object? value;
+
+    try {
+      value = ref.value ?? injector!(ref.parameters);
+    } on InjectorError catch (e) {
+      assert(
+        false,
+        '''
+InjectorError: ${e.message}.
+
+Did you provide the missing type?
+context.provide<${e.expectedT}>(...); // <- provide it
+        ''',
+      );
+      rethrow;
+    }
 
     if (value is Future<T>) {
       _future = value;
     } else if (value is Stream<T>) {
       _stream = value;
-    } else {
+    } else if (value is T) {
       snapshot = AsyncSnapshot.withData(ConnectionState.none, value);
+    } else {
+      assert(false, 'Invalid type: ${value.runtimeType}.\n');
     }
 
     _created = true;

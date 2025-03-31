@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0
+
+- Added `Injector.returnType`.
+- Injector now throws `InjectorError`.
+- Improved `context.provide` injection asserts.
+
 ## 0.15.0
 
 - `Injector.parameters` is now simply `Map<String, dynamic>`.
