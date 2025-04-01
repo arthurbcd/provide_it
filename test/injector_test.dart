@@ -67,6 +67,7 @@ void main() {
 
     test('should parse SomeClass.withOptionalParams constructor correctly', () {
       final injector = Injector(SomeClass.withOptionalParams);
+      expect(injector.hasParams, true);
       expect(injector.params.length, 3);
       expect(injector.params.first.rawType, 'String');
       expect(injector.params[1].rawType, 'String?');
@@ -286,6 +287,36 @@ void main() {
 
       final sizeB = Injector(Size.new);
       expect(sizeB.call, throwsA(isA<InjectorError>()));
+    });
+
+    test('throws InjectorError', () async {
+      final sizeA = Injector<Size>((double a, double b) async => Size(a, b))({
+        '0': 100.0,
+        '1': 200.0,
+      });
+      expect(sizeA, isA<Future<Size>>());
+
+      final awaitA = await sizeA;
+      expect(awaitA, isA<Size>());
+    });
+
+    test('Injector.isAsync resolves correctly', () async {
+      final injector = Injector<Size>(() async => Size(0, 0));
+      expect(injector.isAsync, true);
+
+      final sizeA = injector();
+      expect(sizeA, isA<Future<Size>>());
+
+      final awaitA = await sizeA;
+      expect(awaitA, isA<Size>());
+    });
+
+    test('incorrect void async abstractions throws', () async {
+      final injector = Injector<Offset>(() async => Size(0, 0));
+
+      expect(injector.isAsync, true);
+      expect(injector.hasParams, false);
+      expect(injector.call, throwsA(isA<TypeError>()));
     });
   });
 }

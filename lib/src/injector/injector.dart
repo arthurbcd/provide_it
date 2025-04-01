@@ -76,7 +76,7 @@ class Injector<T> {
 
   /// Whether the [create] function is async.
   bool get isAsync {
-    return rawType.startsWith('Future') || rawType.startsWith('Stream');
+    return returnType.startsWith('Future') || rawType.startsWith('Stream');
   }
 
   String _type() {
@@ -136,6 +136,8 @@ class Injector<T> {
   /// ```
   ///
   FutureOr<T> call([Map<String, dynamic>? parameters]) {
+    if (!hasParams) return this.create();
+
     if (this.parameters != null || parameters != null) {
       parameters = {...?this.parameters, ...?parameters};
     }
@@ -178,7 +180,7 @@ class Injector<T> {
       }
     }
 
-    T create() {
+    FutureOr<T> create() {
       try {
         return Function.apply(this.create, positionalArgs, namedArgs);
       } on TypeError catch (e) {
@@ -192,7 +194,7 @@ class Injector<T> {
   }
 
   // lazy cache
-  late final _createText = create.toString();
+  late final _createText = create.toString().replaceFirst('Closure: ', '');
   late final _createTexts = _createText.splitBetween('(', ')')..removeAt(0);
   late final _input = _createTexts.first;
   late final _namedInput = _input.firstMatch(r'\{(.+)\}')?.group(1);
@@ -311,20 +313,20 @@ class InjectorError implements TypeError {
     required this.expectedT,
     required this.stackTrace,
     required this.owner,
-    this.name,
+    required this.name,
   });
 
   factory InjectorError.from(TypeError e, Injector owner) {
     final parts = '$e'.split("'").where((s) => !s.contains(' ')).take(3);
-    if (parts.length < 3) throw e;
+    if (parts.length < 3 || parts.last.isEmpty) throw e;
     final [resultT, expectedT, name] = parts.toList();
 
     return InjectorError._(
+      owner: owner,
       resultT: resultT,
       expectedT: expectedT,
       stackTrace: e.stackTrace,
-      owner: owner,
-      name: name.isEmpty ? null : name.split('@').first,
+      name: name.split('@').first,
     );
   }
 
@@ -335,7 +337,7 @@ class InjectorError implements TypeError {
   final String expectedT;
 
   /// The name of the parameter.
-  final String? name;
+  final String name;
 
   /// The [Injector] that caused the error.
   final Injector owner;
@@ -345,11 +347,7 @@ class InjectorError implements TypeError {
 
   /// The error message.
   String get message {
-    if (name == null) {
-      return '$resultT is! $expectedT. Expected: $expectedT';
-    }
     final message = 'Expected: ${owner.returnType}($expectedT $name)';
-
     if (resultT == 'Null') {
       return '$expectedT not found. $message';
     }

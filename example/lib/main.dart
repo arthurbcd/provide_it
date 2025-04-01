@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provide_it/provide_it.dart';
 
 final messengerKey = GlobalKey<ScaffoldMessengerState>();
-final pathParameters = <String, String>{
+final pathParameters = {
   'counterId': 'my-counter-id',
 };
 void main() {
@@ -10,7 +10,8 @@ void main() {
     ProvideIt(
       // Auto-injects dependencies
       provide: (context) {
-        context.provide(CounterService.init); // <- async
+        context
+            .provide<CounterService>(CounterNotifierService.init); // <- async
         context.provide(CounterRepository.new);
         context.provide(Counter.new);
       },
@@ -70,14 +71,16 @@ void main() {
   );
 }
 
-class CounterService {
-  CounterService();
+class CounterNotifierService extends CounterService {
+  CounterNotifierService();
 
-  static Future<CounterService> init() async {
+  static Future<CounterNotifierService> init() async {
     await Future.delayed(Duration(seconds: 3));
-    return CounterService();
+    return CounterNotifierService();
   }
 }
+
+class CounterService {}
 
 class CounterRepository {
   CounterRepository(this.service);

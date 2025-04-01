@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.1
+
+- Fixed `Injector.isAsync` to resolve abstractions correctly.
+- Changed `InjectorError` to throw exclusively on `Param` injection errors.
+- Fixed missing `listen<T>` type.
+- Updated example.
+- Added tests.
+
 ## 0.16.0
 
 - Added `Injector.returnType`.

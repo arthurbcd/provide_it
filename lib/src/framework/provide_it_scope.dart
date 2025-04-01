@@ -31,7 +31,7 @@ class ProvideItScope with ReadItMixin {
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
     final state = _stateOf<T>(context, key: key);
 
-    state?.listen(context, listener);
+    state?.listen<T>(context, listener);
   }
 
   @protected
