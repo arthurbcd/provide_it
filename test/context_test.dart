@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provide_it/provide_it.dart';
 
 import 'injector_test.dart';
-import 'read_it_test.dart';
 
 Future<void> provideIt(
   WidgetTester tester,
@@ -429,4 +428,21 @@ void main() {
     expect(contexts[0]!.mounted, false);
     expect(contexts[1]!.mounted, true);
   });
+}
+
+class Counter extends ChangeNotifier {
+  Counter([this._value = 42]);
+  int _value;
+  int get value => _value;
+  set value(int value) {
+    _value = value;
+    notifyListeners();
+  }
+
+  int _value2 = 0;
+  int get value2 => _value2;
+  set value2(int value) {
+    _value2 = value;
+    notifyListeners();
+  }
 }

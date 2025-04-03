@@ -150,7 +150,9 @@ ProvideIt(
   /// The [Injector.parameters] to use in all injectors below this [ProvideIt].
   final Map<String, dynamic>? parameters;
 
-  /// The [ReadIt] scope to use. Defaults to [ReadIt.instance].
+  /// The [ReadIt] scope to use. When `null`, defaults to:
+  /// - [ReadIt.instance] when root.
+  /// - [ReadIt.asNewInstance] when not root.
   final ReadIt? scope;
 
   @override

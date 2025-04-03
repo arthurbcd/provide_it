@@ -2,7 +2,7 @@ part of '../framework.dart';
 
 typedef _State<T> = RefState<T, Ref<T>>;
 
-extension on ReadItMixin {
+extension on ProvideItScope {
   int _initTreeIndex(BuildContext? context) {
     if (context == null) return 0;
 
@@ -14,14 +14,14 @@ extension on ReadItMixin {
     return 0;
   }
 
-  _State<T> _state<T>(Element? context, Ref<T> ref) {
+  _State<T> _state<T>(Element context, Ref<T> ref) {
     final branch = _tree[context] ??= TreeMap<int, _State>();
     final index = _treeIndex[context] ??= _initTreeIndex(context);
     _treeIndex[context] = index + 1;
 
     _State<T> create() => branch[index] = ref.createState()
       .._bind = (element: context, index: index)
-      .._scope = this as ProvideItScope
+      .._scope = this
       .._ref = ref
       ..initState();
 

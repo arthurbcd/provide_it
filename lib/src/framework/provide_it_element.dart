@@ -7,11 +7,10 @@ class ProvideItElement extends InheritedElement {
   ProvideIt get widget => super.widget as ProvideIt;
 
   @protected
-  late final scope = () {
-    if (widget.scope case var scope?) return scope;
-    if (!ReadIt.instance.mounted) return ReadIt.instance;
-    return ReadIt.asNewInstance();
-  }() as ProvideItScope;
+  late final scope = switch (widget.scope) {
+    null => !readIt.mounted ? ReadIt.instance : ReadIt.asNewInstance(),
+    final scope => scope,
+  } as ProvideItScope;
 
   bool _reassembled = false;
 
@@ -28,6 +27,17 @@ class ProvideItElement extends InheritedElement {
 
   @override
   void mount(Element? parent, Object? newSlot) {
+    if (scope._element != null) {
+      throw StateError(
+        'Scope already attached to: ${scope._element}. Cannot attach to $this.',
+      );
+    }
+    if (scope == ReadIt.instance) {
+      assert(
+        parent == null || Navigator.maybeOf(parent) == null,
+        'The root `ProvideIt` widget must be above your app. ',
+      );
+    }
     scope._element = this;
     super.mount(parent, newSlot);
   }
@@ -58,7 +68,7 @@ class ProvideItElement extends InheritedElement {
           ?.forEach((s) => s.removeDependent(dependent));
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
       // we need to check if the dependent is still mounted
       // because it could have been displaced from the tree.
       // if it's still mounted, we reactivate it.
@@ -73,7 +83,12 @@ class ProvideItElement extends InheritedElement {
   @override
   void unmount() {
     super.unmount();
-    scope._element = null;
+
+    // we give a chance for states to auto-dispose.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      assert(scope._tree.isEmpty, '${scope._tree.length} states not disposed.');
+      scope._element = null;
+    });
   }
 
   @override
@@ -98,10 +113,10 @@ extension on BuildContext {
   ///
   /// When unmounted, [RefState.removeDependent] will be called for each
   /// state dependency that this `context` depends on.
-  void dependOnRefState(RefState state, String method, [String? useInstead]) {
+  void dependOnRefState(RefState state, String method, [String? instead]) {
     assert(
-      this is Element && debugDoingBuild,
-      '$method() should be called within the build(). ${useInstead ?? ''}',
+      debugDoingBuild,
+      '$method() should be called within the build(). ${instead ?? ''}',
     );
     final ProvideItScope scope = state._scope;
 

@@ -32,7 +32,7 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 abstract class RefState<T, R extends Ref<T>> {
   // binding
   late final ProvideItScope _scope;
-  late final ({Element? element, int index}) _bind;
+  late final ({Element element, int index}) _bind;
   late final Watcher? _watcher = () {
     if (!mounted) return null;
 
@@ -64,16 +64,10 @@ abstract class RefState<T, R extends Ref<T>> {
   Object? get key => ref.key == Ref.id ? ref : ref.key;
 
   /// Whether [RefState] is bound to an [Element].
-  bool get mounted => _bind.element != null;
+  bool get mounted => _bind.element.mounted;
 
   /// The [context] this [Ref] is bound to.
-  BuildContext get context {
-    assert(
-      mounted,
-      '$ref not attached to the widget tree, `context` is not available.',
-    );
-    return _bind.element!;
-  }
+  BuildContext get context => _bind.element;
 
   /// The [Injector] of [Ref.create] in this scope.
   Injector<T>? get injector =>
@@ -108,7 +102,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void initState() {
-    if (mounted) context.dependOnRefState(this, 'bind');
+    context.dependOnRefState(this, 'bind');
 
     final states = _scope._treeCache[(type, key)] ??= {};
     states.add(this);
@@ -127,7 +121,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void notifyObservers() {
-    if (value != null && mounted) _watcher;
+    if (value != null) _watcher;
 
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
@@ -170,7 +164,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @mustCallSuper
   void reassemble() {
     // only hot restart can reassemble [ReadIt] global bindings.
-    if (mounted) _removeDirty();
+    _removeDirty();
   }
 
   @protected
@@ -246,7 +240,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @mustCallSuper
   T read() {
     if (value case var value?) {
-      if (mounted) _watcher;
+      _watcher;
       return value;
     }
 

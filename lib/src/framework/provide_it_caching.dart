@@ -1,6 +1,6 @@
 part of '../framework.dart';
 
-extension on ReadItMixin {
+extension on ProvideItScope {
   int _initCacheIndex(BuildContext context) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the indexes for the next build.
@@ -10,14 +10,14 @@ extension on ReadItMixin {
     return 0;
   }
 
-  _State? _stateOf<T>(BuildContext? context, {Object? key}) {
+  _State? _stateOf<T>(BuildContext context, {Object? key}) {
     final state = getRefStateOfType<T>(key: key);
 
     if (key case Ref<T> ref) {
       final bind = (element: context, index: _treeIndex[context] ?? 0);
       // get-or-bind
       if (state == null || state._bind == bind) {
-        return _state<T>(context as Element?, ref);
+        return _state<T>(context as Element, ref);
       }
     }
 

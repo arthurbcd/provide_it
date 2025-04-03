@@ -5,10 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../provide_it.dart';
 import 'framework.dart';
 
-@Deprecated('Use `readIt` instead.')
-final getIt = readIt;
-
-/// A contextless version of [ContextReaders].
+/// Contextless [ContextReaders]. Reads the root [ProvideItScope].
 final readIt = ReadIt.instance;
 
 extension ContextProviders on BuildContext {
@@ -218,13 +215,13 @@ extension RefBinder on BuildContext {
   /// Shortcut to bind a [Ref] to this [BuildContext].
   @protected
   RefState<T, Ref<T>> bind<T>(Ref<T> ref) {
-    return scope.bind(ref, context: this);
+    return scope.bind(this, ref);
   }
 
   /// Shortcut to get a [Ref] of this [BuildContext].
   @protected
   RefState? bindOf<T>({Object? key}) {
-    return scope.bindOf<T>(context: this, key: key);
+    return scope.bindOf<T>(this, key: key);
   }
 }
 

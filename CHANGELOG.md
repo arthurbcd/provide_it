@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.17.0
+
+- Removed `ReadItMixin`. Use `ReadIt` only.
+- Removed `ReadIt.bind`. Use `Ref.bind` only.
+- Removed `ReadIt.I` & `get_it` deprecations.
+- Improved `RefWidget.dispose` to callback an inactive context instead of an unmounted.
+- Improved setup errors/asserts.
+- Added tests.
+
 ## 0.16.1
 
 - Fixed `Injector.isAsync` to resolve abstractions correctly.

@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provide_it/provide_it.dart';
 
@@ -66,6 +66,7 @@ void main() {
 
     testWidgets('should dispose value when widget is disposed', (tester) async {
       bool disposeCalled = false;
+      Widget? widget;
       final key = GlobalKey();
 
       await tester.provideIt(
@@ -74,6 +75,7 @@ void main() {
           lazy: false,
           create: (context) => 42,
           dispose: (context, value) {
+            widget = context.widget;
             disposeCalled = true;
           },
           builder: (context, child) => Container(),
@@ -87,9 +89,13 @@ void main() {
 
       expect(key.currentContext?.mounted, isNull);
       expect(disposeCalled, isTrue);
+
+      // accessing the widget in dispose is only available in RefWidget.dispose.
+      expect(widget, isA<Provider>());
     });
 
-    testWidgets('shouldnt dispose when lazy value is not init', (tester) async {
+    testWidgets('shouldn\'t dispose when lazy value is not init',
+        (tester) async {
       bool disposeCalled = false;
       final key = GlobalKey();
 

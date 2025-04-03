@@ -10,8 +10,7 @@ void main() {
     ProvideIt(
       // Auto-injects dependencies
       provide: (context) {
-        context
-            .provide<CounterService>(CounterNotifierService.init); // <- async
+        context.provide<CounterService>(CounterAsyncService.init); // async
         context.provide(CounterRepository.new);
         context.provide(Counter.new);
       },
@@ -71,12 +70,12 @@ void main() {
   );
 }
 
-class CounterNotifierService extends CounterService {
-  CounterNotifierService();
+class CounterAsyncService extends CounterService {
+  CounterAsyncService();
 
-  static Future<CounterNotifierService> init() async {
+  static Future<CounterAsyncService> init() async {
     await Future.delayed(Duration(seconds: 3));
-    return CounterNotifierService();
+    return CounterAsyncService();
   }
 }
 

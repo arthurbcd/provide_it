@@ -15,8 +15,8 @@ class Provider<T> extends RefWidget<T> {
   const Provider({
     super.key,
     this.create,
-    this.dispose,
     this.lazy,
+    super.dispose,
     super.builder,
     super.child,
   })  : value = null,
@@ -28,9 +28,6 @@ class Provider<T> extends RefWidget<T> {
   @override
   final Create<T>? create;
 
-  /// How to dispose the value.
-  final Dispose<T>? dispose;
-
   @Deprecated('Use `context.provideValue` instead.')
   const Provider.value({
     super.key,
@@ -39,8 +36,7 @@ class Provider<T> extends RefWidget<T> {
     super.builder,
     super.child,
   })  : create = null,
-        lazy = null,
-        dispose = null;
+        lazy = null;
 
   /// An already created [value].
   final T? value;
@@ -87,14 +83,6 @@ class ProviderState<T> extends RefState<T, Provider<T>> {
     }
 
     return didChange;
-  }
-
-  @override
-  void dispose() {
-    if (value != null) {
-      ref.dispose?.call(context, value as T);
-    }
-    super.dispose();
   }
 
   @override

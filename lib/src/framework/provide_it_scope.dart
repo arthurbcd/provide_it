@@ -1,11 +1,20 @@
 part of '../framework.dart';
 
-class ProvideItScope with ReadItMixin {
+class ProvideItScope implements ReadIt {
   static ProvideItScope of(BuildContext context) {
     final it = context.getElementForInheritedWidgetOfExactType<ProvideIt>();
-    assert(it != null, 'You must set `ProvideIt` in your app.');
+    assert(it != null, 'You must set a `ProvideIt` above your app.');
     return (it as ProvideItElement).scope;
   }
+
+  /// The attached [ProvideIt] element.
+  ProvideItElement? _element;
+
+  /// The watchers to use. Including [ProvideIt.additionalWatchers].
+  Set<Watcher> get watchers => {
+        ...ProvideIt.defaultWatchers,
+        ...?_element?.widget.additionalWatchers,
+      };
 
   @protected
   T watch<T>(BuildContext context, {Object? key}) {
@@ -45,30 +54,20 @@ class ProvideItScope with ReadItMixin {
 
     state?.listenSelect<T, R>(context, selector, listener);
   }
-}
-
-mixin ReadItMixin implements ReadIt {
-  ProvideItElement? _element;
-
-  /// The watchers to use. Including [ProvideIt.additionalWatchers].
-  Set<Watcher> get watchers => {
-        ...ProvideIt.defaultWatchers,
-        ...?_element?.widget.additionalWatchers,
-      };
 
   @override
   bool get mounted => _element != null;
 
   // state binder tree by context and index.
-  final _tree = TreeMap<Element?, TreeMap<int, RefState>>();
-  final _treeIndex = <Element?, int>{};
-  final _treeCache = HashMap<(String, Object?), Set<RefState>>(
+  late final _tree = TreeMap<Element?, TreeMap<int, RefState>>()._assert(this);
+  late final _treeIndex = <Element?, int>{}._assert(this);
+  late final _treeCache = HashMap<(String, Object?), Set<RefState>>(
     equals: (a, b) => a.$1 == b.$1 && Ref.equals(a.$2, b.$2),
-  );
+  ).._assert(this);
 
   // state dependencies by the dependent `context`.
-  final _dependencies = <Element, Set<RefState>>{};
-  final _dependencyIndex = <Element, int>{};
+  late final _dependencies = <Element, Set<RefState>>{}._assert(this);
+  late final _dependencyIndex = <Element, int>{}._assert(this);
 
   /// Iterates over all [Ref] states. Depth-first.
   Iterable<RefState> get states sync* {
@@ -111,17 +110,13 @@ mixin ReadItMixin implements ReadIt {
     return null;
   }
 
-  @override
-  RefState<T, Ref<T>> bind<T>(Ref<T> ref, {BuildContext? context}) {
-    assert(
-      context != null || !mounted,
-      'ReadIt cannot bind after ProvideIt is attached to the widget tree.',
-    );
-
-    return _state<T>(context as Element?, ref);
+  @protected
+  RefState<T, Ref<T>> bind<T>(BuildContext context, Ref<T> ref) {
+    return _state<T>(context as Element, ref);
   }
 
-  RefState? bindOf<T>({Object? key, BuildContext? context}) {
+  @protected
+  RefState? bindOf<T>(BuildContext context, {Object? key}) {
     return _stateOf<T>(context, key: key);
   }
 
@@ -183,4 +178,52 @@ context.provide<$type>(...); // <- provide it
 
   @override
   String toString() => _tree.toString();
+}
+
+extension<K, V> on Map<K, V> {
+  /// Creates a new [Map] that asserts the given function when mutating.
+  ///
+  /// This is useful for debugging and testing purposes.
+  Map<K, V> _assert(ProvideItScope scope) {
+    return AssertMap(this, () {
+      final to = scope == readIt ? 'to this scope.' : 'above your app.';
+      assert(scope.mounted, 'Scope not attached. You must set a ProvideIt $to');
+    });
+  }
+}
+
+class AssertMap<K, V> extends MapBase<K, V> {
+  AssertMap(this._map, this._assert);
+  final Map<K, V> _map;
+  final VoidCallback _assert;
+
+  @override
+  void operator []=(key, value) {
+    _assert();
+    _map[key] = value;
+  }
+
+  @override
+  void clear() {
+    _assert();
+    _map.clear();
+  }
+
+  @override
+  Iterable<K> get keys {
+    _assert();
+    return _map.keys;
+  }
+
+  @override
+  V? remove(Object? key) {
+    _assert();
+    return _map.remove(key);
+  }
+
+  @override
+  V? operator [](Object? key) {
+    _assert();
+    return _map[key];
+  }
 }
