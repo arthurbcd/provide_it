@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.1
+
+- `AsyncRef` now resolves early stream/future creation errors.
+
 ## 0.17.0
 
 - Removed `ReadItMixin`. Use `ReadIt` only.

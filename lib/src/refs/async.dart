@@ -75,7 +75,14 @@ abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
   @protected
   Future<void> load() async {
     final old = (future: future, stream: stream);
-    create();
+
+    try {
+      create();
+    } on AssertionError catch (_) {
+      rethrow;
+    } catch (e, s) {
+      snapshot = AsyncSnapshot.withError(ConnectionState.done, e, s);
+    }
 
     assert(future == null || stream == null, 'Only one future/stream allowed');
     _didLoad = true;
