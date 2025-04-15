@@ -76,8 +76,13 @@ class Injector<T> {
 
   /// Whether the [create] function is async.
   bool get isAsync {
-    return returnType.startsWith('Future') || rawType.startsWith('Stream');
+    return returnType.startsWith(_future) || rawType.startsWith(_stream);
   }
+
+  // handling minified types
+  static final _future = '$Future'.split('<').first;
+  static final _stream = '$Stream'.split('<').first;
+  static final _generics = ['$dynamic', '$Object'];
 
   String _type() {
     if (!isAsync) return rawType.replaceAll('?', '');
@@ -86,8 +91,7 @@ class Injector<T> {
   }
 
   String _rawType() {
-    const types = ['dynamic', 'Object'];
-    if (!types.contains(T.type)) return T.toString();
+    if (!_generics.contains(T.type)) return T.toString();
 
     return returnType;
   }

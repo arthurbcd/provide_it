@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.1
+
+- Fixed error when reading minified types in web release mode.
+
 ## 0.18.0
 
 - `RefState` is now simply `Bind`.
