@@ -14,7 +14,7 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 /// This class is intended to be extended by other classes that manage the state
 /// of a [Ref] of type [T] and a reference type [R] that extends [Ref<T>].
 ///
-/// The [RefState] class provides a base for managing the lifecycle and state
+/// The [Bind] class provides a base for managing the lifecycle and state
 /// transitions of a reference, allowing for more complex state management
 /// patterns to be implemented.
 ///
@@ -29,12 +29,13 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 /// - [ProvideRef]
 /// - [ValueRef]
 ///
-abstract class RefState<T, R extends Ref<T>> {
+abstract class Bind<T, R extends Ref<T>> {
   // binding
   late final ProvideItScope _scope;
-  late final ({Element element, int index}) _bind;
+  late final Element _element;
+  late final int index;
   late final Watcher? _watcher = () {
-    if (!mounted) return null;
+    if (!_element.mounted) return null;
 
     final value = ArgumentError.checkNotNull(this.value);
 
@@ -57,23 +58,20 @@ abstract class RefState<T, R extends Ref<T>> {
   final _listeners = <Element, Listeners>{};
   final _listenSelectors = <Element, ListenSelectors>{};
 
-  /// The [Ref] that this state is associated with.
-  R get ref => _ref;
-
   /// The [Ref] key used to bind this state.
   Object? get key => ref.key == Ref.id ? ref : ref.key;
 
-  /// Whether [RefState] is bound to an [Element].
-  bool get mounted => _bind.element.mounted;
+  /// The [Ref] that this state is associated with.
+  R get ref => _ref;
 
   /// The [context] this [Ref] is bound to.
-  BuildContext get context => _bind.element;
+  BuildContext get context => _element;
 
   /// The [Injector] of [Ref.create] in this scope.
   Injector<T>? get injector =>
-      ref.create != null ? _scope.injector(ref.create!) : null;
+      ref.create != null ? _scope.injector<T>(ref.create!) : null;
 
-  /// The type used to bind this state.
+  /// The type used to bind.
   late final type = () {
     final type = injector?.type ?? T.type;
     assert(
@@ -83,10 +81,10 @@ abstract class RefState<T, R extends Ref<T>> {
     return type;
   }();
 
-  /// How a [RefState] should be displayed in debug output.
+  /// How a [Bind] should be displayed in debug output.
   String get debugLabel {
     final parts = runtimeType.toString().split('<');
-    final ref = parts.first.replaceAll('RefState', '').toLowerCase();
+    final ref = parts.first.replaceAll('Bind', '').toLowerCase();
 
     return 'context.$ref<$type>';
   }
@@ -101,11 +99,11 @@ abstract class RefState<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void initState() {
-    context.dependOnRefState(this, 'bind');
+  void initBind() {
+    context.dependOnBind(this, 'bind');
 
-    final states = _scope._treeCache[(type, key)] ??= {};
-    states.add(this);
+    final binds = _scope._treeCache[(type, key)] ??= {};
+    binds.add(this);
   }
 
   @protected
@@ -163,14 +161,13 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void reassemble() {
-    // only hot restart can reassemble [ReadIt] global bindings.
     _removeDirty();
   }
 
   @protected
   @mustCallSuper
   void listen<L>(BuildContext context, Function listener) {
-    context.dependOnRefState(this, 'listen');
+    context.dependOnBind(this, 'listen');
 
     tryListen(value) {
       if (value is! L) return;
@@ -190,7 +187,7 @@ abstract class RefState<T, R extends Ref<T>> {
     Function selector,
     Function listener,
   ) {
-    context.dependOnRefState(this, 'listenSelect');
+    context.dependOnBind(this, 'listenSelect');
 
     trySelect(value) {
       if (value is! L) return null;
@@ -212,7 +209,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   S select<L, S>(BuildContext context, Function selector) {
-    context.dependOnRefState(this, 'select');
+    context.dependOnBind(this, 'select');
 
     trySelect(value) {
       if (value is! L) return null;
@@ -231,7 +228,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void watch(BuildContext context) {
-    context.dependOnRefState(this, 'watch', 'Use `read` instead.');
+    context.dependOnBind(this, 'watch', 'Use `read` instead.');
 
     _watchers.add(context as Element);
   }
@@ -239,7 +236,7 @@ abstract class RefState<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   T read() {
-    if (value case var value?) {
+    if (value case final value?) {
       _watcher;
       return value;
     }

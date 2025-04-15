@@ -20,19 +20,19 @@ class StreamRef<T> extends AsyncRef<T> {
   final Stream<T>? value;
 
   @override
-  AsyncRefState<T, StreamRef<T>> createState() => StreamRefState<T>();
+  AsyncBind<T, StreamRef<T>> createBind() => StreamBind<T>();
 }
 
-class StreamRefState<T> extends AsyncRefState<T, StreamRef<T>> {
+class StreamBind<T> extends AsyncBind<T, StreamRef<T>> {
   Stream<T>? _stream;
 
   @override
   Stream<T>? get stream => _stream;
 
   @override
-  void initState() {
+  void initBind() {
     load();
-    super.initState();
+    super.initBind();
   }
 
   @override

@@ -6,7 +6,7 @@ import '../injector/injector.dart';
 import 'async.dart';
 
 /// Determines the fallback behavior when `lazy` is `null`.
-typedef LazyPredicate<T> = bool Function(ProvideRefState<T> state);
+typedef LazyPredicate<T> = bool Function(ProvideBind<T> state);
 
 class ProvideRef<T> extends AsyncRef<T> {
   /// A reference to a provider with various configuration options.
@@ -88,10 +88,10 @@ class ProvideRef<T> extends AsyncRef<T> {
   final bool Function(T prev, T next)? updateShouldNotify;
 
   @override
-  AsyncRefState<T, ProvideRef<T>> createState() => ProvideRefState<T>();
+  AsyncBind<T, ProvideRef<T>> createBind() => ProvideBind<T>();
 }
 
-class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
+class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
   Future<T>? _future;
   Stream<T>? _stream;
 
@@ -111,9 +111,9 @@ class ProvideRefState<T> extends AsyncRefState<T, ProvideRef<T>> {
   Stream<T>? get stream => _stream;
 
   @override
-  void initState() {
+  void initBind() {
     if (!lazy) load();
-    super.initState();
+    super.initBind();
   }
 
   @override

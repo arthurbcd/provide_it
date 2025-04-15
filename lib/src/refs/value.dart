@@ -37,15 +37,15 @@ class ValueRef<T> extends Ref<T> {
   ///
   /// - [ValueRef] must be bound to a [BuildContext]. Bind it with [watch].
   void write(BuildContext context, T value) {
-    final state = context.getRefStateOfType<T>(key: this) as ValueRefState<T>;
-    state.write(value);
+    final bind = context.getBindOfType<T>(key: this) as ValueBind<T>;
+    bind.write(value);
   }
 
   @override
-  RefState<T, ValueRef<T>> createState() => ValueRefState<T>();
+  Bind<T, ValueRef<T>> createBind() => ValueBind<T>();
 }
 
-class ValueRefState<T> extends RefState<T, ValueRef<T>> {
+class ValueBind<T> extends Bind<T, ValueRef<T>> {
   Timer? _debounceTimer, _throttleTimer;
 
   @override
@@ -94,9 +94,9 @@ class ValueRefState<T> extends RefState<T, ValueRef<T>> {
 /// count.value = 1;
 /// ```
 extension ValueRecordExtension<T> on (T, void Function(T)) {
-  /// The [ValueRefState.read].
+  /// The [ValueBind.read].
   T get value => $1;
 
-  /// The [ValueRefState.write].
+  /// The [ValueBind.write].
   set value(T value) => $2(value);
 }

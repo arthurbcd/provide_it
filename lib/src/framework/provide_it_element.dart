@@ -44,8 +44,8 @@ class ProvideItElement extends InheritedElement {
 
   @override
   void reassemble() {
-    for (final state in scope.states) {
-      state.reassemble();
+    for (final bind in scope.binds) {
+      bind.reassemble();
     }
     super.reassemble();
     _reassembled = true;
@@ -54,12 +54,12 @@ class ProvideItElement extends InheritedElement {
 
   @override
   void removeDependent(Element dependent) {
-    scope._tree[dependent]?.values.forEach((state) => state.deactivate());
+    scope._tree[dependent]?.values.forEach((bind) => bind.deactivate());
 
     void dispose() {
       // binds
       scope._treeIndex.remove(dependent);
-      scope._tree.remove(dependent)?.values.forEach((state) => state.dispose());
+      scope._tree.remove(dependent)?.values.forEach((bind) => bind.dispose());
 
       // dependencies
       scope._dependencyIndex.remove(dependent);
@@ -73,7 +73,7 @@ class ProvideItElement extends InheritedElement {
       // because it could have been displaced from the tree.
       // if it's still mounted, we reactivate it.
       dependent.mounted
-          ? scope._tree[dependent]?.values.forEach((state) => state.activate())
+          ? scope._tree[dependent]?.values.forEach((bind) => bind.activate())
           : dispose();
     });
 
@@ -84,19 +84,19 @@ class ProvideItElement extends InheritedElement {
   void unmount() {
     super.unmount();
 
-    // we give a chance for states to auto-dispose.
+    // we give a chance for binds to auto-dispose.
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      assert(scope._tree.isEmpty, '${scope._tree.length} states not disposed.');
+      assert(scope._tree.isEmpty, '${scope._tree.length} binds not disposed.');
       scope._element = null;
     });
   }
 
   @override
   Widget build() {
-    // we bind the provided states to the tree.
+    // we bind the providers to the tree.
     widget.provide?.call(this);
 
-    // we use [FutureRef] a.k.a `context.future` to wait for all async states.
+    // we use [FutureRef] a.k.a `context.future` to wait for all async binds.
     final snapshot = future(allReady);
 
     // if `allReady` is void (ready), we immediately return `super.build`.
@@ -109,22 +109,22 @@ class ProvideItElement extends InheritedElement {
 }
 
 extension on BuildContext {
-  /// Stablishes a dependency between this `context` and [RefState].
+  /// Stablishes a dependency between this `context` and [bind].
   ///
-  /// When unmounted, [RefState.removeDependent] will be called for each
-  /// state dependency that this `context` depends on.
-  void dependOnRefState(RefState state, String method, [String? instead]) {
+  /// When disabled, [Bind.removeDependent] will be called for each
+  /// bind dependency that this `context` depends on.
+  void dependOnBind(Bind bind, String method, [String? instead]) {
     assert(
       debugDoingBuild,
       '$method() should be called within the build(). ${instead ?? ''}',
     );
-    final ProvideItScope scope = state._scope;
+    final ProvideItScope scope = bind._scope;
 
-    // we depend so we can get notified by [removeDependent].
+    // we depend so we can get notified by [Element.removeDependent].
     dependOnInheritedElement(scope._element!);
 
-    // we register the dependent so we can remove it when unmounted.
+    // we register it to notify the depending binds [Bind.removeDependent].
     final dependencies = scope._dependencies[this as Element] ??= {};
-    dependencies.add(state);
+    dependencies.add(bind);
   }
 }

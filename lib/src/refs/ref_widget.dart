@@ -21,7 +21,7 @@ abstract class RefWidget<T> extends Widget implements Ref<T> {
 
 class RefElement<T> extends ComponentElement {
   RefElement(super.widget);
-  RefState<T, Ref<T>>? _state;
+  Bind<T, Ref<T>>? _bind;
 
   @override
   RefWidget<T> get widget => super.widget as RefWidget<T>;
@@ -31,7 +31,7 @@ class RefElement<T> extends ComponentElement {
     assert(widget.builder != null || widget.child != null);
 
     // we bind it to its own element.
-    _state = widget.bind(this);
+    _bind = widget.bind(this);
 
     return widget.builder?.call(this, widget.child) ?? widget.child!;
   }
@@ -47,10 +47,10 @@ class RefElement<T> extends ComponentElement {
   void unmount() {
     // to mimic `provider`, we must callback the inactive context.
     // still can't access ancestors, but `context.widget` works.
-    if (_state!.value case T value) {
+    if (_bind!.value case T value) {
       widget._dispose?.call(this, value);
     }
     super.unmount();
-    _state = null;
+    _bind = null;
   }
 }

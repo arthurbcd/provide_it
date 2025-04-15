@@ -20,7 +20,7 @@ sealed class ReadIt {
   /// Async reads the value of a [AsyncRef].
   FutureOr<T> readAsync<T>({Object? key});
 
-  /// The future when all [AsyncRefState.isReady] are completed.
+  /// The future when all [AsyncBind.isReady] are completed.
   FutureOr<void> allReady();
 
   /// The future when [T] is ready.

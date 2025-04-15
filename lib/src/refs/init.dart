@@ -11,14 +11,14 @@ class InitRef extends Ref<void> {
   Function? get create => init;
 
   @override
-  RefState<void, Ref<void>> createState() => InitRefState();
+  Bind<void, Ref<void>> createBind() => InitBind();
 }
 
-class InitRefState extends RefState<void, InitRef> {
+class InitBind extends Bind<void, InitRef> {
   @override
-  void initState() {
+  void initBind() {
     ref.init?.call();
-    super.initState();
+    super.initBind();
   }
 
   @override

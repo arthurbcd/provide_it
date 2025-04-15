@@ -390,10 +390,10 @@ void main() {
     expect(contexts[1]!.mounted, true);
   });
 
-  testWidgets('RefState dependent should be disposed', (tester) async {
+  testWidgets('Bind dependent should be disposed', (tester) async {
     int count = 0;
     final contexts = <int, BuildContext>{};
-    RefState? refState;
+    Bind? bind;
 
     await provideIt(tester, (context) {
       context.provide(() => Counter(0));
@@ -405,7 +405,7 @@ void main() {
         builder: (context) {
           contexts[counter.value] = context;
           context.watch<Counter>();
-          refState = context.getRefStateOfType<Counter>();
+          bind = context.getBindOfType<Counter>();
 
           return GestureDetector(
             onTap: () => counter.value++,
@@ -415,15 +415,15 @@ void main() {
     });
 
     expect(count, 0);
-    expect(refState?.dependents.length, 1);
-    expect(refState?.dependents.first, contexts[0]);
+    expect(bind?.dependents.length, 1);
+    expect(bind?.dependents.first, contexts[0]);
 
     await tester.tap(find.byType(GestureDetector));
     await tester.pump();
 
     expect(count, 1);
-    expect(refState?.dependents.length, 1);
-    expect(refState?.dependents.first, contexts[1]);
+    expect(bind?.dependents.length, 1);
+    expect(bind?.dependents.first, contexts[1]);
     expect(contexts[0] != contexts[1], true);
     expect(contexts[0]!.mounted, false);
     expect(contexts[1]!.mounted, true);

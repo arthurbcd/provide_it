@@ -17,11 +17,11 @@ class ValueListenableProvider<T> extends Provider<T> {
   final ValueListenable<T> _valueListenable;
 
   @override
-  RefState<T, Provider<T>> createState() => ValueListenableProviderState<T>();
+  Bind<T, Provider<T>> createBind() => ValueListenableProviderState<T>();
 }
 
 class ValueListenableProviderState<T>
-    extends RefState<T, ValueListenableProvider<T>> {
+    extends Bind<T, ValueListenableProvider<T>> {
   T? _previousValue;
 
   @override
@@ -39,8 +39,8 @@ class ValueListenableProviderState<T>
   }
 
   @override
-  void initState() {
-    super.initState();
+  void initBind() {
+    super.initBind();
     _previousValue = ref._valueListenable.value;
     ref._valueListenable.addListener(notifyObservers);
   }

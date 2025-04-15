@@ -148,10 +148,10 @@ extension ContextReaders on BuildContext {
     return scope.readAsync<T>(key: key);
   }
 
-  /// The future when all [AsyncRefState.isReady] are completed.
+  /// The future when all [AsyncBind.isReady] are completed.
   FutureOr<void> allReady() => scope.allReady();
 
-  /// Whether all [AsyncRefState.isReady] are completed.
+  /// Whether all [AsyncBind.isReady] are completed.
   bool allReadySync() => allReady() == null;
 
   /// The future when [T] is ready.
@@ -202,25 +202,25 @@ extension ContextBinds on BuildContext {
   }
 }
 
-extension ContextRefStateFinder on BuildContext {
-  /// Gets a [RefState] of [T] type. O(1).
+extension ContextBindFinder on BuildContext {
+  /// Gets a [Bind] of [T] type. O(1).
   ///
-  /// The return type is `dynamic` on purpose as some [RefState] types are inferred by [Injector].
-  RefState? getRefStateOfType<T>({Object? key}) {
-    return scope.getRefStateOfType<T>(key: key);
+  /// The return type is `dynamic` on purpose as some [Bind] types are inferred by [Injector].
+  Bind? getBindOfType<T>({Object? key}) {
+    return scope.getBindOfType<T>(key: key);
   }
 }
 
 extension RefBinder on BuildContext {
   /// Shortcut to bind a [Ref] to this [BuildContext].
   @protected
-  RefState<T, Ref<T>> bind<T>(Ref<T> ref) {
+  Bind<T, Ref<T>> bind<T>(Ref<T> ref) {
     return scope.bind(this, ref);
   }
 
   /// Shortcut to get a [Ref] of this [BuildContext].
   @protected
-  RefState? bindOf<T>({Object? key}) {
+  Bind? bindOf<T>({Object? key}) {
     return scope.bindOf<T>(this, key: key);
   }
 }

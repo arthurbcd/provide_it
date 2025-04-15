@@ -24,19 +24,19 @@ class FutureRef<T> extends AsyncRef<T> {
   final FutureOr<T>? value;
 
   @override
-  AsyncRefState<T, FutureRef<T>> createState() => FutureRefState<T>();
+  AsyncBind<T, FutureRef<T>> createBind() => FutureBind<T>();
 }
 
-class FutureRefState<T> extends AsyncRefState<T, FutureRef<T>> {
+class FutureBind<T> extends AsyncBind<T, FutureRef<T>> {
   Future<T>? _future;
 
   @override
   Future<T>? get future => _future;
 
   @override
-  void initState() {
+  void initBind() {
     load();
-    super.initState();
+    super.initBind();
   }
 
   @override

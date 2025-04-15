@@ -1,7 +1,5 @@
 part of '../framework.dart';
 
-typedef _State<T> = RefState<T, Ref<T>>;
-
 extension on ProvideItScope {
   int _initTreeIndex(BuildContext? context) {
     if (context == null) return 0;
@@ -14,30 +12,31 @@ extension on ProvideItScope {
     return 0;
   }
 
-  _State<T> _state<T>(Element context, Ref<T> ref) {
-    final branch = _tree[context] ??= TreeMap<int, _State>();
+  Bind<T, Ref<T>> _bind<T>(Element context, Ref<T> ref) {
+    final branch = _tree[context] ??= TreeMap();
     final index = _treeIndex[context] ??= _initTreeIndex(context);
     _treeIndex[context] = index + 1;
 
-    _State<T> create() => branch[index] = ref.createState()
-      .._bind = (element: context, index: index)
+    Bind<T, Ref<T>> create() => branch[index] = ref.createBind()
       .._scope = this
+      .._element = context
+      ..index = index
       .._ref = ref
-      ..initState();
+      ..initBind();
 
-    _State<T> update(_State<T> old) => old
+    Bind<T, Ref<T>> update(Bind<T, Ref<T>> old) => old
       .._ref = ref
       ..didUpdateRef(old.ref);
 
-    _State<T> reset(_State<dynamic> old) {
+    Bind<T, Ref<T>> reset(Bind old) {
       assert(_element!._reassembled || old.ref.runtimeType == ref.runtimeType);
-      return create();
+      return create(); // reassembled or key changed
     }
 
     return switch (branch[index]) {
       null => create(),
-      _State<T> old when Ref.canUpdate(old.ref, ref) => update(old),
-      var old => reset(old), // reassemble or key changed
+      Bind<T, Ref<T>> old when Ref.canUpdate(old.ref, ref) => update(old),
+      final old => reset(old),
     };
   }
 }

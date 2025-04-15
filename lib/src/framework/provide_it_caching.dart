@@ -10,22 +10,23 @@ extension on ProvideItScope {
     return 0;
   }
 
-  _State? _stateOf<T>(BuildContext context, {Object? key}) {
-    final state = getRefStateOfType<T>(key: key);
+  Bind? _bindOf<T>(BuildContext context, {Object? key}) {
+    final bind = getBindOfType<T>(key: key);
 
     if (key case Ref<T> ref) {
-      final bind = (element: context, index: _treeIndex[context] ?? 0);
+      final index = _treeIndex[context] ?? 0;
+
       // get-or-bind
-      if (state == null || state._bind == bind) {
-        return _state<T>(context as Element, ref);
+      if (bind == null || bind.context == context && bind.index == index) {
+        return _bind<T>(context as Element, ref);
       }
     }
 
-    if (state != null && context is Element) {
+    if (bind != null && context is Element) {
       final index = _dependencyIndex[context] ??= _initCacheIndex(context);
       _dependencyIndex[context] = index + 1;
     }
 
-    return state;
+    return bind;
   }
 }

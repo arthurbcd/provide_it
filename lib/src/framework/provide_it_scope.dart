@@ -18,29 +18,29 @@ class ProvideItScope implements ReadIt {
 
   @protected
   T watch<T>(BuildContext context, {Object? key}) {
-    final state = _stateOf<T>(context, key: key);
-    final value = state?.value;
-    state?.watch(context);
+    final bind = _bindOf<T>(context, key: key);
+    final value = bind?.value;
+    bind?.watch(context);
 
     if (value == null && null is T) return value;
-    if (state != null) return state.read();
+    if (bind != null) return bind.read();
 
     throw StateError('Ref<$T> not found, key: $key.');
   }
 
   @protected
   R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
-    final state = _stateOf<T>(context, key: key);
-    final value = state?.select<T, R>(context, selector);
+    final bind = _bindOf<T>(context, key: key);
+    final value = bind?.select<T, R>(context, selector);
 
     return value as R;
   }
 
   @protected
   void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
-    final state = _stateOf<T>(context, key: key);
+    final bind = _bindOf<T>(context, key: key);
 
-    state?.listen<T>(context, listener);
+    bind?.listen<T>(context, listener);
   }
 
   @protected
@@ -50,30 +50,30 @@ class ProvideItScope implements ReadIt {
     void listener(R previous, R next), {
     Object? key,
   }) {
-    final state = _stateOf<T>(context, key: key);
+    final bind = _bindOf<T>(context, key: key);
 
-    state?.listenSelect<T, R>(context, selector, listener);
+    bind?.listenSelect<T, R>(context, selector, listener);
   }
 
   @override
   bool get mounted => _element != null;
 
-  // state binder tree by context and index.
-  late final _tree = TreeMap<Element?, TreeMap<int, RefState>>()._assert(this);
+  // bind tree by context and index.
+  late final _tree = TreeMap<Element?, TreeMap<int, Bind>>()._assert(this);
   late final _treeIndex = <Element?, int>{}._assert(this);
-  late final _treeCache = HashMap<(String, Object?), Set<RefState>>(
+  late final _treeCache = HashMap<(String, Object?), Set<Bind>>(
     equals: (a, b) => a.$1 == b.$1 && Ref.equals(a.$2, b.$2),
   ).._assert(this);
 
-  // state dependencies by the dependent `context`.
-  late final _dependencies = <Element, Set<RefState>>{}._assert(this);
+  // bind dependencies by the dependent `context`.
+  late final _dependencies = <Element, Set<Bind>>{}._assert(this);
   late final _dependencyIndex = <Element, int>{}._assert(this);
 
-  /// Iterates over all [Ref] states. Depth-first.
-  Iterable<RefState> get states sync* {
+  /// Iterates over all [Ref] binds. Depth-first.
+  Iterable<Bind> get binds sync* {
     for (var branch in _tree.values) {
-      for (var state in branch.values) {
-        yield state;
+      for (var bind in branch.values) {
+        yield bind;
       }
     }
   }
@@ -83,58 +83,58 @@ class ProvideItScope implements ReadIt {
     return _element?.injector<I>(create) ?? Injector<I>(create);
   }
 
-  /// The future of [AsyncRefState.isReady].
+  /// The future of [AsyncBind.isReady].
   @override
   FutureOr<void> allReady() {
     final futures = <Future>[];
 
-    for (var state in states) {
-      if (state is! AsyncRefState) continue;
-      if (state.isReady() case Future it) futures.add(it);
+    for (var bind in binds) {
+      if (bind is! AsyncBind) continue;
+      if (bind.isReady() case Future it) futures.add(it);
     }
     if (futures.isEmpty) return null;
 
     return futures.wait as Future<void>;
   }
 
-  /// The future when a [AsyncRefState.isReady] is completed.
+  /// The future when a [AsyncBind.isReady] is completed.
   @override
   FutureOr<void> isReady<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final states = _treeCache[(type, key)];
-    assert(states != null, 'AsyncRef<$type> not found, key: $key.');
-    assert(states?.length == 1, 'Duplicate AsyncRef<$type>, key: $key.');
+    final binds = _treeCache[(type, key)];
+    assert(binds != null, 'AsyncRef<$type> not found, key: $key.');
+    assert(binds?.length == 1, 'Duplicate AsyncRef<$type>, key: $key.');
 
-    if (states?.firstOrNull case AsyncRefState s) return s.isReady();
+    if (binds?.firstOrNull case AsyncBind s) return s.isReady();
     return null;
   }
 
   @protected
-  RefState<T, Ref<T>> bind<T>(BuildContext context, Ref<T> ref) {
-    return _state<T>(context as Element, ref);
+  Bind<T, Ref<T>> bind<T>(BuildContext context, Ref<T> ref) {
+    return _bind<T>(context as Element, ref);
   }
 
   @protected
-  RefState? bindOf<T>(BuildContext context, {Object? key}) {
-    return _stateOf<T>(context, key: key);
+  Bind? bindOf<T>(BuildContext context, {Object? key}) {
+    return _bindOf<T>(context, key: key);
   }
 
   Future<void> reload<T>({Object? key}) async {
-    final state = getRefStateOfType<T>(key: key);
-    assert(state is AsyncRefState || null is T,
-        'AsyncRef<$T> not found, key: $key.');
+    final bind = getBindOfType<T>(key: key);
+    assert(
+        bind is AsyncBind || null is T, 'AsyncRef<$T> not found, key: $key.');
 
-    await (state as AsyncRefState?)?.load();
+    await (bind as AsyncBind?)?.load();
   }
 
   @override
   T read<T>({Object? key}) {
-    final state = getRefStateOfType<T>(key: key);
-    final value = state?.value;
+    final bind = getBindOfType<T>(key: key);
+    final value = bind?.value;
 
     if (value == null && null is T) return value;
-    if (state != null) return state.read();
+    if (bind != null) return bind.read();
 
     throw StateError('Ref<$T> not found, key: $key.');
   }
@@ -143,10 +143,10 @@ class ProvideItScope implements ReadIt {
   FutureOr<T> readAsync<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final state = getRefStateOfType(type: type, key: key);
+    final bind = getBindOfType(type: type, key: key);
 
-    if (state is AsyncRefState) {
-      final value = state.readAsync();
+    if (bind is AsyncBind) {
+      final value = bind.readAsync();
 
       // we need to cast the future/value to T.
       if (value is Future) return value.then((it) => it as T);
@@ -166,14 +166,14 @@ context.provide<$type>(...); // <- provide it
   }
 
   @protected
-  RefState? getRefStateOfType<T>({String? type, Object? key}) {
+  Bind? getBindOfType<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final states = _treeCache[(type, key)] ?? {};
-    final state = states.firstOrNull;
+    final binds = _treeCache[(type, key)] ?? {};
+    final bind = binds.firstOrNull;
 
-    assert(states.length < 2, 'Duplicate Ref<$type> found, key: $key.');
-    return state;
+    assert(binds.length < 2, 'Duplicate Ref<$type> found, key: $key.');
+    return bind;
   }
 
   @override
@@ -185,6 +185,8 @@ extension<K, V> on Map<K, V> {
   ///
   /// This is useful for debugging and testing purposes.
   Map<K, V> _assert(ProvideItScope scope) {
+    if (!kDebugMode) return this;
+
     return AssertMap(this, () {
       final to = scope == readIt ? 'to this scope.' : 'above your app.';
       assert(scope.mounted, 'Scope not attached. You must set a ProvideIt $to');

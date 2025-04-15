@@ -51,10 +51,10 @@ class FutureProvider<T> extends AsyncRefWidget<T> {
   }
 
   @override
-  AsyncRefState<T, FutureProvider<T>> createState() => FutureProviderState<T>();
+  AsyncBind<T, FutureProvider<T>> createBind() => FutureProviderState<T>();
 }
 
-class FutureProviderState<T> extends AsyncRefState<T, FutureProvider<T>> {
+class FutureProviderState<T> extends AsyncBind<T, FutureProvider<T>> {
   late var _future = ref.create?.call(context) ?? ref.future;
 
   @override
@@ -70,9 +70,9 @@ class FutureProviderState<T> extends AsyncRefState<T, FutureProvider<T>> {
   Future<T>? get future => _future;
 
   @override
-  void initState() {
+  void initBind() {
     if (ref.lazy == false) create();
-    super.initState();
+    super.initBind();
   }
 
   @override

@@ -63,9 +63,9 @@ void main() {
 
 #### `context.provide`
 
-Use the `provide` method to bind a state to the context. The state will be disposed when the context is unmounted.
+Use `provide` method to bind a value to a context. The value will be unbound/disposed when the same context is unmounted.
 
-This is equivalent to `Provider` in the provider package.
+This is equivalent to a widget-less `Provider` in the provider package.
 
 ```dart
 class CounterProvider extends StatelessWidget {
@@ -135,7 +135,7 @@ class CounterProvider extends StatelessWidget {
 }
 ```
 
-When using complex objects, you can use the `create` method to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
+When using complex objects, you can use `context.create` to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
 
 ```dart
 class CounterProvider extends StatelessWidget {
@@ -154,7 +154,7 @@ class CounterProvider extends StatelessWidget {
 }
 ```
 
-> Both `value` and `create` will watch the `context` and rebuilt on it. By default only watches `Listenable` objects. You can add a custom `Watcher` to watch other objects. See [Additional Watchers](#4-additional-watchers).
+> Both `value` and `create` will watch the `context` and rebuilt on it. By default, it watches `Listenable` objects. You can add a custom `Watcher` to watch other objects. See [Additional Watchers](#4-additional-watchers).
 
 ### 2. Accessing
 

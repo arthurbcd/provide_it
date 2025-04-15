@@ -20,10 +20,10 @@ class MultiProvider extends RefWidget<void> {
   Function? get create => null;
 
   @override
-  RefState<void, MultiProvider> createState() => MultiProviderState();
+  Bind<void, MultiProvider> createBind() => MultiProviderState();
 }
 
-class MultiProviderState extends RefState<void, MultiProvider> {
+class MultiProviderState extends Bind<void, MultiProvider> {
   void _bind() {
     for (var provider in ref.providers) {
       provider.bind(context);
@@ -31,8 +31,8 @@ class MultiProviderState extends RefState<void, MultiProvider> {
   }
 
   @override
-  void initState() {
-    super.initState();
+  void initBind() {
+    super.initBind();
     _bind();
   }
 

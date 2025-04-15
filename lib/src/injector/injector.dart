@@ -194,7 +194,7 @@ class Injector<T> {
   }
 
   // lazy cache
-  late final _createText = create.toString().replaceFirst('Closure: ', '');
+  late final _createText = create.runtimeType.toString();
   late final _createTexts = _createText.splitBetween('(', ')')..removeAt(0);
   late final _input = _createTexts.first;
   late final _namedInput = _input.firstMatch(r'\{(.+)\}')?.group(1);

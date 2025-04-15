@@ -18,10 +18,10 @@ class CreateRef<T> extends Ref<T> {
   final void Function(T value)? dispose;
 
   @override
-  RefState<T, CreateRef<T>> createState() => CreateRefState<T>();
+  Bind<T, CreateRef<T>> createBind() => CreateBind<T>();
 }
 
-class CreateRefState<T> extends RefState<T, CreateRef<T>> {
+class CreateBind<T> extends Bind<T, CreateRef<T>> {
   final _states = <State>{};
 
   @override
@@ -53,21 +53,21 @@ class CreateRefState<T> extends RefState<T, CreateRef<T>> {
 }
 
 extension type CreateContext._(BuildContext context) implements BuildContext {
-  static CreateRefState? _currentState;
+  static CreateBind? _currentBind;
 
   /// Creates a [CreateContext] for the current [CreateRef.create].
-  factory CreateContext(CreateRefState state) {
-    _currentState = state;
-    SchedulerBinding.instance.addPostFrameCallback((_) => _currentState = null);
+  factory CreateContext(CreateBind bind) {
+    _currentBind = bind;
+    SchedulerBinding.instance.addPostFrameCallback((_) => _currentBind = null);
 
-    return CreateContext._(state.context);
+    return CreateContext._(bind.context);
   }
 
   /// Creates a single [TickerProvider] for the current [CreateContext].
   TickerProvider get vsync {
-    assert(_currentState != null, 'vsync can only be used on create');
+    assert(_currentBind != null, 'vsync can only be used on create');
     final state = _TickerProvider(context);
-    _currentState?._states.add(state);
+    _currentBind?._states.add(state);
 
     return state;
   }

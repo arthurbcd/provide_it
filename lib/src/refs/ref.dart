@@ -11,13 +11,13 @@ import '../../provide_it.dart';
 /// They are similar to [InheritedWidget] but with more features.
 /// - They are not limited to the current widget tree.
 /// - As long as the [Ref] is bound to a [BuildContext], it can be used anywhere.
-/// - They can be used to manage the lifecycle of values with [RefState].
+/// - They can be used to manage the lifecycle of values with [Bind].
 /// - They automatically dispose when the [BuildContext] is unmounted.
-/// - You can `read`, `watch`, `listen`, and `select` values.
+/// - You can `read`, `watch`, `listen`, and `select` bind values.
 ///
 /// You must set [ProvideIt] in the root of your app.
 ///
-/// See [RefState] for more details.
+/// See [Bind] for more details.
 abstract class Ref<T> {
   const Ref({this.key = id});
 
@@ -44,7 +44,7 @@ abstract class Ref<T> {
       (oldRef.runtimeType == newRef.runtimeType &&
           equals(oldRef.key, newRef.key));
 
-  /// The equality used for [Ref.key] & [RefState.select].
+  /// The equality used for [Ref.key] & [Bind.select].
   static bool equals(Object? a, Object? b) => defaultEquals(a, b);
 
   /// Signature for using [Ref] own identity as [key].
@@ -53,18 +53,18 @@ abstract class Ref<T> {
   static void id() {}
 
   @protected
-  RefState<T, Ref<T>> createState();
+  Bind<T, Ref<T>> createBind();
 }
 
 extension RefReaders<T> on Ref<T> {
   /// Binds this [Ref] to the [BuildContext].
   @protected
-  RefState<T, Ref<T>> bind(BuildContext context) => context.bind(this);
+  Bind<T, Ref<T>> bind(BuildContext context) => context.bind(this);
 
-  /// Gets the [RefState] of this [Ref].
+  /// Gets the [Bind] of this [Ref].
   @protected
-  RefState<T, Ref<T>> bindOf(BuildContext context) {
-    return context.bindOf<T>(key: this) as RefState<T, Ref<T>>;
+  Bind<T, Ref<T>> bindOf(BuildContext context) {
+    return context.bindOf<T>(key: this) as Bind<T, Ref<T>>;
   }
 
   /// Reads a previously bound [T] value.
@@ -99,12 +99,12 @@ extension RefReaders<T> on Ref<T> {
 
 extension AsyncRefBinder<T> on AsyncRef<T> {
   /// Binds the [AsyncRef] to the [BuildContext].
-  AsyncRefState<T, AsyncRef<T>> bind(BuildContext context) {
-    return context.bind(this) as AsyncRefState<T, AsyncRef<T>>;
+  AsyncBind<T, AsyncRef<T>> bind(BuildContext context) {
+    return context.bind(this) as AsyncBind<T, AsyncRef<T>>;
   }
 
-  AsyncRefState<T, AsyncRef<T>> bindOf(BuildContext context) {
-    return context.bindOf<T>(key: this) as AsyncRefState<T, AsyncRef<T>>;
+  AsyncBind<T, AsyncRef<T>> bindOf(BuildContext context) {
+    return context.bindOf<T>(key: this) as AsyncBind<T, AsyncRef<T>>;
   }
 
   /// Watches the [AsyncSnapshot] of this async value.

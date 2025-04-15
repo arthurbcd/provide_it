@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.0
+
+- `RefState` is now simply `Bind`.
+- Fixed `Injector` throwing `ArgumentError` in web release mode.
+
 ## 0.17.1
 
 - `AsyncRef` now resolves early stream/future creation errors.

@@ -1,6 +1,6 @@
 part of '../framework.dart';
 
-extension<T, R extends Ref<T>> on RefState<T, R> {
+extension<T, R extends Ref<T>> on Bind<T, R> {
   void _markNeedsBuild(Element el) {
     assert(el.mounted);
 
@@ -55,7 +55,7 @@ extension<T, R extends Ref<T>> on RefState<T, R> {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // null implies that the ref was removed
       if (_lastRef == null) {
-        _scope._tree[_bind.element]!.remove(_bind.index)!.dispose();
+        _scope._tree[_element]!.remove(index)!.dispose();
       }
     });
   }

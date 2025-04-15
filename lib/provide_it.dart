@@ -81,10 +81,14 @@ ProvideIt(
     return Center(child: Text(kDebugMode ? '$e\n$s' : '$e'));
   }
 
-  /// Called once when the [ProvideIt] is created.
-  /// - Use this to set up singletons or other global state.
-  /// - When marked with `async`, [loadingBuilder] will show until completion.
-  /// - If an error occurs, [errorBuilder] will be shown.
+  /// Initializes [ProvideIt] and sets up app-wide bindings.
+  ///
+  /// The [provide] follows [ReadIt.allReady], calling:
+  /// - [loadingBuilder]: when any async bind is loading.
+  /// - [errorBuilder]: when any async bind fails to load.
+  /// - [child]: when all async binds are ready.
+  ///
+  /// If [provide] is `null`, the [child] will be displayed immediately.
   final void Function(BuildContext context)? provide;
 
   /// The builder to use if [provide] is marked with `async`.
@@ -96,7 +100,7 @@ ProvideIt(
   /// Extra watchers to use:
   /// - [ProvideIt.defaultWatchers] + [additionalWatchers].
   ///
-  /// A [RefState] can have exactly one [Watcher]. Starting from last,
+  /// A [Bind] can have exactly one [Watcher]. Starting from last,
   /// returns the first watcher that [Watcher.canWatch]. So [additionalWatchers]
   /// can override [defaultWatchers].
   ///
@@ -152,7 +156,7 @@ ProvideIt(
 
   /// The [ReadIt] scope to use. When `null`, defaults to:
   /// - [ReadIt.instance] when root.
-  /// - [ReadIt.asNewInstance] when not root.
+  /// - [ReadIt.asNewInstance] when not root.l l
   final ReadIt? scope;
 
   @override

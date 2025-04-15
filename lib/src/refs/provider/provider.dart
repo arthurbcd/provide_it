@@ -51,16 +51,16 @@ class Provider<T> extends RefWidget<T> {
   }
 
   @override
-  RefState<T, Provider<T>> createState() => ProviderState<T>();
+  Bind<T, Provider<T>> createBind() => ProviderState<T>();
 }
 
-class ProviderState<T> extends RefState<T, Provider<T>> {
+class ProviderState<T> extends Bind<T, Provider<T>> {
   bool _created = false;
 
   @override
-  void initState() {
+  void initBind() {
     if (ref.lazy == false) _create();
-    super.initState();
+    super.initBind();
   }
 
   void _create() {

@@ -11,7 +11,7 @@ abstract class AsyncRef<T> extends Ref<T> {
   final T? initialData;
 
   @override
-  AsyncRefState<T, AsyncRef<T>> createState();
+  AsyncBind<T, AsyncRef<T>> createBind();
 }
 
 abstract class AsyncRefWidget<T> extends RefWidget<T> implements AsyncRef<T> {
@@ -26,10 +26,10 @@ abstract class AsyncRefWidget<T> extends RefWidget<T> implements AsyncRef<T> {
   final T? initialData;
 
   @override
-  AsyncRefState<T, AsyncRef<T>> createState();
+  AsyncBind<T, AsyncRef<T>> createBind();
 }
 
-abstract class AsyncRefState<T, R extends AsyncRef<T>> extends RefState<T, R> {
+abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
   late var _snapshot = switch (ref.initialData) {
     var data? => AsyncSnapshot.withData(ConnectionState.none, data),
     null => AsyncSnapshot<T>.nothing(),
