@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.2
+
+- Added `Bind.deactivated` to check if a bind was deactivated.
+- Now duplicate binds asserts checks only non-deactivated binds.
+
 ## 0.18.1
 
 - Fixed error when reading minified types in web release mode.

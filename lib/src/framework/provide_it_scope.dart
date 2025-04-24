@@ -104,7 +104,10 @@ class ProvideItScope implements ReadIt {
 
     final binds = _treeCache[(type, key)];
     assert(binds != null, 'AsyncRef<$type> not found, key: $key.');
-    assert(binds?.length == 1, 'Duplicate AsyncRef<$type>, key: $key.');
+    assert(
+      binds?.where((it) => !it.deactivated).length == 1,
+      'Duplicate AsyncRef<$type>, key: $key.',
+    );
 
     if (binds?.firstOrNull case AsyncBind s) return s.isReady();
     return null;
@@ -172,7 +175,10 @@ context.provide<$type>(...); // <- provide it
     final binds = _treeCache[(type, key)] ?? {};
     final bind = binds.firstOrNull;
 
-    assert(binds.length < 2, 'Duplicate Ref<$type> found, key: $key.');
+    assert(
+      binds.where((it) => !it.deactivated).length < 2,
+      'Duplicate Ref<$type> found, key: $key.',
+    );
     return bind;
   }
 

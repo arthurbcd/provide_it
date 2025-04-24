@@ -136,11 +136,22 @@ abstract class Bind<T, R extends Ref<T>> {
     _listenSelectors.remove(dependent);
   }
 
-  @protected
-  void deactivate() {}
+  bool _deactivated = false;
 
   @protected
-  void activate() {}
+  bool get deactivated => _deactivated;
+
+  @protected
+  @mustCallSuper
+  void deactivate() {
+    _deactivated = true;
+  }
+
+  @protected
+  @mustCallSuper
+  void activate() {
+    _deactivated = false;
+  }
 
   @protected
   @mustCallSuper
