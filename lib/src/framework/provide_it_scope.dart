@@ -59,11 +59,12 @@ class ProvideItScope implements ReadIt {
   bool get mounted => _element != null;
 
   // bind tree by context and index.
-  late final _tree = TreeMap<Element?, TreeMap<int, Bind>>()._assert(this);
-  late final _treeIndex = <Element?, int>{}._assert(this);
-  late final _treeCache = HashMap<(String, Object?), Set<Bind>>(
-    equals: (a, b) => a.$1 == b.$1 && Ref.equals(a.$2, b.$2),
-  ).._assert(this);
+  late final _tree = TreeMap<Element, TreeMap<int, Bind>>()._assert(this);
+  late final _treeIndex = <Element, int>{}._assert(this);
+
+  // tree cache
+  late final _typeCache = <String, Set<Bind>>{}._assert(this);
+  late final _refCache = <Ref, Set<Bind>>{}._assert(this);
 
   // bind dependencies by the dependent `context`.
   late final _dependencies = <Element, Set<Bind>>{}._assert(this);
@@ -76,6 +77,25 @@ class ProvideItScope implements ReadIt {
         yield bind;
       }
     }
+  }
+
+  void _register(Bind bind) {
+    final binds = switch (bind.key) {
+      Ref ref => _refCache[ref] ??= {},
+      _ => _typeCache[bind.type] ??= {},
+    };
+    binds.add(bind);
+  }
+
+  void _unregister(Bind bind) {
+    final (cache, key) = switch (bind.key) {
+      Ref ref => (_refCache, ref),
+      _ => (_typeCache, bind.type),
+    };
+    final binds = cache[key]!;
+    binds.remove(bind);
+
+    if (binds.isEmpty) cache.remove(key);
   }
 
   @protected
@@ -102,14 +122,19 @@ class ProvideItScope implements ReadIt {
   FutureOr<void> isReady<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final binds = _treeCache[(type, key)];
+    final binds = switch (key) {
+      Ref ref => _refCache[ref],
+      null => _typeCache[type],
+      _ => _typeCache[type]?.where((it) => it.key == key),
+    };
+
     assert(binds != null, 'AsyncRef<$type> not found, key: $key.');
     assert(
-      binds?.where((it) => !it.deactivated).length == 1,
+      binds?.length == 1 || binds?.where((it) => !it.deactivated).length == 1,
       'Duplicate AsyncRef<$type>, key: $key.',
     );
 
-    if (binds?.firstOrNull case AsyncBind s) return s.isReady();
+    if (binds?.lastOrNull case AsyncBind bind) return bind.isReady();
     return null;
   }
 
@@ -172,8 +197,12 @@ context.provide<$type>(...); // <- provide it
   Bind? getBindOfType<T>({String? type, Object? key}) {
     type ??= T.type;
 
-    final binds = _treeCache[(type, key)] ?? {};
-    final bind = binds.firstOrNull;
+    final binds = switch (key) {
+      Ref ref => _refCache[ref] ?? {},
+      null => _typeCache[type] ?? {},
+      _ => _typeCache[type]?.where((b) => Ref.equals(b.key, key)) ?? {},
+    };
+    final bind = binds.lastOrNull;
 
     assert(
       binds.where((it) => !it.deactivated).length < 2,

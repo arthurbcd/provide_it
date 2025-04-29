@@ -127,6 +127,27 @@ void main() {
     });
   });
 
+  group(
+    'Ref binding',
+    () {
+      final ref1 = ValueRef('hello');
+      final ref2 = CreateRef((c) => Size(0, 0));
+
+      testWidgets('should bind to context', (tester) async {
+        BuildContext? ctx;
+        await provideIt(tester, (context) {
+          ref1.watch(context);
+          ref2.watch(context);
+          ctx = context;
+          return Container();
+        });
+
+        expect(ref1.read(ctx!), 'hello');
+        expect(ref2.read(ctx!), isA<Size>());
+      });
+    },
+  );
+
   group('ContextStates', () {
     testWidgets('value should bind value to context', (tester) async {
       await provideIt(tester, (context) {
@@ -427,6 +448,47 @@ void main() {
     expect(contexts[0] != contexts[1], true);
     expect(contexts[0]!.mounted, false);
     expect(contexts[1]!.mounted, true);
+  });
+
+  testWidgets('Bind dependent should be replaced', (tester) async {
+    int createCount = 0;
+    int disposeCount = 0;
+
+    await provideIt(tester, (context) {
+      final counter = context.value(0);
+
+      return Builder(
+        key: Key(counter.value.toString()),
+        builder: (context) {
+          context.provide(
+            () {
+              createCount++;
+              return '';
+            },
+            lazy: false,
+            dispose: (value) {
+              disposeCount++;
+            },
+          );
+
+          return GestureDetector(
+            key: Key(context.read<String>()),
+            onTap: () => counter.value++,
+          );
+        },
+      );
+    });
+
+    expect(createCount, 1);
+    expect(disposeCount, 0);
+    expect(find.byKey(Key('')), findsOneWidget);
+
+    await tester.tap(find.byType(GestureDetector));
+    await tester.pump();
+
+    expect(createCount, 2);
+    expect(disposeCount, 1);
+    expect(find.byKey(Key('')), findsOneWidget);
   });
 }
 

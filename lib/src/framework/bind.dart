@@ -101,9 +101,7 @@ abstract class Bind<T, R extends Ref<T>> {
   @mustCallSuper
   void initBind() {
     context.dependOnBind(this, 'bind');
-
-    final binds = _scope._treeCache[(type, key)] ??= {};
-    binds.add(this);
+    _scope._register(this);
   }
 
   @protected
@@ -162,11 +160,7 @@ abstract class Bind<T, R extends Ref<T>> {
         _watcher?.dispose(value);
       }
     }
-
-    if (_scope._treeCache[(type, key)] case var states?) {
-      states.remove(this);
-      if (states.isEmpty) _scope._treeCache.remove((type, key));
-    }
+    _scope._unregister(this);
   }
 
   @protected
