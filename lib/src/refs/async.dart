@@ -86,7 +86,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
 
     assert(future == null || stream == null, 'Only one future/stream allowed');
     _didLoad = true;
-    _completer = Completer<T>();
+    _completer = Completer<T?>();
 
     if (future case var future? when old.future != future) {
       snapshot = _snapshot.inState(ConnectionState.waiting);

@@ -1,9 +1,12 @@
 # Changelog
 
+## 0.18.5
+
+- Fixed `Stream.empty` throwing `TypeError` instead of setting `AsyncSnapshot.error`.
+
 ## 0.18.4
 
 - Fixed `Watcher` resolution order.
-- Fixed `Stream.empty` throwing `TypeError` instead of setting `AsyncSnapshot.error`.
 
 ## 0.18.3
 
