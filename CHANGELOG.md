@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.18.4
+
+- Fixed `Watcher` resolution order.
+- Fixed `Stream.empty` throwing `TypeError` instead of setting `AsyncSnapshot.error`.
+
 ## 0.18.3
 
 - Fixed `Bind` replacement order when `Ref.key` changes.

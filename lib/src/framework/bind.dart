@@ -39,7 +39,7 @@ abstract class Bind<T, R extends Ref<T>> {
 
     final value = ArgumentError.checkNotNull(this.value);
 
-    for (var watcher in _scope.watchers) {
+    for (var watcher in _scope.watchers.toList().reversed) {
       if (watcher.canWatch(value)) {
         return watcher..init(value, notifyObservers);
       }

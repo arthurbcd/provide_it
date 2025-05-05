@@ -35,7 +35,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     null => AsyncSnapshot<T>.nothing(),
   };
   StreamSubscription? _subscription;
-  var _completer = Completer<T>();
+  var _completer = Completer<T?>();
   bool _didLoad = false;
 
   set snapshot(AsyncSnapshot<T> snapshot) {
@@ -44,7 +44,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     if (snapshot.connectionState == ConnectionState.done) {
       snapshot.hasError
           ? _completer.completeError(snapshot.error!, snapshot.stackTrace!)
-          : _completer.complete(snapshot.data as T);
+          : _completer.complete(snapshot.data);
     }
 
     // we prevent notifying when not ready
@@ -120,7 +120,8 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     if (!_didLoad) load();
     if (snapshot.hasData) return snapshot.data as T;
 
-    return _completer.future;
+    // if `data as T` throws, then it's probably a Stream.empty.
+    return _completer.future.then((data) => data as T);
   }
 
   @override
