@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.7
+
+- Further improvements to `AsyncBind`.
+
 ## 0.18.6
 
 - Fixed `AsyncBind` to prevent notifying during build.

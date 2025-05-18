@@ -48,8 +48,12 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
           : _completer.complete(snapshot.data);
     }
 
-    // we prevent notifying when not ready
-    if (_canNotify) notifyObservers();
+    // we prevent notifying during the build phase
+    if (_canNotify) {
+      notifyObservers();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => notifyObservers());
+    }
   }
 
   /// The current [future] state.
@@ -115,7 +119,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
       });
     }
 
-    // we prevent notifications while building
+    // we prevent notifying during the build phase
     WidgetsBinding.instance.addPostFrameCallback((_) => _canNotify = true);
   }
 
