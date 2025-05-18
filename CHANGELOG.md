@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.6
+
+- Fixed `AsyncBind` to prevent notifying during build.
+
 ## 0.18.5
 
 - Fixed `Stream.empty` throwing `TypeError` instead of setting `AsyncSnapshot.error`.

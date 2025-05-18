@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 0.1.0
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.7.2
 
 dependencies:
   flutter:
@@ -12,8 +12,6 @@ dependencies:
   provide_it: 
     path: ../
   performance: ^0.1.1
-  riverpod: ^2.6.1
-  flutter_riverpod: ^2.6.1
 
 dev_dependencies:
   flutter_test:

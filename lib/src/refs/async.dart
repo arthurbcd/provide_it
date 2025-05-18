@@ -37,6 +37,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
   StreamSubscription? _subscription;
   var _completer = Completer<T?>();
   bool _didLoad = false;
+  bool _canNotify = false;
 
   set snapshot(AsyncSnapshot<T> snapshot) {
     _snapshot = snapshot;
@@ -48,7 +49,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     }
 
     // we prevent notifying when not ready
-    if (_didLoad) notifyObservers();
+    if (_canNotify) notifyObservers();
   }
 
   /// The current [future] state.
@@ -113,6 +114,9 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
         snapshot = _snapshot.inState(ConnectionState.done);
       });
     }
+
+    // we prevent notifications while building
+    WidgetsBinding.instance.addPostFrameCallback((_) => _canNotify = true);
   }
 
   @protected

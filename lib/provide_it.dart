@@ -26,6 +26,11 @@ export 'src/utils/async_snapshot_extension.dart';
 export 'src/watchers/change_notifier.dart';
 export 'src/watchers/listenable.dart';
 
+// TODO(arthurbcd): add tests:
+// ## 0.18.4
+// ## 0.18.5
+// ## 0.18.6
+
 typedef ErrorBuilder = Widget Function(
     BuildContext context, Object error, StackTrace stackTrace);
 
