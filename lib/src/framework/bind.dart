@@ -31,6 +31,7 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 ///
 abstract class Bind<T, R extends Ref<T>> {
   // binding
+  late final String type;
   late final ProvideItScope _scope;
   late final Element _element;
   late final int index;
@@ -59,7 +60,7 @@ abstract class Bind<T, R extends Ref<T>> {
   final _listenSelectors = <Element, ListenSelectors>{};
 
   /// The [Ref] key used to bind this state.
-  Object? get key => ref.key == Ref.id ? ref : ref.key;
+  Object? get key => ref.key;
 
   /// The [Ref] that this state is associated with.
   R get ref => _ref;
@@ -70,16 +71,6 @@ abstract class Bind<T, R extends Ref<T>> {
   /// The [Injector] of [Ref.create] in this scope.
   Injector<T>? get injector =>
       ref.create != null ? _scope.injector<T>(ref.create!) : null;
-
-  /// The type used to bind.
-  late final type = () {
-    final type = injector?.type ?? T.type;
-    assert(
-      type != 'dynamic' && type != 'Object',
-      'This is likely a mistake. Provide a non-generic type.',
-    );
-    return type;
-  }();
 
   /// How a [Bind] should be displayed in debug output.
   String get debugLabel {
@@ -151,6 +142,8 @@ abstract class Bind<T, R extends Ref<T>> {
     _deactivated = false;
   }
 
+  bool _disposed = false;
+
   @protected
   @mustCallSuper
   void dispose() {
@@ -161,6 +154,7 @@ abstract class Bind<T, R extends Ref<T>> {
       }
     }
     _scope._unregister(this);
+    _disposed = true;
   }
 
   @protected
@@ -180,7 +174,7 @@ abstract class Bind<T, R extends Ref<T>> {
     }
 
     final listeners = _listeners[context as Element] ??= {};
-    final index = _scope._dependencyIndex[context]!;
+    final index = _scope._observerIndex[context]!;
 
     listeners[index] = tryListen;
   }
@@ -206,7 +200,7 @@ abstract class Bind<T, R extends Ref<T>> {
 
     final value = trySelect(this.value);
     final listenSelectors = _listenSelectors[context as Element] ??= {};
-    final index = _scope._dependencyIndex[context]!;
+    final index = _scope._observerIndex[context]!;
 
     listenSelectors[index] = (value, trySelect, tryListen);
   }
@@ -223,7 +217,7 @@ abstract class Bind<T, R extends Ref<T>> {
 
     final value = trySelect(read());
     final selectors = _selectors[context as Element] ??= {};
-    final index = _scope._dependencyIndex[context]!;
+    final index = _scope._observerIndex[context]!;
 
     selectors[index] = (value, trySelect);
 
@@ -246,7 +240,7 @@ abstract class Bind<T, R extends Ref<T>> {
       return value;
     }
 
-    throw StateError('Ref<$type> not ready.');
+    throw LoadingProvideException('$type not ready.');
   }
 
   /// The value to provide.

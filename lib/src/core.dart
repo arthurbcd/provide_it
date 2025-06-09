@@ -211,21 +211,13 @@ extension ContextBindFinder on BuildContext {
   }
 }
 
-extension RefBinder on BuildContext {
-  /// Shortcut to bind a [Ref] to this [BuildContext].
-  @protected
-  Bind<T, Ref<T>> bind<T>(Ref<T> ref) {
-    return scope.bind(this, ref);
-  }
-
-  /// Shortcut to get a [Ref] of this [BuildContext].
-  @protected
-  Bind? bindOf<T>({Object? key}) {
-    return scope.bindOf<T>(this, key: key);
-  }
-}
-
 extension on BuildContext {
   @protected
   ProvideItScope get scope => ProvideItScope.of(this);
+}
+
+extension<T> on AsyncRef<T> {
+  AsyncBind<T, AsyncRef<T>> bind(BuildContext context) {
+    return context.scope.bind(context, this) as AsyncBind<T, AsyncRef<T>>;
+  }
 }

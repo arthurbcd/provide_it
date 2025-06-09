@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.19.0
+
+- Added `ProvideIt.restart` to restart app subtree and it's bind dependencies.
+- Added `ProvideIt.override` & `context.override`.
+- Now handles `ProvideIt.provide` errors in `ProvideIt.errorBuilder`.
+- Removes `Ref` top level binding to focus solely on `Type` bindings.
+- Fixed `Ref.didUpdateRef` to callback `oldRef` correctly.
+- Improved exceptions.
+
 ## 0.18.7
 
 - Further improvements to `AsyncBind`.

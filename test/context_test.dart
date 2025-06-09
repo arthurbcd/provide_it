@@ -127,27 +127,6 @@ void main() {
     });
   });
 
-  group(
-    'Ref binding',
-    () {
-      final ref1 = ValueRef('hello');
-      final ref2 = CreateRef((c) => Size(0, 0));
-
-      testWidgets('should bind to context', (tester) async {
-        BuildContext? ctx;
-        await provideIt(tester, (context) {
-          ref1.watch(context);
-          ref2.watch(context);
-          ctx = context;
-          return Container();
-        });
-
-        expect(ref1.read(ctx!), 'hello');
-        expect(ref2.read(ctx!), isA<Size>());
-      });
-    },
-  );
-
   group('ContextStates', () {
     testWidgets('value should bind value to context', (tester) async {
       await provideIt(tester, (context) {
@@ -236,6 +215,69 @@ void main() {
       await tester.pump();
       expect(snapshot, AsyncSnapshot.withData(ConnectionState.done, 42));
       expect(createCount, 2);
+    });
+
+    testWidgets('should reset state when key changes', (tester) async {
+      int createCount = 0;
+      int disposeCount = 0;
+      int? key = 1;
+
+      await provideIt(tester, (context) {
+        final (value, setValue) = context.value(0);
+
+        return Column(
+          children: [
+            Expanded(
+              child: Builder(
+                builder: (context) {
+                  context.provide(
+                    () {
+                      createCount++;
+                      return Counter(42);
+                    },
+                    key: key,
+                    dispose: (_) => disposeCount++,
+                  );
+
+                  final counter = context.watch<Counter>();
+                  return GestureDetector(
+                    key: Key('${counter.value}'),
+                    onTap: () => counter.value++,
+                  );
+                },
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                key: Key('change_key'),
+                onTap: () {
+                  key = 2;
+                  setValue(value + 1);
+                },
+              ),
+            ),
+          ],
+        );
+      });
+
+      expect(createCount, 1);
+      expect(disposeCount, 0);
+      expect(find.byKey(Key('42')), findsOneWidget);
+
+      // Increment counter
+      await tester.tap(find.byKey(Key('42')));
+      await tester.pump();
+      expect(find.byKey(Key('43')), findsOneWidget);
+
+      // Change key
+      await tester.tap(find.byKey(Key('change_key')));
+      await tester.pump();
+
+      // Old state should be disposed and new state created
+      expect(createCount, 2);
+      expect(disposeCount, 1);
+      expect(find.byKey(Key('42')),
+          findsOneWidget); // Counter reset to initial value
     });
   });
 
@@ -490,6 +532,60 @@ void main() {
     expect(disposeCount, 1);
     expect(find.byKey(Key('')), findsOneWidget);
   });
+
+  testWidgets('Bind should deactivate and activate', (tester) async {
+    final key = GlobalKey();
+    late _ActivateBind bind;
+
+    await provideIt(
+      tester,
+      (context) {
+        final (swap, setSwap) = context.value(false);
+
+        final button = Builder(
+            key: key,
+            builder: (context) {
+              bind = (_ActivateRef(0).bind(context)..watch(context))
+                  as _ActivateBind;
+
+              return GestureDetector(
+                key: Key(bind.value.toString()),
+                onTap: () => setSwap(!swap),
+              );
+            });
+
+        if (swap) {
+          return button;
+        }
+
+        return SizedBox(
+          child: button,
+        );
+      },
+    );
+
+    expect(bind.value, 0);
+
+    await tester.tap(find.byType(GestureDetector));
+    await tester.pump();
+
+    expect(bind.value, 1);
+  });
+}
+
+class _ActivateRef extends ValueRef<int> {
+  _ActivateRef(super.initialValue);
+
+  @override
+  ValueBind<int> createBind() => _ActivateBind();
+}
+
+class _ActivateBind extends ValueBind<int> {
+  @override
+  void activate() {
+    value = value! + 1;
+    super.activate();
+  }
 }
 
 class Counter extends ChangeNotifier {

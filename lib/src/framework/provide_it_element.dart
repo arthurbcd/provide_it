@@ -3,6 +3,12 @@ part of '../framework.dart';
 class ProvideItElement extends InheritedElement {
   ProvideItElement(super.widget);
 
+  static ProvideItElement of(BuildContext context) {
+    final it = context.getElementForInheritedWidgetOfExactType<ProvideIt>();
+    assert(it != null, 'You must set a `ProvideIt` above your app.');
+    return it as ProvideItElement;
+  }
+
   @override
   ProvideIt get widget => super.widget as ProvideIt;
 
@@ -39,45 +45,57 @@ class ProvideItElement extends InheritedElement {
       );
     }
     scope._element = this;
+    _applyOverrides();
+
     super.mount(parent, newSlot);
+  }
+
+  void _applyOverrides() {
+    overrides.clear();
+
+    OverrideRef._element = this;
+    widget.override?.call(OverrideContext(this));
+    OverrideRef._element = null;
   }
 
   @override
   void reassemble() {
+    _applyOverrides();
+
     for (final bind in scope.binds) {
       bind.reassemble();
     }
     super.reassemble();
+
     _reassembled = true;
     SchedulerBinding.instance.addPostFrameCallback((_) => _reassembled = false);
   }
 
   @override
   void removeDependent(Element dependent) {
-    scope._tree[dependent]?.values.forEach((bind) => bind.deactivate());
+    final binds = scope._binds[dependent];
 
-    void dispose() {
-      // binds
-      scope._treeIndex.remove(dependent);
-      scope._tree.remove(dependent)?.values.forEach((bind) => bind.dispose());
+    // we sync as [Element.deactivate] was called.
+    binds?.forEach((_, bind) => bind.deactivate());
 
-      // dependencies
-      scope._dependencyIndex.remove(dependent);
-      scope._dependencies
-          .remove(dependent)
-          ?.forEach((s) => s.removeDependent(dependent));
-    }
+    // binds must stop notifying this dependent.
+    scope._observers
+        .remove(dependent)
+        ?.forEach((bind) => bind.removeDependent(dependent));
+
+    super.removeDependent(dependent);
+    if (binds == null) return;
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we need to check if the dependent is still mounted
       // because it could have been displaced from the tree.
-      // if it's still mounted, we reactivate it.
-      dependent.mounted
-          ? scope._tree[dependent]?.values.forEach((bind) => bind.activate())
-          : dispose();
+      // if still mounted, we activate it.
+      if (dependent.mounted) {
+        binds.forEach((_, bind) => bind.activate());
+      } else {
+        scope._binds.remove(dependent)?.forEach((_, bind) => bind.dispose());
+      }
     });
-
-    super.removeDependent(dependent);
   }
 
   @override
@@ -86,25 +104,56 @@ class ProvideItElement extends InheritedElement {
 
     // we give a chance for binds to auto-dispose.
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      assert(scope._tree.isEmpty, '${scope._tree.length} binds not disposed.');
+      assert(
+          scope._binds.isEmpty, '${scope._binds.length} binds not disposed.');
       scope._element = null;
     });
   }
 
+  /// Restart [ProvideIt] subtree and all its bind dependencies.
+  void restart() {
+    _restartKey = UniqueKey();
+    markNeedsBuild();
+  }
+
+  // final refOverrides = <Ref, Ref>{};
+  final overrides = <String, OverrideRef>{};
+
+  Key? _restartKey;
+
   @override
   Widget build() {
-    // we bind the providers to the tree.
-    widget.provide?.call(this);
+    return Builder(
+      key: _restartKey,
+      builder: (context) {
+        try {
+          // we bind the overrides/providers to the tree.
+          widget.provide?.call(context);
+        } catch (e, s) {
+          return widget.errorBuilder(context, e, s);
+        }
 
-    // we use [FutureRef] a.k.a `context.future` to wait for all async binds.
-    final snapshot = future(allReady);
+        // we use [FutureRef] a.k.a `context.future` to wait for all async binds.
+        final snapshot = context.future(allReady);
 
-    // if `allReady` is void (ready), we immediately return `super.build`.
-    return snapshot.maybeWhen(
-      loading: () => widget.loadingBuilder(this),
-      error: (e, s) => widget.errorBuilder(this, e, s),
-      orElse: super.build,
+        // if `allReady` is void (ready), we immediately return `super.build`.
+        return snapshot.maybeWhen(
+          loading: () => widget.loadingBuilder(context),
+          error: (e, s) => widget.errorBuilder(context, e, s),
+          orElse: super.build,
+        );
+      },
     );
+  }
+}
+
+class OverrideRef<T> extends ProvideRef<T> {
+  OverrideRef(super.value) : super.value();
+
+  static ProvideItElement? _element;
+  static ProvideItElement get element {
+    assert(_element != null, 'Cannot override outside of ProvideIt.override.');
+    return _element!;
   }
 }
 
@@ -124,7 +173,7 @@ extension on BuildContext {
     dependOnInheritedElement(scope._element!);
 
     // we register it to notify the depending binds [Bind.removeDependent].
-    final dependencies = scope._dependencies[this as Element] ??= {};
+    final dependencies = scope._observers[this as Element] ??= {};
     dependencies.add(bind);
   }
 }

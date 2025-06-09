@@ -1,6 +1,5 @@
 library;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'provide_it.dart';
@@ -34,12 +33,13 @@ export 'src/watchers/listenable.dart';
 typedef ErrorBuilder = Widget Function(
     BuildContext context, Object error, StackTrace stackTrace);
 
-typedef _AsyncProvide = Future<void> Function(BuildContext context);
+typedef _Async = Future<void> Function(BuildContext context);
 
-class ProvideIt extends InheritedWidget {
+class ProvideIt extends InheritedWidget with _Overrides {
   const ProvideIt({
     super.key,
     this.scope,
+    this.override,
     this.provide,
     this.locator,
     this.parameters,
@@ -48,23 +48,23 @@ class ProvideIt extends InheritedWidget {
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
     required super.child,
-  }) : assert(provide is! _AsyncProvide, _assert);
+  }) : assert(provide is! _Async && override is! _Async, _notAsyncMessage);
 
-  static const _assert = '''
-ProvideIt.provide must be void. 
-If you want need async, use it directly in a `provide`:
+  static const _notAsyncMessage = '''
+ProvideIt.provide and ProvideIt.override must be void. 
+If you need async, use it directly in a `provide`:
 
 ProvideIt(
-  provide: (context) {
+  provide: (context) { // <- DO NOT mark it as async.
 
     // Use async operations here:
     context.provide(() async {
-      final value = await MyAsyncValue.init();
+      final value = await MyAsyncValue.async();
       return value;
     });
 
     // Or simply:
-    context.provide(MyAsyncValue.init);
+    context.provide(MyAsyncValue.async);
   },
   child: MyApp(),
 );
@@ -78,13 +78,38 @@ ProvideIt(
     ChangeNotifierWatcher(),
   };
 
+  /// Restart the nearest [ProvideIt] subtree and all its bind dependencies.
+  static void restart(BuildContext context) {
+    ProvideItElement.of(context).restart();
+  }
+
   static Widget _loadingBuilder(BuildContext context) {
     return Center(child: CircularProgressIndicator.adaptive());
   }
 
   static Widget _errorBuilder(BuildContext context, Object e, StackTrace s) {
-    return Center(child: Text(kDebugMode ? '$e\n$s' : '$e'));
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Tooltip(
+                message: '$s',
+                child: Text('$e'),
+              ),
+              TextButton(
+                onPressed: () => ProvideIt.restart(context),
+                child: Text('Restart'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
+
+  final void Function(OverrideContext context)? override;
 
   /// Initializes [ProvideIt] and sets up app-wide bindings.
   ///
@@ -163,10 +188,19 @@ ProvideIt(
   /// - [ReadIt.instance] when root.
   /// - [ReadIt.asNewInstance] when not root.l l
   final ReadIt? scope;
+}
 
+mixin _Overrides on InheritedWidget {
   @override
-  bool updateShouldNotify(covariant ProvideIt oldWidget) => false;
+  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
 
   @override
   InheritedElement createElement() => ProvideItElement(this);
+}
+
+extension type OverrideContext(ProvideItElement _) implements BuildContext {
+  void override<T extends Object>(T value) {
+    assert(T != dynamic || T != Object, 'Cannot override dynamic or Object');
+    _.overrides[T.toString()] = OverrideRef<T>(value);
+  }
 }

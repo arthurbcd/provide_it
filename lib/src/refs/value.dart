@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
 
 import '../framework.dart';
 import 'ref.dart';
@@ -27,19 +26,6 @@ class ValueRef<T> extends Ref<T> {
 
   @override
   Function? get create => null;
-
-  /// Watches and returns a record to (read, write) this value. Autobinds.
-  (T, void Function(T)) watch(BuildContext context) {
-    return bindOf(context).watch(context) as (T, void Function(T));
-  }
-
-  /// Writes a new [value] and notifies all observers.
-  ///
-  /// - [ValueRef] must be bound to a [BuildContext]. Bind it with [watch].
-  void write(BuildContext context, T value) {
-    final bind = context.getBindOfType<T>(key: this) as ValueBind<T>;
-    bind.write(value);
-  }
 
   @override
   Bind<T, ValueRef<T>> createBind() => ValueBind<T>();

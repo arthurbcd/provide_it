@@ -6,37 +6,68 @@ extension on ProvideItScope {
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the index for the next build.
-      _treeIndex.remove(context);
+      _bindIndex.remove(context);
     });
 
     return 0;
   }
 
   Bind<T, Ref<T>> _bind<T>(Element context, Ref<T> ref) {
-    final branch = _tree[context] ??= TreeMap();
-    final index = _treeIndex[context] ??= _initTreeIndex(context);
-    _treeIndex[context] = index + 1;
+    final branch = _binds[context] ??= TreeMap();
+    final index = _bindIndex[context] ??= _initTreeIndex(context);
+    _bindIndex[context] = index + 1;
 
-    Bind<T, Ref<T>> create() => branch[index] = ref.createBind()
-      .._scope = this
-      .._element = context
-      ..index = index
-      .._ref = ref
-      ..initBind();
+    Ref<T> getRef(String type) => _element?.overrides[type] as Ref<T>? ?? ref;
 
-    Bind<T, Ref<T>> update(Bind<T, Ref<T>> old) => old
-      .._ref = ref
-      ..didUpdateRef(old.ref);
+    Bind<T, Ref<T>> create() {
+      final type = ref.getType();
+      ref = getRef(type);
 
-    Bind<T, Ref<T>> reset(Bind old) {
-      assert(_element!._reassembled || old.ref.runtimeType == ref.runtimeType);
+      return branch[index] = ref.createBind()
+        .._element = context
+        .._scope = this
+        .._ref = ref
+        ..type = type
+        ..index = index
+        ..initBind();
+    }
+
+    bool canUpdate(Bind<T, Ref<T>> bind) {
+      final (oldRef, ref) = (bind.ref, getRef(bind.type));
+      return Ref.canUpdate(oldRef, ref);
+    }
+
+    Bind<T, Ref<T>> update(Bind<T, Ref<T>> bind) {
+      final (oldRef, ref) = (bind.ref, getRef(bind.type));
+      return bind
+        .._ref = ref
+        ..didUpdateRef(oldRef);
+    }
+
+    Bind<T, Ref<T>> reset(Bind bind) {
+      bind
+        ..deactivate()
+        ..dispose();
+      final (oldRef, ref) = (bind.ref, getRef(bind.type));
+      assert(_element!._reassembled || oldRef.runtimeType == ref.runtimeType);
       return create(); // reassembled or key changed
     }
 
     return switch (branch[index]) {
       null => create(),
-      Bind<T, Ref<T>> old when Ref.canUpdate(old.ref, ref) => update(old),
-      final old => reset(old),
+      Bind<T, Ref<T>> bind when canUpdate(bind) => update(bind),
+      final bind => reset(bind),
     };
+  }
+}
+
+extension<T> on Ref<T> {
+  String getType() {
+    final type = create != null ? Injector<T>(create!).type : T.type;
+    assert(
+      type != 'dynamic' && type != 'Object',
+      'This is likely a mistake. Provide a non-generic type.',
+    );
+    return type;
   }
 }

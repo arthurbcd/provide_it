@@ -12,7 +12,7 @@ void main() {
     ProvideIt(
       // Auto-injects dependencies
       provide: (context) {
-        context.provide(CounterService.init); // <- async
+        context.provide(CounterService.async); // <- Future
         context.provide(CounterRepository.new);
         context.provide(Counter.new);
       },
@@ -166,9 +166,7 @@ final count2 = context.read<int>();
 final count3 = context.select((CounterNotifier counter) => counter.count);
 ```
 
-You can contextlessly read using `ReadIt.intance`, `ReadIt.I` or simply `readIt`.
-
-They are available outside of the widget-tree (ex: tests). Some context dependent methods such as `watch` and `select` are not.
+You can contextlessly read using `ReadIt.intance` or simply `readIt`.
 
 Equivalent deprecations were included to help migrating from `provider`/`get_it` packages.
 

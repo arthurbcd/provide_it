@@ -54,8 +54,10 @@ extension<T, R extends Ref<T>> on Bind<T, R> {
     _lastRef = null;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // null implies that the ref was removed
-      if (_lastRef == null) {
-        _scope._tree[_element]!.remove(index)!.dispose();
+      if (_lastRef == null && !_disposed) {
+        _scope._binds[_element]!.remove(index)!
+          ..deactivate()
+          ..dispose();
       }
     });
   }
