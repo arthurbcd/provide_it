@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
@@ -148,11 +149,20 @@ class Injector<T> {
 
     final futures = <Future>[];
 
-    locate(Param param) =>
-        parameters?['${param.name ?? param.index}'] ??
-        parameters?[param.type] ??
-        locator?.call(param) ??
-        defaultLocator?.call(param);
+    locate(Param param) {
+      try {
+        return parameters?['${param.name ?? param.index}'] ??
+            parameters?[param.type] ??
+            locator?.call(param) ??
+            defaultLocator?.call(param);
+      } catch (e, s) {
+        if (kDebugMode) {
+          log('Throwed while locating $param',
+              name: 'Injector', error: e, stackTrace: s);
+        }
+        return null;
+      }
+    }
 
     final positionalArgs = [];
 

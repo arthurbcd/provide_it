@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.1
+
+- Now returns `null` when `Injector.locator` throws, debug prints error.
+
 ## 0.19.0
 
 - Added `ProvideIt.restart` to restart app subtree and it's bind dependencies.
