@@ -160,6 +160,9 @@ class Injector<T> {
           log('Throwed while locating $param',
               name: 'Injector', error: e, stackTrace: s);
         }
+        if (e is TypeError && !param.hasDefaultValue) {
+          throw InjectorError.from(e, this);
+        }
         return null;
       }
     }

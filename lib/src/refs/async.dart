@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:provide_it/src/refs/ref_widget.dart';
+import 'package:provide_it/src/utils/async_snapshot_extension.dart';
 
 import '../framework.dart';
 import 'ref.dart';
@@ -34,8 +35,8 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     var data? => AsyncSnapshot.withData(ConnectionState.none, data),
     null => AsyncSnapshot<T>.nothing(),
   };
+  Completer<T?>? _completer;
   StreamSubscription? _subscription;
-  var _completer = Completer<T?>();
   bool _didLoad = false;
   bool _canNotify = false;
 
@@ -44,8 +45,8 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
 
     if (snapshot.connectionState == ConnectionState.done) {
       snapshot.hasError
-          ? _completer.completeError(snapshot.error!, snapshot.stackTrace!)
-          : _completer.complete(snapshot.data);
+          ? _completer?.completeError(snapshot.error!, snapshot.stackTrace!)
+          : _completer?.complete(snapshot.data);
     }
 
     // we prevent notifying during the build phase
@@ -71,7 +72,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     if (!_didLoad) return null;
     if (snapshot.hasData) return null;
 
-    return _completer.future as Future<void>;
+    return _completer?.future as Future<void>?;
   }
 
   /// Loads the value. Creates a new [future] or [snapshot].
@@ -83,17 +84,15 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
 
     try {
       create();
-    } on AssertionError catch (_) {
-      rethrow;
     } catch (e, s) {
-      snapshot = AsyncSnapshot.withError(ConnectionState.done, e, s);
+      snapshot = AsyncSnapshot.withError(ConnectionState.none, e, s);
     }
 
     assert(future == null || stream == null, 'Only one future/stream allowed');
     _didLoad = true;
-    _completer = Completer<T?>();
 
     if (future case var future? when old.future != future) {
+      _completer = Completer<T?>();
       snapshot = _snapshot.inState(ConnectionState.waiting);
 
       future.then((value) {
@@ -106,6 +105,7 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
     }
 
     if (stream case var stream? when old.stream != stream) {
+      _completer = Completer<T?>();
       snapshot = _snapshot.inState(ConnectionState.waiting);
 
       _subscription?.cancel();
@@ -126,10 +126,14 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
   @protected
   FutureOr<T> readAsync() {
     if (!_didLoad) load();
-    if (snapshot.hasData) return snapshot.data as T;
 
-    // if `data as T` throws, then it's probably a Stream.empty.
-    return _completer.future.then((data) => data as T);
+    if (snapshot.isLoading) {
+      // if we have a completer, we can await it
+      // if `data as T` throws, then it's probably a Stream.empty.
+      return _completer!.future.then((data) => data as T);
+    }
+
+    return read();
   }
 
   @override
@@ -148,16 +152,9 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
   void create();
 
   @override
-  T read() {
-    if (!_didLoad) load();
-    return super.read();
-  }
-
-  @override
   T? get value {
     // even listen/read<T?> should init lazy values
-    stream;
-    future;
+    if (!_didLoad) load();
     return snapshot.data;
   }
 }

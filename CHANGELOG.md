@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.2
+
+- Improved error handling for missing parameters in `Injector`.
+
 ## 0.19.1
 
 - Now returns `null` when `Injector.locator` throws, debug prints error.

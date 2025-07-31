@@ -93,7 +93,6 @@ class ProvideRef<T> extends AsyncRef<T> {
 
 class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
   Future<T>? _future;
-  Stream<T>? _stream;
 
   /// Whether value is created lazily.
   bool get lazy => ref.lazy ?? ProvideRef.lazyPredicate(this);
@@ -106,9 +105,6 @@ class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
 
   @override
   Future<T>? get future => _future;
-
-  @override
-  Stream<T>? get stream => _stream;
 
   @override
   void initBind() {
@@ -125,7 +121,7 @@ class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
     }
 
     if (didChange) {
-      create();
+      load();
     }
 
     return didChange;
@@ -133,33 +129,14 @@ class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
 
   @override
   void create() {
-    _stream = _future = null;
+    _future = null;
 
-    Object? value;
-
-    try {
-      value = ref.value ?? injector!(ref.parameters);
-    } on InjectorError catch (e) {
-      assert(
-        false,
-        '''
-InjectorError: ${e.message}.
-
-Did you provide the missing type?
-context.provide<${e.expectedT}>(...); // <- provide it
-        ''',
-      );
-      rethrow;
-    }
+    final value = ref.value ?? injector!(ref.parameters);
 
     if (value is Future<T>) {
       _future = value;
-    } else if (value is Stream<T>) {
-      _stream = value;
-    } else if (value is T) {
-      snapshot = AsyncSnapshot.withData(ConnectionState.none, value);
     } else {
-      assert(false, 'Invalid type: ${value.runtimeType}.\n');
+      snapshot = AsyncSnapshot.withData(ConnectionState.none, value);
     }
   }
 
@@ -169,6 +146,24 @@ context.provide<${e.expectedT}>(...); // <- provide it
       ref.dispose?.call(snapshot.data as T);
     }
     super.dispose();
+  }
+
+  @override
+  T read() {
+    final e = snapshot.error;
+    assert(
+      e is! InjectorError,
+      '''
+InjectorError: ${e.message}.
+
+Did you provide the missing type?
+context.provide<${e.expectedT}>(...); // <- provide it
+        ''',
+    );
+    if (e is InjectorError) {
+      throw e;
+    }
+    return super.read();
   }
 
   @override
