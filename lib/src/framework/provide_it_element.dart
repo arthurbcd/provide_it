@@ -19,6 +19,13 @@ class ProvideItElement extends InheritedElement {
   } as ProvideItScope;
 
   bool _reassembled = false;
+  bool _firstFrame = true;
+
+  bool get isBuilding {
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    return phase == SchedulerPhase.persistentCallbacks ||
+        _firstFrame && phase == SchedulerPhase.idle;
+  }
 
   @protected
   Injector<I> injector<I>(Function create) {
@@ -48,6 +55,7 @@ class ProvideItElement extends InheritedElement {
     _applyOverrides();
 
     super.mount(parent, newSlot);
+    SchedulerBinding.instance.addPostFrameCallback((_) => _firstFrame = false);
   }
 
   void _applyOverrides() {
@@ -104,8 +112,7 @@ class ProvideItElement extends InheritedElement {
 
     // we give a chance for binds to auto-dispose.
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      assert(
-          scope._binds.isEmpty, '${scope._binds.length} binds not disposed.');
+      assert(scope._binds.isEmpty, '${scope._binds.length} undisposed binds.');
       scope._element = null;
     });
   }
@@ -163,11 +170,11 @@ extension on BuildContext {
   /// When disabled, [Bind.removeDependent] will be called for each
   /// bind dependency that this `context` depends on.
   void dependOnBind(Bind bind, String method, [String? instead]) {
+    final ProvideItScope scope = bind._scope;
     assert(
-      debugDoingBuild,
+      scope._element!.isBuilding,
       '$method() should be called within the build(). ${instead ?? ''}',
     );
-    final ProvideItScope scope = bind._scope;
 
     // we depend so we can get notified by [Element.removeDependent].
     dependOnInheritedElement(scope._element!);

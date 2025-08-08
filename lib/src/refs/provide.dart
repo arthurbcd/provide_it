@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/utils/async_snapshot_extension.dart';
 
 import '../injector/injector.dart';
 import 'async.dart';
@@ -150,6 +151,15 @@ class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
 
   @override
   T read() {
+    value; // init lazy
+
+    if (snapshot.hasData) {
+      return super.read();
+    }
+    if (snapshot.isLoading) {
+      throw LoadingProvideException('$type is loading.');
+    }
+
     final e = snapshot.error;
     assert(
       e is! InjectorError,
@@ -160,10 +170,8 @@ Did you provide the missing type?
 context.provide<${e.expectedT}>(...); // <- provide it
         ''',
     );
-    if (e is InjectorError) {
-      throw e;
-    }
-    return super.read();
+
+    throw ErrorProvideException('$type got error: $e');
   }
 
   @override
@@ -175,4 +183,20 @@ context.provide<${e.expectedT}>(...); // <- provide it
 
     return 'context.provide<$type> $lazy';
   }
+}
+
+class LoadingProvideException implements Exception {
+  LoadingProvideException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'LoadingProvideException: $message';
+}
+
+class ErrorProvideException implements Exception {
+  ErrorProvideException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'ErrorProvideException: $message';
 }

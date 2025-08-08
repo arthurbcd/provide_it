@@ -240,7 +240,7 @@ abstract class Bind<T, R extends Ref<T>> {
       return value;
     }
 
-    throw LoadingProvideException('$type not ready.');
+    throw NullBindException('$type got null.');
   }
 
   /// The value to provide.
@@ -250,4 +250,12 @@ abstract class Bind<T, R extends Ref<T>> {
 
   @override
   String toString() => _debugState();
+}
+
+class NullBindException implements Exception {
+  NullBindException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'NullBindException: $message';
 }

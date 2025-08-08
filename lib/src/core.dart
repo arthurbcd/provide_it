@@ -137,6 +137,7 @@ extension ContextStates on BuildContext {
 /// Use them freely.
 extension ContextReaders on BuildContext {
   /// Reads a previously bound value by [T] and [key].
+  @Deprecated('Use of instead.')
   T read<T>({Object? key}) {
     return scope.read<T>(key: key);
   }
@@ -172,6 +173,7 @@ extension ContextBinds on BuildContext {
   /// Watches a previously bound value by [T] and [key].
   ///
   /// Reads the bind if not already.
+  @Deprecated('Use of instead.')
   T watch<T>({Object? key}) {
     return scope.watch<T>(this, key: key);
   }
@@ -208,6 +210,15 @@ extension ContextBindFinder on BuildContext {
   /// The return type is `dynamic` on purpose as some [Bind] types are inferred by [Injector].
   Bind? getBindOfType<T>({Object? key}) {
     return scope.getBindOfType<T>(key: key);
+  }
+
+  /// Automatically calls [read] or [watch] based on the [listen] parameter.
+  ///
+  /// When listen is null (default), it automatically decides based on whether
+  /// the widget is currently in build/layout/paint pipeline, but you can
+  /// enforce specific behavior by explicitly setting listen to true or false.
+  T of<T>({Object? key, bool? listen}) {
+    return scope.of<T>(this, key: key, listen: listen);
   }
 }
 

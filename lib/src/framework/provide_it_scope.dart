@@ -211,6 +211,24 @@ context.provide<$type>(...); // <- provide it
   String toString() => _binds.toString();
 }
 
+extension ContextOf on ProvideItScope {
+  /// Automatically calls [read] or [watch] based on the [listen] parameter.
+  ///
+  /// When `listen` is null (default), it automatically decides based on whether
+  /// the widget is currently in build/layout/paint pipeline, but you can enforce
+  /// specific behavior by explicitly setting `listen` to true or false.
+  ///
+  T of<T>(BuildContext context, {Object? key, bool? listen}) {
+    listen ??= _element?.isBuilding ?? false;
+
+    if (listen) {
+      return watch<T>(context, key: key);
+    } else {
+      return read<T>(key: key);
+    }
+  }
+}
+
 extension<K, V> on Map<K, V> {
   /// Creates a new [Map] that asserts the given function when mutating.
   ///
@@ -267,12 +285,4 @@ class MissingProvideException implements Exception {
 
   @override
   String toString() => 'MissingProvideException: $message';
-}
-
-class LoadingProvideException implements Exception {
-  LoadingProvideException(this.message);
-  final String message;
-
-  @override
-  String toString() => 'LoadingProvideException: $message';
 }

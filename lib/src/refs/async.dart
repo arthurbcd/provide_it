@@ -152,9 +152,39 @@ abstract class AsyncBind<T, R extends AsyncRef<T>> extends Bind<T, R> {
   void create();
 
   @override
+  T read() {
+    value; // init lazy
+
+    if (snapshot.hasData) {
+      return super.read();
+    }
+    if (snapshot.isLoading) {
+      throw LoadingBindException('$type is loading.');
+    }
+
+    throw ErrorBindException('$type got error: ${snapshot.error}');
+  }
+
+  @override
   T? get value {
     // even listen/read<T?> should init lazy values
     if (!_didLoad) load();
     return snapshot.data;
   }
+}
+
+class LoadingBindException implements Exception {
+  LoadingBindException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'LoadingBindException: $message';
+}
+
+class ErrorBindException implements Exception {
+  ErrorBindException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'ErrorBindException: $message';
 }

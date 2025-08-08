@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.20.0
+
+- Added `BuildContext.of({bool? listen})`.
+- Deprecated `BuildContext.read`.
+- Deprecated `BuildContext.watch`.
+- Added `Loading/Error/Null` exceptions for bind providers.
+
 ## 0.19.2
 
 - Improved error handling for missing parameters in `Injector`.
