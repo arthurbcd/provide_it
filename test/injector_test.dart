@@ -318,6 +318,17 @@ void main() {
       expect(injector.hasParams, false);
       expect(injector.call, throwsA(isA<TypeError>()));
     });
+
+    test('Param.matches', () async {
+      final injector = Injector<Offset>((int _) async => Size(0, 0));
+      final param = injector.params.first;
+      final integer = 1;
+      final double = 1.0;
+
+      expect(param.matches(null), false);
+      expect(param.matches(integer), true);
+      expect(param.matches(double), false);
+    });
   });
 }
 

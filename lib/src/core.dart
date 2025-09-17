@@ -137,7 +137,6 @@ extension ContextStates on BuildContext {
 /// Use them freely.
 extension ContextReaders on BuildContext {
   /// Reads a previously bound value by [T] and [key].
-  @Deprecated('Use of instead.')
   T read<T>({Object? key}) {
     return scope.read<T>(key: key);
   }
@@ -173,7 +172,6 @@ extension ContextBinds on BuildContext {
   /// Watches a previously bound value by [T] and [key].
   ///
   /// Reads the bind if not already.
-  @Deprecated('Use of instead.')
   T watch<T>({Object? key}) {
     return scope.watch<T>(this, key: key);
   }

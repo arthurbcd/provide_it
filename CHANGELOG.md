@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.0
+
+- Added `Param.matches`.
+- Added `Param.isStream` & `Param.isAsync`.
+- Fix `Param` to handle minified types.
+- Revert `BuildContext.read/watch` deprecations.
+
 ## 0.20.0
 
 - Added `BuildContext.of({bool? listen})`.

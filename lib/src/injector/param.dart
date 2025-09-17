@@ -32,10 +32,12 @@ sealed class Param {
   /// The [PositionalParam.index] or null.
   int? get index => null;
 
-  /// The type name, always without the nullable operator.
+  /// The type name, without nullable operator.
+  /// If [rawType] is a [Future] or [Stream], the subtype is returned.
   String get type {
-    if (isNullable) return rawType.substring(0, rawType.length - 1);
-    return rawType;
+    if (!isAsync) return rawType.replaceAll('?', '');
+
+    return rawType.split('<').last.split('>').first.replaceAll('?', '');
   }
 
   /// Whether the type is nullable.
@@ -45,10 +47,30 @@ sealed class Param {
   bool get isPrivate => rawType.startsWith('_');
 
   /// Whether the type is a future.
-  bool get isFuture => rawType.startsWith('Future');
+  bool get isFuture => rawType.startsWith(futureType);
+
+  /// Whether the type is a stream.
+  bool get isStream => rawType.startsWith(streamType);
+
+  /// Whether the type is asynchronous (either a future or a stream).
+  bool get isAsync => isFuture || isStream;
 
   /// Whether the parameter has a default value.
   bool get hasDefaultValue => !isRequired || isNullable;
+
+  /// Whether this [Param] matches the given [value] type.
+  /// A type mismatch returns false.
+  bool matches(Object? value) {
+    if (value == null) return isNullable;
+
+    final valueType = value.runtimeType.toString();
+    return valueType == type || valueType == rawType;
+  }
+
+  // minified types
+  static final futureType = '$Future'.split('<').first;
+  static final streamType = '$Stream'.split('<').first;
+  static final genericTypes = ['$dynamic', '$Object'];
 }
 
 /// Represents a named parameter in an instance constructor.

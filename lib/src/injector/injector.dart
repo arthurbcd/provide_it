@@ -67,23 +67,23 @@ class Injector<T> {
   /// The return type of [create] function.
   ///
   /// If [create] is a [Future] or [Stream], the subtype is returned.
+  /// Ex: `Injector<Future<bool>>.type == Injector<bool>.type`
   late final type = _type();
 
-  /// The type of [create] function.
+  /// The inferred `T` type of [Injector].
+  /// Fallbacks to [returnType] when `T` is generic.
   late final rawType = _rawType();
 
   /// The return type of [create] function.
+  ///
+  /// This is the full return type, always including `Future` or `Stream`.
   late final returnType = _returnType();
 
   /// Whether the [create] function is async.
   bool get isAsync {
-    return returnType.startsWith(_future) || rawType.startsWith(_stream);
+    return returnType.startsWith(Param.futureType) ||
+        returnType.startsWith(Param.streamType);
   }
-
-  // handling minified types
-  static final _future = '$Future'.split('<').first;
-  static final _stream = '$Stream'.split('<').first;
-  static final _generics = ['$dynamic', '$Object'];
 
   String _type() {
     if (!isAsync) return rawType.replaceAll('?', '');
@@ -92,7 +92,7 @@ class Injector<T> {
   }
 
   String _rawType() {
-    if (!_generics.contains(T.type)) return T.toString();
+    if (!Param.genericTypes.contains(T.type)) return T.toString();
 
     return returnType;
   }

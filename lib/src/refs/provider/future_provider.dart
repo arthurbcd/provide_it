@@ -4,7 +4,7 @@ import 'package:provide_it/src/core.dart';
 import '../async.dart';
 import 'provider.dart';
 
-@Deprecated('Use `FutureRef` or `context.future` instead.')
+@Deprecated('Use `context.future` instead.')
 class FutureProvider<T> extends AsyncRefWidget<T> {
   const FutureProvider({
     super.key,
@@ -30,7 +30,7 @@ class FutureProvider<T> extends AsyncRefWidget<T> {
   /// Whether to create the value only when it's first called.
   final bool? lazy;
 
-  @Deprecated('Use `FutureRef.value` or `context.futureValue` instead.')
+  @Deprecated('Use `context.futureValue` instead.')
   const FutureProvider.value({
     super.key,
     this.future,
