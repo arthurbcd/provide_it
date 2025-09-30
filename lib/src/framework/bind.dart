@@ -139,6 +139,7 @@ abstract class Bind<T, R extends Ref<T>> {
   @protected
   @mustCallSuper
   void activate() {
+    context.dependOnBind(this, 'bind');
     _deactivated = false;
   }
 

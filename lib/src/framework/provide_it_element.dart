@@ -81,25 +81,40 @@ class ProvideItElement extends InheritedElement {
 
   @override
   void removeDependent(Element dependent) {
-    final binds = scope._binds[dependent];
-
     // we sync as [Element.deactivate] was called.
-    binds?.forEach((_, bind) => bind.deactivate());
+    final binds = scope._binds[dependent]
+      ?..forEach((_, bind) => bind.deactivate());
 
-    // binds must stop notifying this dependent.
-    scope._observers
-        .remove(dependent)
-        ?.forEach((bind) => bind.removeDependent(dependent));
+    // binds must immediately stop notifying this dependent.
+    final observers = scope._observers.remove(dependent)
+      ?..forEach((bind) => bind.removeDependent(dependent));
 
     super.removeDependent(dependent);
-    if (binds == null) return;
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we need to check if the dependent is still mounted
       // because it could have been displaced from the tree.
       // if still mounted, we activate it.
       if (dependent.mounted) {
-        binds.forEach((_, bind) => bind.activate());
+        binds?.forEach((_, bind) => bind.activate());
+
+        if (observers == null || observers.isEmpty) return;
+
+        // observers should be re-activated on next frame.
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          final newObservers = scope._observers[dependent];
+
+          // we ensure the observers are reactivated, this should rarely happen
+          if (dependent.mounted && !setEquals(observers, newObservers)) {
+            dependent.markNeedsBuild();
+
+            if (kDebugMode) {
+              print(
+                'ProvideIt: Warning - Re-activating removed observers of ${dependent.widget}.',
+              );
+            }
+          }
+        });
       } else {
         scope._binds.remove(dependent)?.forEach((_, bind) => bind.dispose());
       }
@@ -171,8 +186,9 @@ extension on BuildContext {
   /// bind dependency that this `context` depends on.
   void dependOnBind(Bind bind, String method, [String? instead]) {
     final ProvideItScope scope = bind._scope;
+    final isActivating = bind._deactivated && !bind._disposed;
     assert(
-      scope._element!.isBuilding,
+      scope._element!.isBuilding || isActivating,
       '$method() should be called within the build(). ${instead ?? ''}',
     );
 

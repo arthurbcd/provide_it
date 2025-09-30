@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.21.1
+
+- Fix missing `dependOnBind` on `Bind.activate`.
+
 ## 0.21.0
 
 - Added `Param.matches`.
@@ -177,7 +181,7 @@ Thanks to `almeidajuan`.
 
 - Changed [Injector.parameters] to use [Symbol] instead of [String].
 - Improved [ReadIt] type resolution.
-- Improved [Injector.toString] 
+- Improved [Injector.toString]
 - Improved [Param.toString].
 - Improved async injections.
 - Updated example.
