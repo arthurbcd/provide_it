@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.0
+
+- Add optional `context` param to `getBindOfType` with scope.
+- Removed `key` param from `getBindOfType`.
+- Now fully scope retrocompatible with `provider`.
+- Added `BuildContext.inheritScope` to stablish a scope hierarchy, useful for overlays.
+
 ## 0.21.1
 
 - Fix missing `dependOnBind` on `Bind.activate`.

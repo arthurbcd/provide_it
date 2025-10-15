@@ -137,15 +137,15 @@ extension ContextStates on BuildContext {
 /// Use them freely.
 extension ContextReaders on BuildContext {
   /// Reads a previously bound value by [T] and [key].
-  T read<T>({Object? key}) {
-    return scope.read<T>(key: key);
+  T read<T>() {
+    return scope.read<T>(this);
   }
 
   /// Reads a previously bound value by [T] and [key].
   ///
   /// Returns a [Future] if the value is not ready.
-  FutureOr<T> readAsync<T>({Object? key}) {
-    return scope.readAsync<T>(key: key);
+  FutureOr<T> readAsync<T>() {
+    return scope.readAsync<T>();
   }
 
   /// The future when all [AsyncBind.isReady] are completed.
@@ -160,8 +160,8 @@ extension ContextReaders on BuildContext {
   /// Whether [T] is ready.
   bool isReadySync<T>({Object? key}) => isReady<T>(key: key) == null;
 
-  Future<void> reload<T>({Object? key}) {
-    return scope.reload<T>(key: key);
+  Future<void> reload<T>() {
+    return scope.reload<T>();
   }
 }
 
@@ -172,22 +172,22 @@ extension ContextBinds on BuildContext {
   /// Watches a previously bound value by [T] and [key].
   ///
   /// Reads the bind if not already.
-  T watch<T>({Object? key}) {
-    return scope.watch<T>(this, key: key);
+  T watch<T>() {
+    return scope.watch<T>(this);
   }
 
   /// Selects a previously bound value by [T] and [key].
   ///
   /// Reads the bind if not already.
-  R select<T, R>(R selector(T value), {Object? key}) {
-    return scope.select<T, R>(this, selector, key: key);
+  R select<T, R>(R selector(T value)) {
+    return scope.select<T, R>(this, selector);
   }
 
   /// Listens to a previously bound value by [T] and [key].
   ///
   /// Does not read a lazy bind.
-  void listen<T>(void listener(T value), {Object? key}) {
-    scope.listen<T>(this, listener, key: key);
+  void listen<T>(void listener(T value)) {
+    scope.listen<T>(this, listener);
   }
 
   /// Listens to a previously bound value by [T], [selector] and [key].
@@ -195,10 +195,9 @@ extension ContextBinds on BuildContext {
   /// Instantiates the bind if not already.
   void listenSelect<R, T>(
     R selector(T value),
-    void listener(R previous, R next), {
-    Object? key,
-  }) {
-    scope.listenSelect<T, R>(this, selector, listener, key: key);
+    void listener(R previous, R next),
+  ) {
+    scope.listenSelect<T, R>(this, selector, listener);
   }
 }
 
@@ -206,8 +205,17 @@ extension ContextBindFinder on BuildContext {
   /// Gets a [Bind] of [T] type. O(1).
   ///
   /// The return type is `dynamic` on purpose as some [Bind] types are inferred by [Injector].
-  Bind? getBindOfType<T>({Object? key}) {
-    return scope.getBindOfType<T>(key: key);
+  Bind? getBindOfType<T>() {
+    return scope.getBindOfType<T>();
+  }
+
+  /// Inherits scope from a parent context, establishing a scope relationship.
+  ///
+  /// This allows [getBindOfType] to traverse the scope hierarchy when looking
+  /// for providers in ancestor scopes.
+  @protected
+  void inheritScope(BuildContext parent) {
+    scope.inheritScope(this, parent);
   }
 
   /// Automatically calls [read] or [watch] based on the [listen] parameter.
@@ -216,7 +224,7 @@ extension ContextBindFinder on BuildContext {
   /// the widget is currently in build/layout/paint pipeline, but you can
   /// enforce specific behavior by explicitly setting listen to true or false.
   T of<T>({Object? key, bool? listen}) {
-    return scope.of<T>(this, key: key, listen: listen);
+    return scope.of<T>(this, listen: listen);
   }
 }
 

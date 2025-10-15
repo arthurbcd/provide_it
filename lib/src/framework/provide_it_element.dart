@@ -117,6 +117,7 @@ class ProvideItElement extends InheritedElement {
         });
       } else {
         scope._binds.remove(dependent)?.forEach((_, bind) => bind.dispose());
+        scope._inheritedScopes.remove(dependent);
       }
     });
   }

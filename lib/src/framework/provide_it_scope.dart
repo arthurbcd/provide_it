@@ -15,28 +15,28 @@ class ProvideItScope implements ReadIt {
       };
 
   @protected
-  T watch<T>(BuildContext context, {Object? key}) {
-    final bind = _bindOf<T>(context, key: key);
+  T watch<T>(BuildContext context) {
+    final bind = _bindOf<T>(context);
     final value = bind?.value;
     bind?.watch(context);
 
     if (value == null && null is T) return value;
     if (bind != null) return bind.read();
 
-    throw StateError('Ref<$T> not found, key: $key.');
+    throw StateError('Ref<$T> not found.');
   }
 
   @protected
-  R select<T, R>(BuildContext context, R selector(T value), {Object? key}) {
-    final bind = _bindOf<T>(context, key: key);
+  R select<T, R>(BuildContext context, R selector(T value)) {
+    final bind = _bindOf<T>(context);
     final value = bind?.select<T, R>(context, selector);
 
     return value as R;
   }
 
   @protected
-  void listen<T>(BuildContext context, void listener(T value), {Object? key}) {
-    final bind = _bindOf<T>(context, key: key);
+  void listen<T>(BuildContext context, void listener(T value)) {
+    final bind = _bindOf<T>(context);
 
     bind?.listen<T>(context, listener);
   }
@@ -45,10 +45,9 @@ class ProvideItScope implements ReadIt {
   void listenSelect<T, R>(
     BuildContext context,
     R selector(T value),
-    void listener(R previous, R next), {
-    Object? key,
-  }) {
-    final bind = _bindOf<T>(context, key: key);
+    void listener(R previous, R next),
+  ) {
+    final bind = _bindOf<T>(context);
 
     bind?.listenSelect<T, R>(context, selector, listener);
   }
@@ -64,6 +63,7 @@ class ProvideItScope implements ReadIt {
   // bind tree cache.
   // used to find the bind by type.
   late final _bindCache = <String, Set<Bind>>{}._assert(this);
+  late final _bindScopedCache = <(String, BuildContext), Bind>{}._assert(this);
 
   // bind observers by the dependent `context`.
   // manages which observers can be notified.
@@ -86,6 +86,9 @@ class ProvideItScope implements ReadIt {
 
   void _unregister(Bind bind) {
     _bindCache[bind.type]!.remove(bind);
+    for (var context in bind._scopedDependents) {
+      _bindScopedCache.remove((bind.type, context));
+    }
   }
 
   @protected
@@ -140,21 +143,20 @@ class ProvideItScope implements ReadIt {
   }
 
   @protected
-  Bind? bindOf<T>(BuildContext context, {Object? key}) {
-    return _bindOf<T>(context, key: key);
+  Bind? bindOf<T>(BuildContext context) {
+    return _bindOf<T>(context);
   }
 
-  Future<void> reload<T>({Object? key}) async {
-    final bind = getBindOfType<T>(key: key);
-    assert(
-        bind is AsyncBind || null is T, 'AsyncRef<$T> not found, key: $key.');
+  Future<void> reload<T>() async {
+    final bind = getBindOfType<T>();
+    assert(bind is AsyncBind || null is T, 'AsyncRef<$T> not found.');
 
     await (bind as AsyncBind?)?.load();
   }
 
   @override
-  T read<T>({Object? key}) {
-    final bind = getBindOfType<T>(key: key);
+  T read<T>([BuildContext? context]) {
+    final bind = getBindOfType<T>(context: context);
     final value = bind?.value;
 
     if (value == null && null is T) return value;
@@ -164,10 +166,10 @@ class ProvideItScope implements ReadIt {
   }
 
   @override
-  FutureOr<T> readAsync<T>({String? type, Object? key}) {
+  FutureOr<T> readAsync<T>({String? type}) {
     type ??= T.type;
 
-    final bind = getBindOfType(type: type, key: key);
+    final bind = getBindOfType(type: type);
 
     if (bind is AsyncBind) {
       final value = bind.readAsync();
@@ -180,7 +182,7 @@ class ProvideItScope implements ReadIt {
     assert(
       false,
       '''
-ReadError: '$type not found, key: $key.'.
+ReadError: '$type not found'.
 
 Did you provide the missing type?
 context.provide<$type>(...); // <- provide it
@@ -190,19 +192,56 @@ context.provide<$type>(...); // <- provide it
     throw MissingProvideException('$type not found.');
   }
 
+  final _inheritedScopes = <BuildContext, BuildContext>{};
+
+  /// Links a child context to a parent context, establishing a scope relationship.
+  ///
+  /// This allows [getBindOfType] to traverse the scope hierarchy when looking
+  /// for providers in ancestor scopes.
   @protected
-  Bind? getBindOfType<T>({String? type, Object? key}) {
+  void inheritScope(BuildContext child, BuildContext parent) {
+    child.dependOnInheritedElement(_element!);
+    _inheritedScopes[child] = parent;
+  }
+
+  @protected
+  Bind? getBindOfType<T>({String? type, BuildContext? context}) {
     type ??= T.type;
 
-    final binds = switch (key) {
-      null => _bindCache[type] ?? {},
-      _ => _bindCache[type]?.where((b) => Ref.equals(b.key, key)) ?? {},
-    };
+    final binds = _bindCache[type] ?? {};
+
+    if (binds.length > 1 && context != null) {
+      if (_bindScopedCache[(type, context)] case var bind?) return bind;
+
+      bool checkScope(BuildContext ctx) {
+        final binds = _binds[ctx]?.values.where((e) => e.type == type);
+
+        if (binds?.isNotEmpty ?? false) {
+          assert(
+            binds!.length < 2,
+            'Duplicate provide<$type> found in the same scope $ctx.',
+          );
+          _bindScopedCache[(type!, context)] = binds!.first
+            .._scopedDependents.add(context);
+          return false;
+        }
+
+        if (_inheritedScopes[ctx] case var parent?) {
+          if (checkScope(parent)) parent.visitAncestorElements(checkScope);
+          return false;
+        }
+
+        return true;
+      }
+
+      if (checkScope(context)) context.visitAncestorElements(checkScope);
+      if (_bindScopedCache[(type, context)] case var bind?) return bind;
+    }
     final bind = binds.lastOrNull;
 
     assert(
       binds.where((it) => !it.deactivated).length < 2,
-      'Duplicate provide<$type> found, key: $key.',
+      'Duplicate provide<$type> found globally.',
     );
     return bind;
   }
@@ -218,13 +257,13 @@ extension ContextOf on ProvideItScope {
   /// the widget is currently in build/layout/paint pipeline, but you can enforce
   /// specific behavior by explicitly setting `listen` to true or false.
   ///
-  T of<T>(BuildContext context, {Object? key, bool? listen}) {
+  T of<T>(BuildContext context, {bool? listen}) {
     listen ??= _element?.isBuilding ?? false;
 
     if (listen) {
-      return watch<T>(context, key: key);
+      return watch<T>(context);
     } else {
-      return read<T>(key: key);
+      return read<T>(context);
     }
   }
 }

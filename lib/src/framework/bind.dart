@@ -53,6 +53,9 @@ abstract class Bind<T, R extends Ref<T>> {
   late R _ref;
   R? _lastRef;
 
+  // scoped cache
+  final _scopedDependents = <BuildContext>{};
+
   // observers
   final _watchers = <Element>{};
   final _selectors = <Element, Selectors>{};

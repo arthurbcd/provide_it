@@ -10,8 +10,8 @@ extension on ProvideItScope {
     return 0;
   }
 
-  Bind? _bindOf<T>(BuildContext context, {Object? key}) {
-    final bind = getBindOfType<T>(key: key);
+  Bind? _bindOf<T>(BuildContext context) {
+    final bind = getBindOfType<T>(context: context);
 
     if (bind != null && context is Element) {
       final index = _observerIndex[context] ??= _initCacheIndex(context);

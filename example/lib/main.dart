@@ -59,6 +59,45 @@ void main() {
                       },
                       child: Text('Open Counter dialog'),
                     ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemBuilder: (context, index) {
+                          return Builder(
+                            builder: (context) {
+                              context.provide(() => ValueNotifier(0));
+                              final vn = context.watch<ValueNotifier<int>>();
+                              return ListTile(
+                                title: Text('Counter: ${vn.value}'),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.add),
+                                  onPressed: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) {
+                                        // // This child context is now scoped to the parent context
+                                        ctx.inheritScope(context);
+                                        final vn =
+                                            ctx.watch<ValueNotifier<int>>();
+                                        return AlertDialog(
+                                          title: Text('Counter from dialog'),
+                                          content: Text('${vn.value}'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => vn.value++,
+                                              child: const Text('Close'),
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               );

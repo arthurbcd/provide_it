@@ -46,8 +46,8 @@ class Provider<T> extends RefWidget<T> {
   final UpdateShouldNotify<T>? updateShouldNotify;
 
   @Deprecated('Use `context.read/watch` instead.')
-  static T of<T>(BuildContext context, {bool listen = true, Object? key}) {
-    return listen ? context.watch(key: key) : context.read(key: key);
+  static T of<T>(BuildContext context, {bool listen = true}) {
+    return listen ? context.watch() : context.read();
   }
 
   @override

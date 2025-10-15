@@ -15,19 +15,19 @@ sealed class ReadIt {
   bool get mounted;
 
   /// Reads the value of a [Ref].
-  T read<T>({Object? key});
+  T read<T>();
 
   /// Async reads the value of a [AsyncRef].
-  FutureOr<T> readAsync<T>({Object? key});
+  FutureOr<T> readAsync<T>();
 
   /// The future when all [AsyncBind.isReady] are completed.
   FutureOr<void> allReady();
 
   /// The future when [T] is ready.
-  FutureOr<void> isReady<T>({Object? key});
+  FutureOr<void> isReady<T>();
 }
 
 extension CallableReadIt on ReadIt {
   /// Syntactic sugar for [ReadIt.read].
-  T call<T>({Object? key}) => read<T>(key: key);
+  T call<T>() => read<T>();
 }
