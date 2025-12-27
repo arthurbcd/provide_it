@@ -9,9 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  provide_it: 
+  provide_it:
     path: ../
   performance: ^0.1.1
+  context_plus: ^6.0.5
 
 dev_dependencies:
   flutter_test:

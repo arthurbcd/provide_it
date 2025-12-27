@@ -51,10 +51,10 @@ class ProvideItElement extends InheritedElement {
         'The root `ProvideIt` widget must be above your app. ',
       );
     }
+    super.mount(parent, newSlot);
     scope._element = this;
     _applyOverrides();
 
-    super.mount(parent, newSlot);
     SchedulerBinding.instance.addPostFrameCallback((_) => _firstFrame = false);
   }
 

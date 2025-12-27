@@ -25,7 +25,7 @@ void main() {
       child: MaterialApp(
         home: Builder(
           builder: (context) {
-            final counter = context.of<Counter>();
+            final counter = context.watch<Counter>();
 
             context.listen<Counter>((counter) {
               // do something
@@ -76,8 +76,8 @@ class CounterProvider extends StatelessWidget {
     context.provide(Counter.new);
 
     return ElevatedButton(
-      onPressed: () => context.of<Counter>().increment(),
-      child: Text('Count: ${context.of<Counter>().count}'),
+      onPressed: () => context.read<Counter>().increment(),
+      child: Text('Count: ${context.read<Counter>().count}'),
     );
   }
 }
@@ -85,7 +85,7 @@ class CounterProvider extends StatelessWidget {
 
 Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound.
 
-By default, its located by instance type: `of<Type>`.
+By default, its located by instance type: `read<Type>`.
 
 You can manually specify one using `locator` parameter:
 
@@ -161,8 +161,8 @@ class CounterProvider extends StatelessWidget {
 For accessing a state, several methods are available:
 
 ```dart
-final count = context.of<CounterNotifier>().count;
-final count2 = context.of<int>(listen: false); // force read only
+final count = context.watch<CounterNotifier>().count;
+final count2 = context.read<int>(); // read only
 final count3 = context.select((CounterNotifier counter) => counter.count);
 ```
 
@@ -230,10 +230,10 @@ ProvideIt(
 );
 ```
 
-And now you can watch it with `of`, `select` and `listen` as usual:
+And now you can watch it with `watch`, `select` and `listen` as usual:
 
 ```dart
-final state = context.of<MyCubit>().state;
+final state = context.watch<MyCubit>().state;
 ```
 
 **`provide_it` is a proof of concept and is not recommended for production use.**

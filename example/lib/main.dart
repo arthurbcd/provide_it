@@ -38,7 +38,7 @@ void main() {
                         showDialog(
                           context: context,
                           builder: (context) {
-                            final counter = context.of<Counter>();
+                            final counter = context.watch<Counter>();
 
                             return AlertDialog(
                               title: Text('Works in a dialog!'),
