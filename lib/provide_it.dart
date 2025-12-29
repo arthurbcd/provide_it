@@ -35,7 +35,7 @@ typedef ErrorBuilder = Widget Function(
 
 typedef _Async = Future<void> Function(BuildContext context);
 
-class ProvideIt extends InheritedWidget with _Overrides {
+class ProvideIt extends InheritedWidget {
   const ProvideIt({
     super.key,
     this.scope,
@@ -43,7 +43,6 @@ class ProvideIt extends InheritedWidget with _Overrides {
     this.provide,
     this.locator,
     this.parameters,
-    this.allowedDuplicates = const [],
     this.additionalWatchers = const [],
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
@@ -109,16 +108,20 @@ ProvideIt(
     );
   }
 
+  /// Overrides existing providers or values within this [ProvideIt] scope.
+  ///
+  /// The [override] callback is executed before [provide], allowing you to
+  /// replace dependencies for testing or specific subtrees.
   final void Function(OverrideContext context)? override;
 
-  /// Initializes [ProvideIt] and sets up app-wide bindings.
+  /// Initializes [ProvideIt] and sets up root [ContextProviders].
   ///
-  /// The [provide] follows [ReadIt.allReady], calling:
-  /// - [loadingBuilder]: when any async bind is loading.
-  /// - [errorBuilder]: when any async bind fails to load.
-  /// - [child]: when all async binds are ready.
+  /// The [provide] callback follows [ReadIt.allReady], showing:
+  /// - [loadingBuilder]: when any async provider is loading.
+  /// - [errorBuilder]: when any async provider fails to load.
+  /// - [child]: when all async providers are ready.
   ///
-  /// If [provide] is `null`, the [child] will be displayed immediately.
+  /// If [provide] is `null` or no async provider is found, [child] is immediately displayed.
   final void Function(BuildContext context)? provide;
 
   /// The builder to use if [provide] is marked with `async`.
@@ -136,29 +139,6 @@ ProvideIt(
   ///
   /// To disable [defaultWatchers], set: `ProvideIt.defaultWatchers = []`.
   final List<Watcher> additionalWatchers;
-
-  /// List of types allowed to have duplicate values on read.
-  ///
-  /// Types not in this list will be treated as strict and cannot have duplicate values,
-  /// unless a key exists to differentiate them.
-  ///
-  /// - Set to `[]` to strictly enforce no duplicates.
-  /// - Set to `null` to allow duplicates for all types.
-  ///
-  /// Using binds directly does not enforce this rule, as you are not
-  /// reading it from the context.
-  ///
-  /// ```dart
-  /// // when using locally, duplicates are always allowed.
-  /// final (name, setName) = context.value('');
-  /// final (title, setTitle) = context.value('');
-  /// final (email, setEmail) = context.value('', key: 'email');
-  ///
-  /// // unless `allowedDuplicates` contains `String`, then:
-  /// final title = context.read<String>(); // not allowed
-  /// final email = context.read<String>(key: 'email'); // allowed
-  /// ```
-  final List<Type>? allowedDuplicates;
 
   /// Injects a [Param] during creation.
   ///
@@ -186,21 +166,23 @@ ProvideIt(
 
   /// The [ReadIt] scope to use. When `null`, defaults to:
   /// - [ReadIt.instance] when root.
-  /// - [ReadIt.asNewInstance] when not root.l l
+  /// - [ReadIt.asNewInstance] when not root.
   final ReadIt? scope;
-}
 
-mixin _Overrides on InheritedWidget {
-  @override
+  // ignore: annotate_overrides
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
 
-  @override
+  // ignore: annotate_overrides
   InheritedElement createElement() => ProvideItElement(this);
 }
 
 extension type OverrideContext(ProvideItElement _) implements BuildContext {
   void override<T extends Object>(T value) {
     assert(T != dynamic || T != Object, 'Cannot override dynamic or Object');
+    assert(
+      T != value.runtimeType,
+      'Missing override<Type> for $T.\nEx: context.override<Counter>(FakeCounter())',
+    );
     _.overrides[T.toString()] = OverrideRef<T>(value);
   }
 }

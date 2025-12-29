@@ -51,9 +51,9 @@ class ProvideItElement extends InheritedElement {
         'The root `ProvideIt` widget must be above your app. ',
       );
     }
-    super.mount(parent, newSlot);
     scope._element = this;
     _applyOverrides();
+    super.mount(parent, newSlot);
 
     SchedulerBinding.instance.addPostFrameCallback((_) => _firstFrame = false);
   }
@@ -133,7 +133,7 @@ class ProvideItElement extends InheritedElement {
     });
   }
 
-  /// Restart [ProvideIt] subtree and all its bind dependencies.
+  /// Restart [ProvideIt] subtree and all its dependencies.
   void restart() {
     _restartKey = UniqueKey();
     markNeedsBuild();
@@ -150,16 +150,16 @@ class ProvideItElement extends InheritedElement {
       key: _restartKey,
       builder: (context) {
         try {
-          // we bind the overrides/providers to the tree.
+          // we bind the providers to the tree.
           widget.provide?.call(context);
         } catch (e, s) {
           return widget.errorBuilder(context, e, s);
         }
 
         // we use [FutureRef] a.k.a `context.future` to wait for all async binds.
-        final snapshot = context.future(allReady);
+        final snapshot = context.future(allReady, key: allReady() != null);
 
-        // if `allReady` is void (ready), we immediately return `super.build`.
+        // if `allReady` is void (ready), we return child (super.build).
         return snapshot.maybeWhen(
           loading: () => widget.loadingBuilder(context),
           error: (e, s) => widget.errorBuilder(context, e, s),
