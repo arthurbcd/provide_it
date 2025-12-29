@@ -63,7 +63,7 @@ class ProvideItScope implements ReadIt {
   // bind tree cache.
   // used to find the bind by type.
   late final _bindCache = <String, Set<Bind>>{}._assert(this);
-  late final _bindScopedCache = <(String, BuildContext), Bind>{}._assert(this);
+  late final _scopedBindCache = <(String, BuildContext), Bind>{}._assert(this);
 
   // bind observers by the dependent `context`.
   // manages which observers can be notified.
@@ -87,7 +87,7 @@ class ProvideItScope implements ReadIt {
   void _unregister(Bind bind) {
     _bindCache[bind.type]!.remove(bind);
     for (var context in bind._scopedDependents) {
-      _bindScopedCache.remove((bind.type, context));
+      _scopedBindCache.remove((bind.type, context));
     }
   }
 
@@ -194,12 +194,13 @@ context.provide<$type>(...); // <- provide it
 
   final _inheritedScopes = <BuildContext, BuildContext>{};
 
-  /// Links a child context to a parent context, establishing a scope relationship.
+  /// Establishes a scope relationship from a child context to a parent context.
   ///
   /// This allows [getBindOfType] to traverse the scope hierarchy when looking
   /// for providers in ancestor scopes.
   @protected
   void inheritScope(BuildContext child, BuildContext parent) {
+    assert(child != parent, 'Cannot inherit scope from itself.');
     child.dependOnInheritedElement(_element!);
     _inheritedScopes[child] = parent;
   }
@@ -211,9 +212,9 @@ context.provide<$type>(...); // <- provide it
     final binds = _bindCache[type] ?? {};
 
     if (binds.length > 1 && context != null) {
-      if (_bindScopedCache[(type, context)] case var bind?) return bind;
+      if (_scopedBindCache[(type, context)] case var bind?) return bind;
 
-      bool checkScope(BuildContext ctx) {
+      bool visit(BuildContext ctx) {
         final binds = _binds[ctx]?.values.where((e) => e.type == type);
 
         if (binds?.isNotEmpty ?? false) {
@@ -221,21 +222,21 @@ context.provide<$type>(...); // <- provide it
             binds!.length < 2,
             'Duplicate provide<$type> found in the same scope $ctx.',
           );
-          _bindScopedCache[(type!, context)] = binds!.first
+          _scopedBindCache[(type!, context)] = binds!.first
             .._scopedDependents.add(context);
           return false;
         }
 
         if (_inheritedScopes[ctx] case var parent?) {
-          if (checkScope(parent)) parent.visitAncestorElements(checkScope);
+          if (visit(parent)) parent.visitAncestorElements(visit);
           return false;
         }
 
         return true;
       }
 
-      if (checkScope(context)) context.visitAncestorElements(checkScope);
-      if (_bindScopedCache[(type, context)] case var bind?) return bind;
+      if (visit(context)) context.visitAncestorElements(visit);
+      if (_scopedBindCache[(type, context)] case var bind?) return bind;
     }
     final bind = binds.lastOrNull;
 

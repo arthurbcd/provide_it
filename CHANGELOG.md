@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.1
+
+- Fixed `ProvideIt.provide` & `ProvideIt.override` throwing when switching async providers on hot-reload.
+
 ## 0.22.0
 
 - Add optional `context` param to `getBindOfType` with scope.
