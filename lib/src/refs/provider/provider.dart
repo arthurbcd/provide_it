@@ -54,7 +54,7 @@ class Provider<T> extends RefWidget<T> {
   Bind<T, Provider<T>> createBind() => ProviderState<T>();
 }
 
-class ProviderState<T> extends Bind<T, Provider<T>> {
+class ProviderState<T> extends Bind<T, Provider<T>> with Scope {
   bool _created = false;
 
   @override

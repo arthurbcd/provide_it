@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:provide_it/src/core.dart';
+import 'package:provide_it/src/framework.dart';
 
 import '../async.dart';
 import 'provider.dart';
 
-@Deprecated('Use `context.future` instead.')
+@Deprecated('Use `context.useFuture` instead.')
 class FutureProvider<T> extends AsyncRefWidget<T> {
   const FutureProvider({
     super.key,
@@ -30,7 +30,7 @@ class FutureProvider<T> extends AsyncRefWidget<T> {
   /// Whether to create the value only when it's first called.
   final bool? lazy;
 
-  @Deprecated('Use `context.futureValue` instead.')
+  @Deprecated('Use `context.useFuture` instead.')
   const FutureProvider.value({
     super.key,
     this.future,
@@ -45,16 +45,12 @@ class FutureProvider<T> extends AsyncRefWidget<T> {
   /// The value to provide.
   final Future<T>? future;
 
-  @Deprecated('Use `context.read/watch` instead.')
-  static T of<T>(BuildContext context, {bool listen = true}) {
-    return listen ? context.watch() : context.read();
-  }
-
   @override
   AsyncBind<T, FutureProvider<T>> createBind() => FutureProviderState<T>();
 }
 
-class FutureProviderState<T> extends AsyncBind<T, FutureProvider<T>> {
+class FutureProviderState<T> extends AsyncBind<T, FutureProvider<T>>
+    with Scope {
   Future<T>? _future;
 
   @override

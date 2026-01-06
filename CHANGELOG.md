@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.30.0
+
+- Overall simplification, with:
+    - context.provide/provideValue (shared state)
+    - context.use/useValue (local state)
+
+## 0.22.2
+
+- Updated `setup_test.dart`.
+- Small refactoring.
+
 ## 0.22.1
 
 - Fixed `ProvideIt.provide` & `ProvideIt.override` throwing when switching async providers on hot-reload.

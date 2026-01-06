@@ -5,15 +5,15 @@ import 'package:flutter/widgets.dart';
 import '../framework.dart';
 import 'ref.dart';
 
-class ValueRef<T> extends Ref<T> {
-  const ValueRef(
+class UseValueRef<T> extends Ref<T> {
+  const UseValueRef(
     this.initialValue, {
     this.debounce,
     this.throttle,
     super.key,
   });
 
-  /// The initial value of this [ValueRef].
+  /// The initial value of this [UseValueRef].
   final T initialValue;
 
   /// The duration a write must wait before applying. Resets on each write.
@@ -28,17 +28,17 @@ class ValueRef<T> extends Ref<T> {
   Function? get create => null;
 
   @override
-  Bind<T, ValueRef<T>> createBind() => ValueBind<T>();
+  Bind<T, UseValueRef<T>> createBind() => UseValueBind<T>();
 }
 
-class ValueBind<T> extends Bind<T, ValueRef<T>> {
+class UseValueBind<T> extends Bind<T, UseValueRef<T>> {
   Timer? _debounceTimer, _throttleTimer;
 
   @override
   late T? value = ref.initialValue;
 
   @protected
-  void write(T newValue) {
+  void setValue(T newValue) {
     if (ref.debounce == null) return _throttle(newValue);
 
     _debounceTimer?.cancel();
@@ -46,14 +46,14 @@ class ValueBind<T> extends Bind<T, ValueRef<T>> {
   }
 
   void _throttle(T newValue) {
-    if (ref.throttle == null) return _write(newValue);
+    if (ref.throttle == null) return _setValue(newValue);
 
     if (_throttleTimer?.isActive ?? false) return;
     _throttleTimer = Timer(ref.throttle!, () {});
-    _write(newValue);
+    _setValue(newValue);
   }
 
-  void _write(T newValue) {
+  void _setValue(T newValue) {
     value = newValue;
     notifyObservers();
   }
@@ -62,7 +62,7 @@ class ValueBind<T> extends Bind<T, ValueRef<T>> {
   (T, void Function(T)) watch(BuildContext context) {
     super.watch(context);
 
-    return (read(), write);
+    return (read(), setValue);
   }
 
   @override
@@ -73,16 +73,19 @@ class ValueBind<T> extends Bind<T, ValueRef<T>> {
   }
 }
 
-/// Like a [ValueNotifier] but bounded to [ValueRef].
+/// Like a [ValueNotifier] but bounded to [UseValueRef].
 /// Ex:
 /// ```dart
-/// final count = context.value(0);
+/// final count = context.useValue(0);
+/// ```
+/// Then you can get/set the value:
+/// ```dart
 /// count.value = 1;
 /// ```
 extension ValueRecordExtension<T> on (T, void Function(T)) {
-  /// The [ValueBind.read].
+  /// The [UseValueBind.value].
   T get value => $1;
 
-  /// The [ValueBind.write].
+  /// The [UseValueBind.setValue].
   set value(T value) => $2(value);
 }

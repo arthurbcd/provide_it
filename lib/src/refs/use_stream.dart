@@ -1,7 +1,7 @@
 import 'async.dart';
 
-class StreamRef<T> extends AsyncRef<T> {
-  const StreamRef(
+class UseStreamRef<T> extends AsyncRef<T> {
+  const UseStreamRef(
     Stream<T> Function() this.create, {
     super.initialData,
     super.key,
@@ -10,7 +10,7 @@ class StreamRef<T> extends AsyncRef<T> {
   @override
   final Stream<T> Function()? create;
 
-  const StreamRef.value(
+  const UseStreamRef.value(
     Stream<T> this.value, {
     super.initialData,
     super.key,
@@ -20,10 +20,10 @@ class StreamRef<T> extends AsyncRef<T> {
   final Stream<T>? value;
 
   @override
-  AsyncBind<T, StreamRef<T>> createBind() => StreamBind<T>();
+  AsyncBind<T, UseStreamRef<T>> createBind() => UseStreamBind<T>();
 }
 
-class StreamBind<T> extends AsyncBind<T, StreamRef<T>> {
+class UseStreamBind<T> extends AsyncBind<T, UseStreamRef<T>> {
   Stream<T>? _stream;
 
   @override

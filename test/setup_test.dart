@@ -21,11 +21,10 @@ void main() {
     testWidgets('should throw StateError when re-attaching a scope',
         (tester) async {
       final scope = ReadIt.asNewInstance();
-      await tester.pumpWidget(Column(
-        children: [
-          ProvideIt(scope: scope, child: SizedBox()),
-          ProvideIt(scope: scope, child: SizedBox()),
-        ],
+
+      await tester.pumpWidget(ProvideIt(
+        scope: scope,
+        child: ProvideIt(scope: scope, child: Text('Hello')),
       ));
 
       final e = tester.takeException();

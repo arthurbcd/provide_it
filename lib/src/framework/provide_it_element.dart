@@ -157,7 +157,7 @@ class ProvideItElement extends InheritedElement {
         }
 
         // we use [FutureRef] a.k.a `context.future` to wait for all async binds.
-        final snapshot = context.future(allReady, key: allReady() != null);
+        final snapshot = context.useFuture(allReady, key: allReady() != null);
 
         // if `allReady` is void (ready), we return child (super.build).
         return snapshot.maybeWhen(

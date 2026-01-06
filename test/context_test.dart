@@ -130,7 +130,7 @@ void main() {
   group('ContextStates', () {
     testWidgets('value should bind value to context', (tester) async {
       await provideIt(tester, (context) {
-        final (value, setValue) = context.value(0);
+        final (value, setValue) = context.useValue(0);
         return GestureDetector(
           key: Key('$value'),
           onTap: () => setValue(value + 1),
@@ -149,7 +149,7 @@ void main() {
     testWidgets('create should bind created value to context', (tester) async {
       int createCount = 0;
       await provideIt(tester, (context) {
-        final value = context.create<int>((_) {
+        final value = context.use<int>((_) {
           createCount++;
           return 42;
         });
@@ -169,11 +169,17 @@ void main() {
     testWidgets('future should subscribe to Future function', (tester) async {
       AsyncSnapshot<int>? snapshot;
       int createCount = 0;
+      var key = Object();
+
       await provideIt(tester, (context) {
-        snapshot = context.future<int>(() async => 40 + ++createCount);
+        snapshot =
+            context.useFuture<int>(() async => 40 + ++createCount, key: key);
         return GestureDetector(
           key: Key('${snapshot!.data}'),
-          onTap: () => context.reload<int>(),
+          onTap: () {
+            key = Object();
+            (context as Element).markNeedsBuild();
+          },
         );
       });
       expect(snapshot, AsyncSnapshot.waiting());
@@ -184,6 +190,7 @@ void main() {
       expect(createCount, 1);
 
       await tester.tap(find.byType(GestureDetector));
+      await tester.pump();
       expect(createCount, 2);
 
       await tester.pump();
@@ -194,12 +201,19 @@ void main() {
     testWidgets('stream should subscribe to Stream function', (tester) async {
       AsyncSnapshot<int>? snapshot;
       int createCount = 0;
+      var key = Object();
 
       await provideIt(tester, (context) {
-        snapshot = context.stream<int>(() => Stream.value(40 + ++createCount));
+        snapshot = context.useStream<int>(
+          () => Stream.value(40 + ++createCount),
+          key: key,
+        );
         return GestureDetector(
           key: Key('${snapshot!.data}'),
-          onTap: () => context.reload<int>(),
+          onTap: () {
+            key = Object();
+            (context as Element).markNeedsBuild();
+          },
         );
       });
       expect(snapshot, AsyncSnapshot.waiting());
@@ -210,6 +224,8 @@ void main() {
       expect(createCount, 1);
 
       await tester.tap(find.byType(GestureDetector));
+      await tester.pump();
+
       expect(createCount, 2);
 
       await tester.pump();
@@ -223,7 +239,7 @@ void main() {
       int? key = 1;
 
       await provideIt(tester, (context) {
-        final (value, setValue) = context.value(0);
+        final (value, setValue) = context.useValue(0);
 
         return Column(
           children: [
@@ -363,13 +379,17 @@ void main() {
     testWidgets('listen should listen to previously bound value',
         (tester) async {
       int listenedValue = 0;
+      int value = 0;
 
       await provideIt(tester, (context) {
-        final (value, setValue) = context.value<int>(0);
+        context.provideValue(value);
         context.listen<int>((v) => listenedValue = v);
         return GestureDetector(
           key: Key('$value'),
-          onTap: () => setValue(value + 1),
+          onTap: () {
+            value++;
+            (context as Element).markNeedsBuild();
+          },
         );
       });
 
@@ -424,7 +444,7 @@ void main() {
     final contexts = <int, BuildContext>{};
 
     await provideIt(tester, (context) {
-      final counter = context.value(0);
+      final counter = context.useValue(0);
       count = counter.value;
 
       return Builder(
@@ -460,7 +480,7 @@ void main() {
 
     await provideIt(tester, (context) {
       context.provide(() => Counter(0));
-      final counter = context.value(0);
+      final counter = context.useValue(0);
       count = counter.value;
 
       return Builder(
@@ -497,7 +517,7 @@ void main() {
     int disposeCount = 0;
 
     await provideIt(tester, (context) {
-      final counter = context.value(0);
+      final counter = context.useValue(0);
 
       return Builder(
         key: Key(counter.value.toString()),
@@ -540,7 +560,7 @@ void main() {
     await provideIt(
       tester,
       (context) {
-        final (swap, setSwap) = context.value(false);
+        final (swap, setSwap) = context.useValue(false);
 
         final button = Builder(
             key: key,
@@ -573,14 +593,14 @@ void main() {
   });
 }
 
-class _ActivateRef extends ValueRef<int> {
+class _ActivateRef extends UseValueRef<int> {
   _ActivateRef(super.initialValue);
 
   @override
-  ValueBind<int> createBind() => _ActivateBind();
+  UseValueBind<int> createBind() => _ActivateBind();
 }
 
-class _ActivateBind extends ValueBind<int> {
+class _ActivateBind extends UseValueBind<int> {
   @override
   void activate() {
     value = value! + 1;

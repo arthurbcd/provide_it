@@ -1,9 +1,7 @@
 part of '../framework.dart';
 
 extension on ProvideItScope {
-  int _initTreeIndex(BuildContext? context) {
-    if (context == null) return 0;
-
+  int _initTreeIndex(BuildContext context) {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       // we reset the index for the next build.
       _bindIndex.remove(context);

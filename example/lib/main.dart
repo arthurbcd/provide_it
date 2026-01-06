@@ -74,8 +74,8 @@ void main() {
                                     showDialog(
                                       context: context,
                                       builder: (ctx) {
-                                        // // This child context is now scoped to the parent context
-                                        ctx.inheritScope(context);
+                                        // This child context can now watch ValueNotifier<int>
+                                        ctx.inheritProviders(context);
                                         final vn =
                                             ctx.watch<ValueNotifier<int>>();
                                         return AlertDialog(

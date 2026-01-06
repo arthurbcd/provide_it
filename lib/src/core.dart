@@ -40,95 +40,60 @@ extension ContextProviders on BuildContext {
   }
 }
 
-extension ContextStates on BuildContext {
-  /// Binds [T] value to this [BuildContext].
-  /// - [initialValue] is the initial value.
-  ///
-  /// You can use the record to manage the value state.
-  (T, void Function(T)) value<T>(T initialValue, {Object? key}) {
-    return ValueRef(
-      initialValue,
-      key: key,
-    ).bind(this).watch(this) as (T, void Function(T));
-  }
-
+extension ContextUses on BuildContext {
   /// Binds [create] to this [BuildContext].
   ///
   /// You can use the value directly.
-  T create<T>(
-    T create(CreateContext context), {
+  T use<T>(
+    T create(UseContext context), {
     void dispose(T value)?,
     Object? key,
   }) {
-    return CreateRef<T>(
+    return UseRef<T>(
       create,
       dispose: dispose,
       key: key,
     ).bind(this).watch(this) as T;
   }
 
+  /// Binds [T] value to this [BuildContext].
+  /// - [initialValue] is the initial value.
+  ///
+  /// You can use the record to manage the value state.
+  (T, void Function(T)) useValue<T>(
+    T initialValue, {
+    Object? key,
+  }) {
+    return UseValueRef(
+      initialValue,
+      key: key,
+    ).bind(this).watch(this) as (T, void Function(T));
+  }
+
   /// Subscribes to a [Future] function and returns its snapshot.
-  AsyncSnapshot<T> future<T>(
+  AsyncSnapshot<T> useFuture<T>(
     FutureOr<T> create(), {
     T? initialData,
     Object? key,
   }) {
-    return FutureRef(
+    return UseFutureRef(
       create,
-      initialData: initialData,
-      key: key,
-    ).bind(this).watch(this);
-  }
-
-  /// Subscribes to a [Future] value and returns its snapshot.
-  AsyncSnapshot<T> futureValue<T>(
-    FutureOr<T> value, {
-    T? initialData,
-    Object? key,
-  }) {
-    return FutureRef.value(
-      value,
       initialData: initialData,
       key: key,
     ).bind(this).watch(this);
   }
 
   /// Subscribes to a [Stream] function and returns its snapshot.
-  AsyncSnapshot<T> stream<T>(
+  AsyncSnapshot<T> useStream<T>(
     Stream<T> create(), {
     T? initialData,
     Object? key,
   }) {
-    return StreamRef(
+    return UseStreamRef(
       create,
       initialData: initialData,
       key: key,
     ).bind(this).watch(this);
-  }
-
-  /// Subscribes to a [Stream] value and returns its snapshot.
-  AsyncSnapshot<T> streamValue<T>(
-    Stream<T> value, {
-    T? initialData,
-    Object? key,
-  }) {
-    return StreamRef.value(
-      value,
-      initialData: initialData,
-      key: key,
-    ).bind(this).watch(this);
-  }
-
-  /// Calls [init] when the [BuildContext] is mounted.
-  ///
-  /// Changing [key] re-calls [init].
-  void init(VoidCallback init, {VoidCallback? dispose, Object? key}) {
-    InitRef(init: init, dispose: dispose, key: key).bind(this);
-  }
-
-  /// Calls [dispose] when the [BuildContext] is unmounted.
-  void dispose(VoidCallback dispose, {Object? key}) {
-    InitRef(dispose: dispose, key: key).bind(this);
   }
 }
 
@@ -168,7 +133,7 @@ extension ContextReaders on BuildContext {
 /// Extension methods that DO DEPEND on [BuildContext].
 ///
 /// Use them directly in [Widget] `build` methods.
-extension ContextBinds on BuildContext {
+extension ContextObservers on BuildContext {
   /// Watches a previously bound value by [T] and [key].
   ///
   /// Reads the bind if not already.
@@ -195,13 +160,13 @@ extension ContextBinds on BuildContext {
   /// Instantiates the bind if not already.
   void listenSelect<R, T>(
     R selector(T value),
-    void listener(R previous, R next),
+    void listener(R prev, R next),
   ) {
     scope.listenSelect<T, R>(this, selector, listener);
   }
 }
 
-extension ContextBindFinder on BuildContext {
+extension ContextBinds on BuildContext {
   /// Gets a [Bind] of [T] type. O(1).
   ///
   /// The return type is `dynamic` on purpose as some [Bind] types are inferred by [Injector].
@@ -209,13 +174,12 @@ extension ContextBindFinder on BuildContext {
     return scope.getBindOfType<T>();
   }
 
-  /// Inherits scope from a parent context, establishing a scope relationship.
+  /// Inherits all [ContextProviders] from [parent] to `this`.
   ///
-  /// This allows [getBindOfType] to traverse the scope hierarchy when looking
-  /// for providers in ancestor scopes.
-  @protected
-  void inheritScope(BuildContext parent) {
-    scope.inheritScope(this, parent);
+  /// This allows using [ContextReaders] and [ContextObservers] in simbling contexts,
+  /// such as in dialogs, routes, overlays, etc.
+  void inheritProviders(BuildContext parent) {
+    scope.inheritProviders(this, parent);
   }
 
   /// Automatically calls [read] or [watch] based on the [listen] parameter.

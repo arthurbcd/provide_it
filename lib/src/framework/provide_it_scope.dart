@@ -9,10 +9,10 @@ class ProvideItScope implements ReadIt {
   ProvideItElement? _element;
 
   /// The watchers to use. Including [ProvideIt.additionalWatchers].
-  Set<Watcher> get watchers => {
+  List<Watcher> get watchers => {
         ...ProvideIt.defaultWatchers,
         ...?_element?.widget.additionalWatchers,
-      };
+      }.toList();
 
   @protected
   T watch<T>(BuildContext context) {
@@ -80,11 +80,15 @@ class ProvideItScope implements ReadIt {
   }
 
   void _register(Bind bind) {
+    if (bind is! Scope) return;
+
     final binds = _bindCache[bind.type] ??= {};
     binds.add(bind);
   }
 
   void _unregister(Bind bind) {
+    if (bind is! Scope) return;
+
     _bindCache[bind.type]!.remove(bind);
     for (var context in bind._scopedDependents) {
       _scopedBindCache.remove((bind.type, context));
@@ -199,7 +203,7 @@ context.provide<$type>(...); // <- provide it
   /// This allows [getBindOfType] to traverse the scope hierarchy when looking
   /// for providers in ancestor scopes.
   @protected
-  void inheritScope(BuildContext child, BuildContext parent) {
+  void inheritProviders(BuildContext child, BuildContext parent) {
     assert(child != parent, 'Cannot inherit scope from itself.');
     child.dependOnInheritedElement(_element!);
     _inheritedScopes[child] = parent;

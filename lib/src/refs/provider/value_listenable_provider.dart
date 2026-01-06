@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:provide_it/provide_it.dart';
 
 @Deprecated('Use `context.provideValue` instead.')
@@ -21,7 +20,7 @@ class ValueListenableProvider<T> extends Provider<T> {
 }
 
 class ValueListenableProviderState<T>
-    extends Bind<T, ValueListenableProvider<T>> {
+    extends Bind<T, ValueListenableProvider<T>> with Scope {
   T? _previousValue;
 
   @override
@@ -53,8 +52,4 @@ class ValueListenableProviderState<T>
 
   @override
   T get value => ref._valueListenable.value;
-}
-
-extension ValueListenableBinder<T> on ValueListenable<T> {
-  T watch(BuildContext context) => context.provideValue(this).value;
 }

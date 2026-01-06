@@ -7,39 +7,40 @@ extension<T, R extends Ref<T>> on Bind<T, R> {
     el.markNeedsBuild();
   }
 
-  void _listen(Element? el, Listeners listeners) {
-    assert(el!.mounted);
+  void _listen(Element el, Listeners listeners) {
+    assert(el.mounted);
 
     for (final listener in listeners.values) {
-      listener(value);
+      listener(read());
     }
   }
 
-  void _listenSelect(Element? el, ListenSelectors listenSelectors) {
-    assert(el!.mounted);
+  void _listenSelect(Element el, ListenSelectors listenSelectors) {
+    assert(el.mounted);
 
-    for (final e in listenSelectors.entries) {
-      final (previous, selector, listener) = e.value;
+    listenSelectors.forEach((index, record) {
+      final (previous, selector, listener) = record;
 
-      final current = selector(value);
+      final current = selector(read());
       final didChange = !Ref.equals(previous, current);
 
       if (didChange) listener(previous, current);
-      _listenSelectors[el]?[e.key] = (current, selector, listener);
-    }
+      _listenSelectors[el]?[index] = (current, selector, listener);
+    });
   }
 
   void _select(Element el, Selectors selectors) {
     assert(el.mounted);
 
-    for (final e in selectors.entries) {
-      final (previous, selector) = e.value;
+    selectors.forEach((index, record) {
+      final (previous, selector) = record;
+
       final current = selector(read());
       final didChange = !Ref.equals(previous, current);
 
       if (didChange) el.markNeedsBuild();
-      _selectors[el]?[e.key] = (current, selector);
-    }
+      _selectors[el]?[index] = (current, selector);
+    });
   }
 
   // we check if developer removed any ref/observer

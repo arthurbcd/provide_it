@@ -2,8 +2,6 @@
 
 ProvideIt is a provider-like state binding, management, and injection using only context extensions.
 
-**`provide_it` is a proof of concept and is not recommended for production use.**
-
 ## Use
 
 ```dart
@@ -77,7 +75,7 @@ class CounterProvider extends StatelessWidget {
 
     return ElevatedButton(
       onPressed: () => context.read<Counter>().increment(),
-      child: Text('Count: ${context.read<Counter>().count}'),
+      child: Text('Count: ${context.watch<Counter>().count}'),
     );
   }
 }
@@ -97,7 +95,7 @@ ProvideIt(
 
 This will automatically inject the parameters to the constructor.
 
-When needed, you can also specify the parameters using `parameters`:
+When needed, you can also specify the parameters to inject using `parameters`:
 
 ```dart
  context.provide(Counter.new, parameters: {
@@ -107,13 +105,13 @@ When needed, you can also specify the parameters using `parameters`:
  });
 ```
 
-> Both `locator` and `parameters` are optional and fallback to the default behavior when `null`.
+> Both `locator` and `parameters` are optional and fallback to the default behavior (injecting providers by Type) when `null`.
 
-#### `context.value` & `context.create`
+#### `context.use` & `context.useValue`
 
-Those were common constructors you would find in the `Provider` widgets.
+Similar to `context.provide` & `context.provideValue` but for single-use.
 
-Now you can use them directly from the context, for simple state management.
+Useful for self-contained simple state-management.
 
 ```dart
 class CounterProvider extends StatelessWidget {
@@ -121,21 +119,17 @@ class CounterProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // like this
-    final counter = context.value(0); // use with primitives
-
-    // or with destructuring!
-    final (count, setCount) = context.value(0); // dart records!
+    final (count, setCount) = context.useValue(0);
 
     return ElevatedButton(
-      onPressed: () => counter.value++,
-      child: Text('Counter: ${counter.value}'),
+      onPressed: () => setCount(count + 1),
+      child: Text('Counter: $count'),
     );
   }
 }
 ```
 
-When using complex objects, you can use `context.create` to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
+When using complex objects, you can use `context.use` to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
 
 ```dart
 class CounterProvider extends StatelessWidget {
@@ -143,13 +137,33 @@ class CounterProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // yes! `CreateContext.vsync` is a thing, but only inside `create`.
-    final controller = context.create((c) => AnimationController(vsync: c.vsync));
+    // yes! `UseContext.vsync` is a thing, but only inside `use`.
+    final controller = context.use((c) => AnimationController(vsync: c.vsync));
 
     return ElevatedButton(
       onPressed: () => controller.forward(),
       child: Text('Animation: ${controller.value}'),
     );
+  }
+}
+```
+
+Easily create your own custom use through extensions:
+
+```dart
+extension MyCustomUse on BuildContext {
+  (double, VoidCallback) useAnimationToggle() {
+    final controller = use((c) => AnimationController(vsync: c.vsync)); // auto-listens &auto-dispose
+    final (isActive, setActive) = useValue(false);
+
+    return (controller.value, () {
+      if (isActive) {
+        controller.forward();
+      } else {
+        controller.reverse();
+      }
+      setActive(!isActive);
+    });
   }
 }
 ```
@@ -235,5 +249,3 @@ And now you can watch it with `watch`, `select` and `listen` as usual:
 ```dart
 final state = context.watch<MyCubit>().state;
 ```
-
-**`provide_it` is a proof of concept and is not recommended for production use.**

@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:provide_it/src/framework.dart';
 import 'package:provide_it/src/utils/async_snapshot_extension.dart';
 
 import '../injector/injector.dart';
 import 'async.dart';
 
-/// Determines the fallback behavior when `lazy` is `null`.
-typedef LazyPredicate<T> = bool Function(ProvideBind<T> state);
+/// Determines the default behavior when `lazy` is `null`.
+typedef LazyDefault<T> = bool Function(ProvideBind<T> state);
 
 class ProvideRef<T> extends AsyncRef<T> {
   /// A reference to a provider with various configuration options.
@@ -52,7 +53,7 @@ class ProvideRef<T> extends AsyncRef<T> {
   ///
   /// - true, is created when first read.
   /// - false, is immediately created.
-  /// - null, defined by
+  /// - null, defined by [lazyDefault].
   final bool? lazy;
 
   /// How [lazy] should behave when `null`.
@@ -61,9 +62,9 @@ class ProvideRef<T> extends AsyncRef<T> {
   ///
   /// You can override this behavior:
   /// ```dart
-  /// ProvideRef.lazyPredicate = (_) => true; // always lazy
+  /// ProvideRef.lazyDefault = (_) => true; // always lazy (when null)
   /// ```
-  static LazyPredicate lazyPredicate = (state) => !state.isAsync;
+  static LazyDefault lazyDefault = (state) => !state.isAsync;
 
   /// Creates a [ProvideRef] with a constant value.
   ///
@@ -92,11 +93,11 @@ class ProvideRef<T> extends AsyncRef<T> {
   AsyncBind<T, ProvideRef<T>> createBind() => ProvideBind<T>();
 }
 
-class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> {
+class ProvideBind<T> extends AsyncBind<T, ProvideRef<T>> with Scope {
   Future<T>? _future;
 
   /// Whether value is created lazily.
-  bool get lazy => ref.lazy ?? ProvideRef.lazyPredicate(this);
+  bool get lazy => ref.lazy ?? ProvideRef.lazyDefault(this);
 
   /// Whether the [ref] is async.
   bool get isAsync {

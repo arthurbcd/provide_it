@@ -27,7 +27,7 @@ typedef ListenSelectors = Map<int, (dynamic, Function, Function)>;
 ///
 /// See also:
 /// - [ProvideRef]
-/// - [ValueRef]
+/// - [UseValueRef]
 ///
 abstract class Bind<T, R extends Ref<T>> {
   // binding
@@ -37,10 +37,9 @@ abstract class Bind<T, R extends Ref<T>> {
   late final int index;
   late final Watcher? _watcher = () {
     if (!_element.mounted) return null;
+    assert(value != null);
 
-    final value = ArgumentError.checkNotNull(this.value);
-
-    for (var watcher in _scope.watchers.toList().reversed) {
+    for (var watcher in _scope.watchers.reversed) {
       if (watcher.canWatch(value)) {
         return watcher..init(value, notifyObservers);
       }
@@ -100,19 +99,17 @@ abstract class Bind<T, R extends Ref<T>> {
 
   @protected
   @mustCallSuper
-  void didUpdateRef(R oldRef) {
+  void didUpdateRef(covariant R oldRef) {
     if (updateShouldNotify(oldRef)) notifyObservers();
     _lastRef = oldRef;
   }
 
   @protected
-  bool updateShouldNotify(R oldRef) => false;
+  bool updateShouldNotify(covariant R oldRef) => false;
 
   @protected
   @mustCallSuper
   void notifyObservers() {
-    if (value != null) _watcher;
-
     _watchers.forEach(_markNeedsBuild);
     _listeners.forEach(_listen);
     _selectors.forEach(_select);
@@ -263,3 +260,7 @@ class NullBindException implements Exception {
   @override
   String toString() => 'NullBindException: $message';
 }
+
+/// Binds marked with [Scope] can use [ContextReaders] and [ContextObservers].
+/// Otherwise, are restricted to the current build context. E.g: [ContextUses].
+mixin Scope {}

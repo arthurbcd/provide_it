@@ -26,8 +26,8 @@ abstract class Ref<T> {
   /// Similar to [Widget.key].
   final Object? key;
 
-  /// Creates a [T] value to provide.
-  /// Can return a deferred [T], e.g. a [Future] or [Stream].
+  /// Creates a [T] value to bind. Can return a deferred [T], e.g: [Future] or [Stream].
+  /// When null, the [Bind] will not manage the value lifecycle or disposal.
   Function? get create;
 
   /// The default equality to use in [equals]. Defaults to one-depth collections equality.

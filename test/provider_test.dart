@@ -140,7 +140,7 @@ void main() {
       int value = 0;
       await tester.provideIt(
         Builder(builder: (context) {
-          final (count, setCount) = context.value(0.0);
+          final (count, setCount) = context.useValue(0.0);
           return Provider<int>.value(
             value: count.toInt(),
             updateShouldNotify: (previous, current) => current < 3,

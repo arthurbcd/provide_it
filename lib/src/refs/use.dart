@@ -4,28 +4,28 @@ import 'package:flutter/widgets.dart';
 import '../framework.dart';
 import 'ref.dart';
 
-class CreateRef<T> extends Ref<T> {
-  const CreateRef(
+class UseRef<T> extends Ref<T> {
+  const UseRef(
     this.create, {
     this.dispose,
     super.key,
   });
 
   @override
-  final T Function(CreateContext context) create;
+  final T Function(UseContext context) create;
 
   /// How to dispose the created value.
   final void Function(T value)? dispose;
 
   @override
-  Bind<T, CreateRef<T>> createBind() => CreateBind<T>();
+  Bind<T, UseRef<T>> createBind() => UseBind<T>();
 }
 
-class CreateBind<T> extends Bind<T, CreateRef<T>> {
+class UseBind<T> extends Bind<T, UseRef<T>> {
   final _states = <State>{};
 
   @override
-  late T value = ref.create(CreateContext(this));
+  late T value = ref.create(UseContext(this));
 
   @override
   void activate() {
@@ -52,18 +52,18 @@ class CreateBind<T> extends Bind<T, CreateRef<T>> {
   }
 }
 
-extension type CreateContext._(BuildContext context) implements BuildContext {
-  static CreateBind? _currentBind;
+extension type UseContext._(BuildContext context) implements BuildContext {
+  static UseBind? _currentBind;
 
-  /// Creates a [CreateContext] for the current [CreateRef.create].
-  factory CreateContext(CreateBind bind) {
+  /// Creates a [UseContext] for the current [UseRef.create].
+  factory UseContext(UseBind bind) {
     _currentBind = bind;
     SchedulerBinding.instance.addPostFrameCallback((_) => _currentBind = null);
 
-    return CreateContext._(bind.context);
+    return UseContext._(bind.context);
   }
 
-  /// Creates a single [TickerProvider] for the current [CreateContext].
+  /// Creates a single [TickerProvider] for the current [UseContext].
   TickerProvider get vsync {
     assert(_currentBind != null, 'vsync can only be used on create');
     final state = _TickerProvider(context);

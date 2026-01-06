@@ -4,8 +4,8 @@ import 'package:flutter/widgets.dart';
 
 import 'async.dart';
 
-class FutureRef<T> extends AsyncRef<T> {
-  const FutureRef(
+class UseFutureRef<T> extends AsyncRef<T> {
+  const UseFutureRef(
     FutureOr<T> Function() this.create, {
     super.initialData,
     super.key,
@@ -14,7 +14,7 @@ class FutureRef<T> extends AsyncRef<T> {
   @override
   final FutureOr<T> Function()? create;
 
-  const FutureRef.value(
+  const UseFutureRef.value(
     FutureOr<T> this.value, {
     super.initialData,
     super.key,
@@ -24,10 +24,10 @@ class FutureRef<T> extends AsyncRef<T> {
   final FutureOr<T>? value;
 
   @override
-  AsyncBind<T, FutureRef<T>> createBind() => FutureBind<T>();
+  AsyncBind<T, UseFutureRef<T>> createBind() => UseFutureBind<T>();
 }
 
-class FutureBind<T> extends AsyncBind<T, FutureRef<T>> {
+class UseFutureBind<T> extends AsyncBind<T, UseFutureRef<T>> {
   Future<T>? _future;
 
   @override
@@ -41,7 +41,7 @@ class FutureBind<T> extends AsyncBind<T, FutureRef<T>> {
 
   @override
   void create() {
-    final value = ref.create != null ? ref.create!() : ref.value as T;
+    final value = ref.create != null ? ref.create!() : ref.value!;
 
     if (value is Future<T>) {
       _future = value;

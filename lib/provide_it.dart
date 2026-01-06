@@ -9,9 +9,6 @@ import 'src/injector/injector.dart';
 export 'src/core.dart';
 export 'src/framework.dart' hide ProvideItElement, ProvideItScope;
 export 'src/refs/async.dart';
-export 'src/refs/create.dart';
-export 'src/refs/future.dart';
-export 'src/refs/init.dart';
 export 'src/refs/provide.dart';
 export 'src/refs/provider/consumer.dart';
 export 'src/refs/provider/future_provider.dart';
@@ -19,8 +16,10 @@ export 'src/refs/provider/multi_provider.dart';
 export 'src/refs/provider/provider.dart';
 export 'src/refs/provider/value_listenable_provider.dart';
 export 'src/refs/ref.dart';
-export 'src/refs/stream.dart';
-export 'src/refs/value.dart';
+export 'src/refs/use.dart';
+export 'src/refs/use_future.dart';
+export 'src/refs/use_stream.dart';
+export 'src/refs/use_value.dart';
 export 'src/utils/async_snapshot_extension.dart';
 export 'src/watchers/change_notifier.dart';
 export 'src/watchers/listenable.dart';
@@ -50,7 +49,7 @@ class ProvideIt extends InheritedWidget {
   }) : assert(provide is! _Async && override is! _Async, _notAsyncMessage);
 
   static const _notAsyncMessage = '''
-ProvideIt.provide and ProvideIt.override must be void. 
+ProvideIt.provide and ProvideIt.override must be void.
 If you need async, use it directly in a `provide`:
 
 ProvideIt(
@@ -71,7 +70,7 @@ ProvideIt(
 
   /// Default watchers to use when providing an observable value.
   ///
-  /// To disable, set: `ProvideIt.defaultWatchers = []`.
+  /// To disable, set: `ProvideIt.defaultWatchers = {}`.
   static Set<Watcher> defaultWatchers = {
     ListenableWatcher(),
     ChangeNotifierWatcher(),
