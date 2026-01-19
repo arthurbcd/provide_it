@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.31.0
+
+- Simplified `Watcher` api.
+    - Removed `ProvideIt.additionalWatchers` & `ProvideIt.defaultWatchers`.
+
 ## 0.30.0
 
 - Overall simplification, with:

@@ -21,7 +21,6 @@ export 'src/refs/use_future.dart';
 export 'src/refs/use_stream.dart';
 export 'src/refs/use_value.dart';
 export 'src/utils/async_snapshot_extension.dart';
-export 'src/watchers/change_notifier.dart';
 export 'src/watchers/listenable.dart';
 
 // TODO(arthurbcd): add tests:
@@ -42,7 +41,7 @@ class ProvideIt extends InheritedWidget {
     this.provide,
     this.locator,
     this.parameters,
-    this.additionalWatchers = const [],
+    this.watchers = const [ListenableWatcher()],
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
     required super.child,
@@ -67,14 +66,6 @@ ProvideIt(
   child: MyApp(),
 );
 ''';
-
-  /// Default watchers to use when providing an observable value.
-  ///
-  /// To disable, set: `ProvideIt.defaultWatchers = {}`.
-  static Set<Watcher> defaultWatchers = {
-    ListenableWatcher(),
-    ChangeNotifierWatcher(),
-  };
 
   /// Restart the nearest [ProvideIt] subtree and all its bind dependencies.
   static void restart(BuildContext context) {
@@ -129,15 +120,11 @@ ProvideIt(
   /// The builder to use if an error occurs during [provide].
   final ErrorBuilder errorBuilder;
 
-  /// Extra watchers to use:
-  /// - [ProvideIt.defaultWatchers] + [additionalWatchers].
+  /// The [watchers] to use:
   ///
-  /// A [Bind] can have exactly one [Watcher]. Starting from last,
-  /// returns the first watcher that [Watcher.canWatch]. So [additionalWatchers]
-  /// can override [defaultWatchers].
-  ///
-  /// To disable [defaultWatchers], set: `ProvideIt.defaultWatchers = []`.
-  final List<Watcher> additionalWatchers;
+  /// A [Bind] can have exactly one [Watcher],
+  /// returning the first that [Watcher.canWatch].
+  final List<Watcher> watchers;
 
   /// Injects a [Param] during creation.
   ///

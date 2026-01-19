@@ -8,12 +8,6 @@ class ProvideItScope implements ReadIt {
   /// The attached [ProvideIt] element.
   ProvideItElement? _element;
 
-  /// The watchers to use. Including [ProvideIt.additionalWatchers].
-  List<Watcher> get watchers => {
-        ...ProvideIt.defaultWatchers,
-        ...?_element?.widget.additionalWatchers,
-      }.toList();
-
   @protected
   T watch<T>(BuildContext context) {
     final bind = _bindOf<T>(context);
@@ -98,6 +92,11 @@ class ProvideItScope implements ReadIt {
   @protected
   Injector<I> injector<I>(Function create) {
     return _element?.injector<I>(create) ?? Injector<I>(create);
+  }
+
+  @protected
+  Watcher? watcher(Bind bind) {
+    return _element?.watcher(bind);
   }
 
   /// The future of [AsyncBind.isReady].

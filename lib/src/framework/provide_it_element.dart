@@ -38,6 +38,16 @@ class ProvideItElement extends InheritedElement {
     );
   }
 
+  @protected
+  Watcher? watcher(Bind bind) {
+    for (var watcher in widget.watchers) {
+      if (watcher.canWatch(bind.value)) {
+        return watcher;
+      }
+    }
+    return null;
+  }
+
   @override
   void mount(Element? parent, Object? newSlot) {
     if (scope._element != null) {

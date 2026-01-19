@@ -35,18 +35,6 @@ abstract class Bind<T, R extends Ref<T>> {
   late final ProvideItScope _scope;
   late final Element _element;
   late final int index;
-  late final Watcher? _watcher = () {
-    if (!_element.mounted) return null;
-    assert(value != null);
-
-    for (var watcher in _scope.watchers.reversed) {
-      if (watcher.canWatch(value)) {
-        return watcher..init(value, notifyObservers);
-      }
-    }
-
-    return null;
-  }();
 
   // state
   late R _ref;
@@ -56,6 +44,7 @@ abstract class Bind<T, R extends Ref<T>> {
   final _scopedDependents = <BuildContext>{};
 
   // observers
+  Watcher? _watcher;
   final _watchers = <Element>{};
   final _selectors = <Element, Selectors>{};
   final _listeners = <Element, Listeners>{};
@@ -237,12 +226,19 @@ abstract class Bind<T, R extends Ref<T>> {
   @mustCallSuper
   T read() {
     if (value case final value?) {
-      _watcher;
+      if (!didRead) {
+        _watcher = _scope.watcher(this)?..init(value, notifyObservers);
+        _didRead = true;
+      }
       return value;
     }
 
     throw NullBindException('$type got null.');
   }
+
+  @protected
+  bool get didRead => _didRead;
+  bool _didRead = false;
 
   /// The value to provide.
   ///

@@ -7,8 +7,9 @@ part of '../framework.dart';
 ///
 /// See also:
 /// - [ListenableWatcher].
-/// - [ChangeNotifierWatcher].
-abstract class Watcher<T> {
+abstract class Watcher<T extends Object> {
+  const Watcher();
+
   /// Whether this watcher can watch [observable].
   @protected
   bool canWatch(observable) {
@@ -33,9 +34,9 @@ abstract class Watcher<T> {
 
   /// Disposes this watcher.
   ///
-  /// Called when the [Ref] that created this [observable] is disposed.
+  /// Called when the [Bind] that created this [observable] is disposed.
   @protected
-  void dispose(T observable) => false;
+  void dispose(T observable);
 
   @override
   operator ==(Object other) => runtimeType == other.runtimeType;
