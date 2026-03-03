@@ -137,8 +137,7 @@ class CounterProvider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // yes! `UseContext.vsync` is a thing, but only inside `use`.
-    final controller = context.use((c) => AnimationController(vsync: c.vsync));
+    final controller = context.use(() => AnimationController());
 
     return ElevatedButton(
       onPressed: () => controller.forward(),
@@ -204,7 +203,7 @@ context.listen<CounterNotifier>((counter) {
 And you can also listen with a selector:
 
 ```dart
-context.listenSelect((CounterNotifier it) => it.count, (prev, next) {
+context.listenSelected((CounterNotifier it) => it.count, (prev, next) {
   print('Counter changed: $prev -> $next');
 });
 ```

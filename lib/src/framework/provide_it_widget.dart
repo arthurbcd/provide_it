@@ -1,0 +1,116 @@
+part of '../framework.dart';
+
+typedef ErrorBuilder = Widget Function(
+    BuildContext context, Object error, StackTrace stackTrace);
+
+class ProvideIt extends InheritedWidget {
+  const ProvideIt({
+    super.key,
+    this.scope,
+    this.provide,
+    this.watchers = const [ListenableWatcher()],
+    this.loadingBuilder = _loadingBuilder,
+    this.errorBuilder = _errorBuilder,
+    this.locator,
+    this.parameters,
+    required super.child,
+  }) : assert(
+          provide is! Future<void> Function(BuildContext),
+          '''
+ProvideIt.provide and ProvideIt.override must be void.
+If you need async, use it directly in a `provide`:
+
+ProvideIt(
+  provide: (context) { // <- DO NOT mark it as async.
+
+    // Use async operations here:
+    context.provide(() async {
+      final value = await MyValue.async();
+      return value;
+    });
+
+    // Or simply:
+    context.provide(MyValue.async);
+  },
+  child: MyApp(),
+);
+''',
+        );
+
+  /// Restart the nearest [ProvideIt] subtree and all its bind dependencies.
+  static void restart(BuildContext context) {
+    ProvideItElement.of(context).restart();
+  }
+
+  static Widget _loadingBuilder(BuildContext context) {
+    return const SizedBox.shrink();
+  }
+
+  static Widget _errorBuilder(BuildContext context, Object e, StackTrace s) {
+    return ErrorWidget(e);
+  }
+
+  /// Initializes [ProvideIt] and sets up root [ContextProviders].
+  ///
+  /// The [provide] callback follows [ReadIt.allReady], showing:
+  /// - [loadingBuilder]: when any async provider is loading.
+  /// - [errorBuilder]: when any async provider fails to load.
+  /// - [child]: when all async providers are ready.
+  ///
+  /// If [provide] is `null` or no async provider is found, [child] is immediately displayed.
+  final void Function(BuildContext context)? provide;
+
+  /// The builder to use if [provide] is marked with `async`.
+  final WidgetBuilder loadingBuilder;
+
+  /// The builder to use if an error occurs during [provide].
+  final ErrorBuilder errorBuilder;
+
+  /// [Watcher]s are used to automatically watch for changes in providers such as:
+  /// - `context.provide`: [_Inherited]
+  /// - `context.provideValue`: [_Inherited.value]
+  ///
+  /// You can create your own [Watcher] by extending the class and setting in [watchers].
+  /// By default, [ListenableWatcher] is used to watch for [Listenable] changes.
+  ///
+  /// The first matching [Watcher.canWatch] will be used to watch the provider value.
+  ///
+  /// Watchers are not used by `context.use` / `context.useValue`.
+  ///
+  final List<Watcher> watchers;
+
+  /// Injects a [Param] during creation.
+  ///
+  /// Example with router path parameters:
+  ///
+  /// ```dart
+  /// ProvideIt(
+  ///   locator: (param) => myRouter.pathParameters[param.name],
+  ///   child: MyApp(),
+  /// );
+  /// ```
+  ///
+  /// Auto-injects `pathParameters` to `MyClass.new`:
+  ///
+  /// ```dart
+  /// class MyClass {
+  ///   MyClass({required this.myId});
+  ///   final String myId; // auto-injected if pathParameters['myId'] exists.
+  /// }
+  /// ```
+  final ParamLocator? locator;
+
+  /// The [Injector.parameters] to use in all injectors below this [ProvideIt].
+  final Map<String, dynamic>? parameters;
+
+  /// The [ReadIt] scope to use. When `null`, defaults to:
+  /// - [ReadIt.instance] when root.
+  /// - [ReadIt.asNewInstance] when not root.
+  final ReadIt? scope;
+
+  @override
+  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
+
+  @override
+  InheritedElement createElement() => ProvideItElement(this);
+}

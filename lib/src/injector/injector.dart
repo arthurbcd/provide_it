@@ -64,7 +64,7 @@ class Injector<T> {
   /// Whether to ignore private types.
   final bool ignorePrivateTypes;
 
-  /// The return type of [create] function.
+  /// The deferred return type of [create] function.
   ///
   /// If [create] is a [Future] or [Stream], the subtype is returned.
   /// Ex: `Injector<Future<bool>>.type == Injector<bool>.type`
@@ -74,7 +74,7 @@ class Injector<T> {
   /// Fallbacks to [returnType] when `T` is generic.
   late final rawType = _rawType();
 
-  /// The return type of [create] function.
+  /// The original return type of [create] function.
   ///
   /// This is the full return type, always including `Future` or `Stream`.
   late final returnType = _returnType();
@@ -409,5 +409,10 @@ extension SplitBetweenExtension on String {
 }
 
 extension TypeExtension on Type {
-  String get type => toString().replaceAll('?', '');
+  String get type {
+    final type = toString();
+    if (!type.endsWith('?')) return type;
+
+    return type.substring(0, type.length - 1);
+  }
 }

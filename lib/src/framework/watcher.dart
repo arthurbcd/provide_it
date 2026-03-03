@@ -7,34 +7,35 @@ part of '../framework.dart';
 ///
 /// See also:
 /// - [ListenableWatcher].
-abstract class Watcher<T extends Object> {
+abstract class Watcher<T> {
   const Watcher();
 
   /// Whether this watcher can watch [observable].
   @protected
+  @mustCallSuper
   bool canWatch(observable) {
     return observable is T;
   }
 
   /// Starts watching [observable].
   ///
-  /// Called when first read and ready to notify.
+  /// Called when first read and ready to watch.
   /// - [observable]: The observable to start watching.
-  /// - [notify]: The unique callback to register notifications.
+  /// - [listener]: The unique callback to notify on changes.
   @protected
-  void init(T observable, VoidCallback notify);
+  void init(T observable, VoidCallback listener);
 
   /// Stops watching [observable].
   ///
-  /// Called when [observable] should stop notifying.
+  /// Called when [observable] should stop watching.
   /// - [observable]: The observable to stop watching.
-  /// - [notify]: The unique callback to unregister notifications.
+  /// - [listener]: The same unique callback passed to [init].
   @protected
-  void cancel(T observable, VoidCallback notify);
+  void cancel(T observable, VoidCallback listener);
 
   /// Disposes this watcher.
   ///
-  /// Called when the [Bind] that created this [observable] is disposed.
+  /// Called when the [InheritedState] that created this [observable] is disposed.
   @protected
   void dispose(T observable);
 

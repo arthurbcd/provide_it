@@ -1,71 +1,140 @@
 part of '../framework.dart';
 
-extension on ProvideItScope {
-  int _initTreeIndex(BuildContext context) {
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      // we reset the index for the next build.
-      _bindIndex.remove(context);
-    });
+extension on ProvideItContainer {
+  R _bind<T, R>(Element context, AnyProvider<T, R> provider) {
+    final states = _providers[context] ??= HashMap();
+    final index = _providerIndex[context] ??= 0;
+    _providerIndex[context] = index + 1; // next provider index
 
-    return 0;
-  }
+    ProviderState<T, R> create() {
+      final state = provider.createState()
+        .._bind = (provider: provider, element: context, index: index);
 
-  Bind<T, Ref<T>> _bind<T>(Element context, Ref<T> ref) {
-    final branch = _binds[context] ??= TreeMap();
-    final index = _bindIndex[context] ??= _initTreeIndex(context);
-    _bindIndex[context] = index + 1;
+      if (state case InheritedState state) {
+        _registerProvider(state);
+      }
 
-    Ref<T> getRef(String type) => _element?.overrides[type] as Ref<T>? ?? ref;
-
-    Bind<T, Ref<T>> create() {
-      final type = ref.getType();
-      ref = getRef(type);
-
-      return branch[index] = ref.createBind()
-        .._element = context
-        .._scope = this
-        .._ref = ref
-        ..type = type
-        ..index = index
-        ..initBind();
+      return states[index] = state..initState();
     }
 
-    bool canUpdate(Bind<T, Ref<T>> bind) {
-      final (oldRef, ref) = (bind.ref, getRef(bind.type));
-      return Ref.canUpdate(oldRef, ref);
+    ProviderState<T, R> update(ProviderState<T, R> state) {
+      assert(() {
+        _reassembledProviders?.remove(state);
+        return true;
+      }());
+
+      if (_inactiveProviders.remove(state)) {
+        state.activate();
+
+        if (state case InheritedState state) {
+          _registerProvider(state);
+        }
+      }
+
+      final oldProvider = state.provider; // keep before update
+
+      return state
+        .._bind = (provider: provider, element: context, index: index)
+        ..didUpdateProvider(oldProvider);
     }
 
-    Bind<T, Ref<T>> update(Bind<T, Ref<T>> bind) {
-      final (oldRef, ref) = (bind.ref, getRef(bind.type));
-      return bind
-        .._ref = ref
-        ..didUpdateRef(oldRef);
+    ProviderState<T, R> replace(ProviderState old) {
+      assert(() {
+        final reassembled = _reassembledProviders?.remove(old) == true;
+        return reassembled || old.provider.runtimeType == provider.runtimeType;
+      }(), 'Provider state must be reassembled or key changed to replace.');
+
+      _deactivateProvider(old);
+
+      return create();
     }
 
-    Bind<T, Ref<T>> reset(Bind bind) {
-      bind
-        ..deactivate()
-        ..dispose();
-      final (oldRef, ref) = (bind.ref, getRef(bind.type));
-      assert(_element!._reassembled || oldRef.runtimeType == ref.runtimeType);
-      return create(); // reassembled or key changed
+    bool canUpdate(ProviderState<T, R> state) {
+      return AnyProvider.canUpdate(state.provider, provider);
     }
 
-    return switch (branch[index]) {
+    final state = switch (states[index]) {
       null => create(),
-      Bind<T, Ref<T>> bind when canUpdate(bind) => update(bind),
-      final bind => reset(bind),
+      ProviderState<T, R> it when canUpdate(it) => update(it),
+      final state => replace(state), // reassembled or key changed
     };
-  }
-}
 
-extension<T> on Ref<T> {
-  String getType() {
-    final type = create != null ? Injector<T>(create!).type : T.type;
-    assert(
-      type != 'dynamic' && type != 'Object',
-      'This is likely a mistake. Provide a non-generic type.',
+    context.dependOnInheritedElement(_element!);
+
+    return state.build(context);
+  }
+
+  void _registerProvider(InheritedState state) {
+    _providerCache.update(
+      state.type,
+      (cache) => cache.add(state),
+      ifAbsent: () => InheritedCache.single(state),
     );
-    return type;
+  }
+
+  void _unregisterProvider(InheritedState state) {
+    if (_providerCache[state.type]?.remove(state) case final cache?) {
+      _providerCache[state.type] = cache;
+    } else {
+      _providerCache.remove(state.type);
+    }
+  }
+
+  void _deactivateProvider(ProviderState state) {
+    if (!_inactiveProviders.add(state)) {
+      return; // already deactivated
+    }
+
+    if (state is InheritedState) {
+      _unregisterProvider(state);
+    }
+
+    state.deactivate();
+  }
+
+  @internal
+  void deactivateProviders(BuildContext context) {
+    _providers[context]?.forEach((_, state) => _deactivateProvider(state));
+  }
+
+  @internal
+  void finalizeTree() {
+    assert(() {
+      // removed after reassemble, we deactivate/dispose it.
+      _reassembledProviders?.forEach(_deactivateProvider);
+      _reassembledProviders?.clear();
+      return true;
+    }());
+
+    for (var state in _inactiveProviders) {
+      final states = _providers[state.context]!;
+
+      // we check as if may be replaced by a new state with the same index.
+      if (states[state.index] == state) {
+        states.remove(state.index);
+        if (states.isEmpty) _providers.remove(state.context);
+      }
+
+      state
+        ..dispose()
+        .._bind = null; // unbind after dispose
+    }
+
+    _inactiveProviders.clear();
+    _providerIndex.clear();
+  }
+
+  @internal
+  void reassembleTree() {
+    assert(() {
+      _reassembledProviders ??= HashSet();
+      _providers.forEach((_, states) {
+        states.forEach((_, state) {
+          // reassembled providers should update, otherwise we deactivate it.
+          _reassembledProviders?.add(state..reassemble());
+        });
+      });
+      return true;
+    }());
   }
 }

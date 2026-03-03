@@ -1,185 +1,171 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/rendering.dart';
 
 import '../provide_it.dart';
 import 'framework.dart';
 
-/// Contextless [ContextReaders]. Reads the root [ProvideItScope].
+/// Contextless [ContextReaders]. Reads the root [ProvideItContainer].
 final readIt = ReadIt.instance;
-
-extension ContextProviders on BuildContext {
-  /// Provides the value of [create]. See [ProvideRef].
-  void provide<T>(
-    Function create, {
-    void dispose(T value)?,
-    Map<String, dynamic>? parameters,
-    bool? lazy,
-    Object? key,
-  }) {
-    ProvideRef<T>(
-      key: key,
-      create,
-      dispose: dispose,
-      parameters: parameters,
-      lazy: lazy,
-    ).bind(this);
-  }
-
-  /// Directly provides [value]. See [ProvideRef].
-  T provideValue<T>(
-    T value, {
-    bool Function(T prev, T next)? updateShouldNotify, // prev != next
-    Object? key,
-  }) {
-    return ProvideRef.value(
-      value,
-      key: key,
-      updateShouldNotify: updateShouldNotify,
-    ).bind(this).read();
-  }
-}
-
-extension ContextUses on BuildContext {
-  /// Binds [create] to this [BuildContext].
-  ///
-  /// You can use the value directly.
-  T use<T>(
-    T create(UseContext context), {
-    void dispose(T value)?,
-    Object? key,
-  }) {
-    return UseRef<T>(
-      create,
-      dispose: dispose,
-      key: key,
-    ).bind(this).watch(this) as T;
-  }
-
-  /// Binds [T] value to this [BuildContext].
-  /// - [initialValue] is the initial value.
-  ///
-  /// You can use the record to manage the value state.
-  (T, void Function(T)) useValue<T>(
-    T initialValue, {
-    Object? key,
-  }) {
-    return UseValueRef(
-      initialValue,
-      key: key,
-    ).bind(this).watch(this) as (T, void Function(T));
-  }
-
-  /// Subscribes to a [Future] function and returns its snapshot.
-  AsyncSnapshot<T> useFuture<T>(
-    FutureOr<T> create(), {
-    T? initialData,
-    Object? key,
-  }) {
-    return UseFutureRef(
-      create,
-      initialData: initialData,
-      key: key,
-    ).bind(this).watch(this);
-  }
-
-  /// Subscribes to a [Stream] function and returns its snapshot.
-  AsyncSnapshot<T> useStream<T>(
-    Stream<T> create(), {
-    T? initialData,
-    Object? key,
-  }) {
-    return UseStreamRef(
-      create,
-      initialData: initialData,
-      key: key,
-    ).bind(this).watch(this);
-  }
-}
 
 /// Extension methods that DO NOT depend on [BuildContext].
 ///
 /// Use them freely.
 extension ContextReaders on BuildContext {
-  /// Reads a previously bound value by [T] and [key].
+  /// Reads a previously bound value by [T].
   T read<T>() {
-    return scope.read<T>(this);
+    return container.read<T>(context: this);
   }
 
-  /// Reads a previously bound value by [T] and [key].
+  /// Reads a previously bound value by [T].
   ///
   /// Returns a [Future] if the value is not ready.
   FutureOr<T> readAsync<T>() {
-    return scope.readAsync<T>();
+    return container.readAsync<T>(context: this);
   }
 
-  /// The future when all [AsyncBind.isReady] are completed.
-  FutureOr<void> allReady() => scope.allReady();
-
-  /// Whether all [AsyncBind.isReady] are completed.
-  bool allReadySync() => allReady() == null;
+  /// The future when all [InheritedState.isReady] are completed.
+  FutureOr<void> allReady() {
+    return container.allReady();
+  }
 
   /// The future when [T] is ready.
-  FutureOr<void> isReady<T>({Object? key}) => scope.isReady<T>(key: key);
-
-  /// Whether [T] is ready.
-  bool isReadySync<T>({Object? key}) => isReady<T>(key: key) == null;
-
-  Future<void> reload<T>() {
-    return scope.reload<T>();
+  FutureOr<void> isReady<T>() {
+    return container.isReady<T>(context: this);
   }
 }
 
 /// Extension methods that DO DEPEND on [BuildContext].
 ///
 /// Use them directly in [Widget] `build` methods.
-extension ContextObservers on BuildContext {
-  /// Watches a previously bound value by [T] and [key].
+/// - [watch] and [select] can be used is any builder.
+/// - [listen] and [listenSelected] cannot be used in unstable builders,
+/// such as in `itemBuilder` of [ListView.builder], but can be used in a
+/// stable context, such as in a [Builder] inside the `itemBuilder`.
+///
+extension ContextDependents on BuildContext {
+  /// Watches a previously bound value by [T].
   ///
-  /// Reads the bind if not already.
+  /// Initializes the provider if not already.
   T watch<T>() {
-    return scope.watch<T>(this);
+    return dependOnInheritedProvider(aspect: _Watch());
   }
 
-  /// Selects a previously bound value by [T] and [key].
+  /// Selects a previously bound value by [T].
   ///
-  /// Reads the bind if not already.
-  R select<T, R>(R selector(T value)) {
-    return scope.select<T, R>(this, selector);
+  /// Initializes the provider if not already.
+  S select<T, S>(S selector(T value)) {
+    final value = dependOnInheritedProvider(aspect: _Select(selector));
+    return selector(value);
   }
 
-  /// Listens to a previously bound value by [T] and [key].
+  /// Listens to a previously bound value by [T].
   ///
-  /// Does not read a lazy bind.
+  /// Initializes the provider if not already.
   void listen<T>(void listener(T value)) {
-    scope.listen<T>(this, listener);
+    assert(this is! RenderSliverBoxChildManager, _unstableBuilder);
+    dependOnInheritedProvider(aspect: _Listen(listener));
   }
 
-  /// Listens to a previously bound value by [T], [selector] and [key].
+  /// Listens to a previously bound value by [T], [selector].
   ///
-  /// Instantiates the bind if not already.
-  void listenSelect<R, T>(
-    R selector(T value),
-    void listener(R prev, R next),
+  /// Initializes the provider if not already.
+  void listenSelected<T, S>(
+    S selector(T value),
+    void listener(S prev, S next),
   ) {
-    scope.listenSelect<T, R>(this, selector, listener);
+    assert(this is! RenderSliverBoxChildManager, _unstableBuilder);
+    dependOnInheritedProvider(aspect: _ListenSelected(selector, listener));
+  }
+
+  String get _unstableBuilder {
+    // e.g. ListView.builder, SliverList.builder
+    return 'Cannot listen on a unstable builder: wrap it in a Builder or refactor it into its own widget to obtain a stable build context.';
   }
 }
 
-extension ContextBinds on BuildContext {
-  /// Gets a [Bind] of [T] type. O(1).
-  ///
-  /// The return type is `dynamic` on purpose as some [Bind] types are inferred by [Injector].
-  Bind? getBindOfType<T>() {
-    return scope.getBindOfType<T>();
+class _Watch<T> extends InheritedAspect<T> {
+  const _Watch();
+
+  @override
+  void didChange(Element dependent, T value) {
+    dependent.markNeedsBuild();
+  }
+}
+
+class _Listen<T> extends InheritedAspect<T> {
+  const _Listen(this.listener);
+  final void Function(T value) listener;
+
+  @override
+  void didChange(Element dependent, T value) {
+    listener(value);
+  }
+}
+
+class _Select<T, S> extends InheritedAspect<T> {
+  _Select(this.selector);
+  final S Function(T value) selector;
+  late S _prev;
+
+  @override
+  void didDepend(Element dependent, T value) {
+    _prev = selector(value);
   }
 
-  /// Inherits all [ContextProviders] from [parent] to `this`.
+  @override
+  void didChange(Element dependent, T value) {
+    final next = selector(value);
+
+    if (!AnyProvider.equals(_prev, next)) {
+      dependent.markNeedsBuild();
+      _prev = next;
+    }
+  }
+}
+
+class _ListenSelected<T, S> extends InheritedAspect<T> {
+  _ListenSelected(this.selector, this.listener);
+  final S Function(T value) selector;
+  final void Function(S prev, S next) listener;
+  late S _prev;
+
+  @override
+  void didDepend(Element dependent, T value) {
+    _prev = selector(value);
+  }
+
+  @override
+  void didChange(Element dependent, T value) {
+    final next = selector(value);
+
+    if (!AnyProvider.equals(_prev, next)) {
+      listener(_prev, next);
+      _prev = next;
+    }
+  }
+}
+
+extension ContextDependsOnInheritedProvider on BuildContext {
+  /// Stablishes a dependency between this `context` and an [InheritedState] by [T].
   ///
-  /// This allows using [ContextReaders] and [ContextObservers] in simbling contexts,
+  /// - When first depending on the provider, [InheritedAspect.didDepend] will be called. Then,
+  /// for each [InheritedState.notifyDependents], [InheritedAspect.didChange] will be called.
+  ///
+  /// - When deactivated, [InheritedState.removeDependent] will be called for each
+  /// provider dependency that this `context` depends on.
+  T dependOnInheritedProvider<T>({required InheritedAspect<T> aspect}) {
+    return container.dependOnInheritedProvider<T>(this as Element, aspect);
+  }
+}
+
+extension ContextInheritProviders on BuildContext {
+  /// Inherits all [InheritedProvider] from [ancestor] to `this`.
+  ///
+  /// This allows using [ContextReaders] and [ContextDependents] in simbling contexts,
   /// such as in dialogs, routes, overlays, etc.
-  void inheritProviders(BuildContext parent) {
-    scope.inheritProviders(this, parent);
+  void inheritProviders(BuildContext ancestor) {
+    container.inheritProviders(this, ancestor);
   }
 
   /// Automatically calls [read] or [watch] based on the [listen] parameter.
@@ -188,17 +174,11 @@ extension ContextBinds on BuildContext {
   /// the widget is currently in build/layout/paint pipeline, but you can
   /// enforce specific behavior by explicitly setting listen to true or false.
   T of<T>({Object? key, bool? listen}) {
-    return scope.of<T>(this, listen: listen);
+    return container.of<T>(this, listen: listen);
   }
 }
 
 extension on BuildContext {
-  @protected
-  ProvideItScope get scope => ProvideItScope.of(this);
-}
-
-extension<T> on AsyncRef<T> {
-  AsyncBind<T, AsyncRef<T>> bind(BuildContext context) {
-    return context.scope.bind(context, this) as AsyncBind<T, AsyncRef<T>>;
-  }
+  @internal
+  ProvideItContainer get container => ProvideItContainer.of(this);
 }
