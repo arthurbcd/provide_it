@@ -1,6 +1,6 @@
 part of '../framework.dart';
 
-sealed class ReadIt {
+mixin ReadIt {
   /// The root [ReadIt] instance.
   /// Also accessible via [readIt].
   ///
@@ -10,7 +10,7 @@ sealed class ReadIt {
   /// Creates a fresh instance of [ReadIt].
   ///
   /// Useful for [ProvideIt.scope]. Isolating it from the root [ReadIt] scope.
-  factory ReadIt.asNewInstance() => ProvideItContainer();
+  static ReadIt asNewInstance() => ProvideItContainer();
 
   /// Whether the attached [ProvideIt] is mounted.
   bool get mounted;

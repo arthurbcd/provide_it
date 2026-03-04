@@ -117,7 +117,7 @@ class _Select<T, S> extends InheritedAspect<T> {
   void didChange(Element dependent, T value) {
     final next = selector(value);
 
-    if (!AnyProvider.equals(_prev, next)) {
+    if (!BindProvider.equals(_prev, next)) {
       dependent.markNeedsBuild();
       _prev = next;
     }
@@ -139,7 +139,7 @@ class _ListenSelected<T, S> extends InheritedAspect<T> {
   void didChange(Element dependent, T value) {
     final next = selector(value);
 
-    if (!AnyProvider.equals(_prev, next)) {
+    if (!BindProvider.equals(_prev, next)) {
       listener(_prev, next);
       _prev = next;
     }

@@ -41,12 +41,12 @@ class ValueListenableProviderState<T>
   }
 
   @override
-  void didUpdateProvider(covariant ValueListenableProvider<T> oldProvider) {
+  void updated(covariant ValueListenableProvider<T> oldProvider) {
     if (provider._valueListenable != oldProvider._valueListenable) {
       oldProvider._valueListenable.removeListener(_listener);
       provider._valueListenable.addListener(_listener);
     }
-    super.didUpdateProvider(oldProvider);
+    super.updated(oldProvider);
   }
 
   @override

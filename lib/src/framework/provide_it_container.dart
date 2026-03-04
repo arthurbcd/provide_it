@@ -1,12 +1,9 @@
 part of '../framework.dart';
 
-final class ProvideItContainer implements ReadIt {
+final class ProvideItContainer with InheritIt, BindIt, ReadIt {
   static ProvideItContainer of(BuildContext context) {
     return ProvideItElement.of(context).container;
   }
-
-  /// The attached [ProvideIt] element.
-  ProvideItElement? _element;
 
   T dependOnInheritedProvider<T>(Element dependent, InheritedAspect<T> aspect) {
     final state = getInheritedState<T>(context: dependent);
@@ -28,16 +25,7 @@ final class ProvideItContainer implements ReadIt {
   @override
   bool get mounted => _element != null;
 
-  // provider tree by context & index.
-  final _providers = HashMap<Element, HashMap<int, ProviderState>>();
-  final _providerIndex = HashMap<Element, int>();
-  final _inactiveProviders = HashSet<ProviderState>();
-
-  // provider tree cache by type
-  final _providerCache = HashMap<String, InheritedCache>();
-
   // hot reload
-  HashSet<ProviderState>? _reassembledProviders;
 
   /// The future of all [isReady].
   @override
@@ -50,7 +38,7 @@ final class ProvideItContainer implements ReadIt {
       }
     }
 
-    _providerCache.forEach((_, cache) => cache.forEach(isReady));
+    _inheritedCache.forEach((_, cache) => cache.forEach(isReady));
 
     if (futures.isNotEmpty) {
       return Future.wait(futures, eagerError: true).then((_) {});
@@ -66,16 +54,6 @@ final class ProvideItContainer implements ReadIt {
     if (state?.isReady() case Future<void> future) {
       return future.then((_) {});
     }
-  }
-
-  @protected
-  R bind<T, R>(BuildContext context, AnyProvider<T, R> provider) {
-    assert(
-      // e.g. ListView.builder, SliverList.builder
-      context is! RenderSliverBoxChildManager,
-      'Cannot bind a provider to an unstable context: wrap it in a Builder or refactor it into its own widget to obtain a stable context.',
-    );
-    return _bind(context as Element, provider);
   }
 
   @override
@@ -119,7 +97,7 @@ final class ProvideItContainer implements ReadIt {
   @protected
   InheritedState? getInheritedState<T>({String? type, BuildContext? context}) {
     // we return it right away when null or single
-    final InheritedCache? cache = _providerCache[type ??= T.type];
+    final InheritedCache? cache = _inheritedCache[type ??= T.type];
     if (cache case InheritedState? state) return state;
 
     // we disambiguate by inheritance, like InheritedWidget.

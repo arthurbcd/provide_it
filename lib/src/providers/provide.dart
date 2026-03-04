@@ -88,7 +88,6 @@ class _InheritedState<T> extends InheritedState<T, _Inherited<T>> {
   late final _injector = ProvideItElement.of(
     context,
   ).injector<T>(provider.create);
-  VoidCallback? _cancelWatcher;
 
   @override
   void initState() {
@@ -107,7 +106,8 @@ class _InheritedState<T> extends InheritedState<T, _Inherited<T>> {
         (T value) {
           if (future != _value) return;
 
-          _setValue(value);
+          _value = value;
+          _error = null;
           notifyDependents();
         },
         onError: (Object error, StackTrace stackTrace) {
@@ -118,14 +118,7 @@ class _InheritedState<T> extends InheritedState<T, _Inherited<T>> {
           notifyDependents();
         },
       );
-    } else {
-      _setValue(_value as T);
     }
-  }
-
-  void _setValue(T value) {
-    _value = value;
-    _cancelWatcher ??= ProvideItElement.of(context).tryWatch<T>(this);
   }
 
   @override
@@ -133,7 +126,6 @@ class _InheritedState<T> extends InheritedState<T, _Inherited<T>> {
     if (_value case T value when _created) {
       provider.dispose?.call(value);
     }
-    _cancelWatcher?.call();
     super.dispose();
   }
 

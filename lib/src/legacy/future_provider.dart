@@ -66,8 +66,8 @@ class _FutureInheritedState<T> extends InheritedState<T, FutureProvider<T>> {
   }
 
   @override
-  void didUpdateProvider(oldProvider) {
-    super.didUpdateProvider(oldProvider);
+  void updated(oldProvider) {
+    super.updated(oldProvider);
     if (oldProvider.future != provider.future ||
         (provider.create == null) != (oldProvider.create == null)) {
       if (_value is Future<T>) {

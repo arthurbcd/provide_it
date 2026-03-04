@@ -38,7 +38,7 @@ class ProvideItElement extends InheritedElement {
   }
 
   @protected
-  VoidCallback tryWatch<W>(InheritedState state) {
+  VoidCallback? tryWatch<W>(InheritedState state) {
     final value = state.read();
     for (final watcher in widget.watchers.whereType<Watcher<W>>()) {
       if (watcher.canWatch(value)) {
@@ -49,14 +49,11 @@ class ProvideItElement extends InheritedElement {
         };
       }
     }
-
-    return _doNothing;
+    return null;
   }
 
-  static void _doNothing() {}
-
   @override
-  void mount(Element? parent, Object? newSlot) {
+  void mount(parent, newSlot) {
     if (container._element != null) {
       throw StateError(
         'Scope already attached to: ${container._element}. Cannot attach to $this.',
@@ -81,6 +78,7 @@ class ProvideItElement extends InheritedElement {
     _dirty = true;
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _frame++;
       container.finalizeTree();
       _dirty = false;
@@ -130,7 +128,7 @@ class ProvideItElement extends InheritedElement {
     final dependencies = getDependencies(dependent) as _Dependencies?;
     dependencies?.states.forEach((s) => s.removeDependent(dependent));
 
-    container.deactivateProviders(dependent);
+    container.deactivateBinds(dependent);
     super.removeDependent(dependent);
 
     markDirty();
@@ -139,15 +137,8 @@ class ProvideItElement extends InheritedElement {
   @override
   void unmount() {
     super.unmount();
-
-    // we give a chance for binds to auto-dispose.
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      assert(
-        container._providers.isEmpty,
-        '${container._providers.length} undisposed binds.',
-      );
-      container._element = null;
-    });
+    container.finalizeTree();
+    container._element = null;
   }
 
   /// Restart [ProvideIt] subtree and all its dependencies.

@@ -11,35 +11,114 @@ part of '../framework.dart';
 /// You must set [ProvideIt] in the root of your app.
 ///
 /// See [InheritedState] for more details.
-abstract class InheritedProvider<T> extends AnyProvider<T, void> {
+abstract class InheritedProvider<T> extends BindProvider<void> {
   const InheritedProvider({super.key});
 
-  @override
+  @protected
   InheritedState<T, InheritedProvider<T>> createState();
+
+  @override
+  Bind<void> createBind() => InheritedBind(this);
 }
 
-/// An abstract class that represents the state of a [AnyProvider].
+class InheritedBind<T> extends Bind<void> {
+  InheritedBind(InheritedProvider<T> super.provider)
+    : _state = provider.createState() {
+    state._bind = this;
+  }
+  InheritedState<T, InheritedProvider<T>>? _state;
+  InheritedState<T, InheritedProvider<T>> get state => _state!;
+
+  @override
+  String get debugLabel => state.debugLabel;
+
+  @override
+  void bind() {
+    owner._registerType(state);
+    state.initState();
+    super.bind();
+  }
+
+  @override
+  void update(InheritedProvider<T> newProvider) {
+    final oldProvider = provider as InheritedProvider<T>;
+    super.update(newProvider);
+    state.updated(oldProvider);
+  }
+
+  @override
+  void activate() {
+    owner._registerType(state);
+    super.activate();
+  }
+
+  @override
+  void deactivate() {
+    _unwatch();
+    owner._unregisterType(state);
+    super.deactivate();
+  }
+
+  @override
+  void reassemble() {
+    state.reassemble();
+    super.reassemble();
+  }
+
+  @override
+  void unbind() {
+    state.dispose();
+    _state = null;
+    super.unbind();
+  }
+
+  bool watched = false;
+  VoidCallback? _cancelWatcher;
+
+  void _watch() {
+    _cancelWatcher = owner._element!.tryWatch<T>(state);
+    watched = true;
+  }
+
+  void _unwatch() {
+    _cancelWatcher?.call();
+    watched = false;
+  }
+
+  @override
+  void build() {
+    if (!watched && state.isReady() == null) {
+      _watch();
+    }
+  }
+}
+
+/// An abstract class that represents the state of a [BindProvider].
 ///
 /// This class is intended to be extended by other classes that manage the state
-/// of a [AnyProvider] of type [T] and a reference type [R] that extends [Ref<T>].
+/// of a [BindProvider] of type [T] and a reference type [R] that extends [Ref<T>].
 ///
 /// The [InheritedState] class provides a base for managing the lifecycle and state
 /// transitions of a reference, allowing for more complex state management
 /// patterns to be implemented.
 ///
 /// This class is designed with the [State] class of a [StatefulWidget] in mind,
-/// and like it, will be used to persist the state of its reference [AnyProvider].
+/// and like it, will be used to persist the state of its reference [BindProvider].
 ///
 /// Type Parameters:
 /// - [T]: The type of the value used by [read], [watch], [select], [listen]
-/// - [R]: The [AnyProvider] type that this state is associated with.
+/// - [R]: The [BindProvider] type that this state is associated with.
 ///
 /// See also:
 /// - [ContextProvide]
 /// - [ContextProvideValue]
 ///
-abstract class InheritedState<T, R extends InheritedProvider<T>>
-    extends ProviderState<T, void> {
+abstract class InheritedState<T, R extends InheritedProvider<T>> {
+  InheritedBind<T>? _bind;
+
+  @visibleForTesting
+  String get debugLabel;
+
   @visibleForTesting
   final String type = switch (T.toString()) {
     final type when null is! T => type,
@@ -51,12 +130,17 @@ abstract class InheritedState<T, R extends InheritedProvider<T>>
 
   final _dependents = HashMap<Element, List<InheritedAspect>>();
 
-  @override
-  R get provider => super.provider as R;
+  @protected
+  R get provider => _bind!.provider as R;
 
-  @override
+  @protected
+  BuildContext get context => _bind!.element;
+
   @mustCallSuper
-  void didUpdateProvider(covariant R oldProvider) {}
+  void initState() {}
+
+  @mustCallSuper
+  void updated(covariant R oldProvider) {}
 
   /// Notifies all dependents [InheritedAspect] of this [InheritedState].
   ///
@@ -94,15 +178,13 @@ abstract class InheritedState<T, R extends InheritedProvider<T>>
     _dependents.remove(dependent);
   }
 
-  @override
+  @mustCallSuper
   void reassemble() {
     _dependents.clear();
-    super.reassemble();
   }
 
-  @override
   @mustCallSuper
-  void build(BuildContext context) {}
+  void dispose() {}
 
   @protected
   FutureOr<void> isReady() => null;

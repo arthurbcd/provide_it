@@ -33,8 +33,8 @@ class _ValueInheritedState<T> extends InheritedState<T, _ValueInherited<T>> {
   String get debugLabel => 'provideValue<$T>';
 
   @override
-  void didUpdateProvider(covariant _ValueInherited<T> oldProvider) {
-    super.didUpdateProvider(oldProvider);
+  void updated(covariant _ValueInherited<T> oldProvider) {
+    super.updated(oldProvider);
     if (provider.updateShouldNotify case final shouldNotify?) {
       if (shouldNotify(oldProvider.value, provider.value)) {
         notifyDependents();

@@ -65,8 +65,8 @@ class _ProviderState<T> extends InheritedState<T, Provider<T>> {
   }
 
   @override
-  void didUpdateProvider(covariant Provider<T> oldProvider) {
-    super.didUpdateProvider(oldProvider);
+  void updated(covariant Provider<T> oldProvider) {
+    super.updated(oldProvider);
 
     if (provider.value case var value?) {
       _value = value;

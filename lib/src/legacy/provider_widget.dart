@@ -1,11 +1,7 @@
 part of '../legacy.dart';
 
 sealed class ProviderWidget<T> extends Widget implements InheritedProvider<T> {
-  const ProviderWidget({
-    super.key,
-    this.builder,
-    this.child,
-  });
+  const ProviderWidget({super.key, this.builder, this.child});
 
   final TransitionBuilder? builder;
   final Widget? child;
@@ -16,10 +12,13 @@ sealed class ProviderWidget<T> extends Widget implements InheritedProvider<T> {
   }
 
   @override
-  Element createElement() => _ProviderElement<T>(this);
+  InheritedState<T, InheritedProvider<T>> createState();
 
   @override
-  InheritedState<T, InheritedProvider<T>> createState();
+  Bind<void> createBind() => InheritedBind(this);
+
+  @override
+  Element createElement() => _ProviderElement<T>(this);
 }
 
 class _ProviderElement<T> extends ComponentElement {
@@ -45,11 +44,7 @@ class _ProviderElement<T> extends ComponentElement {
 
 @internal
 abstract class ProviderlessWidget extends ProviderWidget<void> {
-  const ProviderlessWidget({
-    super.key,
-    super.builder,
-    super.child,
-  });
+  const ProviderlessWidget({super.key, super.builder, super.child});
 
   @override
   @internal
