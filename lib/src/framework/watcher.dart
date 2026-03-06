@@ -10,38 +10,32 @@ part of '../framework.dart';
 abstract class Watcher<T> {
   const Watcher();
 
-  /// Whether this watcher can watch [observable].
+  /// Whether this watcher can watch [value].
   @protected
   @mustCallSuper
-  bool canWatch(observable) {
-    return observable is T;
+  bool canWatch(value) {
+    return value is T;
   }
 
-  /// Starts watching [observable].
+  /// Starts watching [value].
   ///
   /// Called when first read and ready to watch.
-  /// - [observable]: The observable to start watching.
+  /// - [value]: The observable to start watching.
   /// - [listener]: The unique callback to notify on changes.
   @protected
-  void init(T observable, VoidCallback listener);
+  void init(T value, VoidCallback listener);
 
-  /// Stops watching [observable].
+  /// Stops watching [value].
   ///
-  /// Called when [observable] should stop watching.
-  /// - [observable]: The observable to stop watching.
+  /// Called when [value] should stop watching.
+  /// - [value]: The observable to stop watching.
   /// - [listener]: The same unique callback passed to [init].
   @protected
-  void cancel(T observable, VoidCallback listener);
+  void cancel(T value, VoidCallback listener);
 
   /// Disposes this watcher.
   ///
-  /// Called when the [InheritedState] that created this [observable] is disposed.
+  /// Called when the [InheritedState] that created this [value] is disposed.
   @protected
-  void dispose(T observable);
-
-  @override
-  operator ==(Object other) => runtimeType == other.runtimeType;
-
-  @override
-  int get hashCode => runtimeType.hashCode;
+  void dispose(T value);
 }

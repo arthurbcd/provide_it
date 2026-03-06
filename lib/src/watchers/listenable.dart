@@ -4,19 +4,19 @@ class ListenableWatcher extends Watcher<Listenable> {
   const ListenableWatcher();
 
   @override
-  void init(Listenable observable, VoidCallback listener) {
-    observable.addListener(listener);
+  void init(Listenable value, VoidCallback listener) {
+    value.addListener(listener);
   }
 
   @override
-  void cancel(Listenable observable, VoidCallback listener) {
-    observable.removeListener(listener);
+  void cancel(Listenable value, VoidCallback listener) {
+    value.removeListener(listener);
   }
 
   @override
-  void dispose(Listenable observable) {
-    if (observable is ChangeNotifier) {
-      observable.dispose();
+  void dispose(Listenable value) {
+    if (value is ChangeNotifier) {
+      value.dispose();
     }
   }
 }

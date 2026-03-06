@@ -6,7 +6,7 @@ import '../injector/injector.dart';
 
 extension ContextProvide on BuildContext {
   /// Provides the value of [create].
-  /// Automatically injects dependencies.
+  /// - Uses [Injector] to inject dependencies.
   void provide<T>(
     Function create, {
     void dispose(T value)?,
@@ -85,9 +85,7 @@ class _InheritedState<T> extends InheritedState<T, _Inherited<T>> {
   _Error? _error;
   bool _created = false;
 
-  late final _injector = ProvideItElement.of(
-    context,
-  ).injector<T>(provider.create);
+  late final _injector = ProvideIt.injectorOf<T>(context, provider.create);
 
   @override
   void initState() {

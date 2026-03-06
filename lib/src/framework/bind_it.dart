@@ -1,15 +1,10 @@
 part of '../framework.dart';
 
-mixin BindIt on InheritIt {
-  /// The attached [ProvideIt] element.
-  ProvideItElement? _element;
-
-  // bind tree by context & index.
-  final _binds = HashMap<Element, HashMap<int, Bind>>();
-  final _bindIndex = HashMap<Element, int>();
-
+mixin BindIt on InheritedElement {
+  final _binds = HashMap<BuildContext, Binds>();
   final _inactiveBinds = HashSet<Bind>();
   HashSet<Bind>? _reassembledBinds;
+  Binds? _currentBinds;
 
   @protected
   R bind<R>(BuildContext context, BindProvider<R> provider) {
@@ -19,16 +14,25 @@ mixin BindIt on InheritIt {
       'Cannot bind a provider to an unstable context: wrap it in a Builder or refactor it into its own widget to obtain a stable context.',
     );
 
-    final binds = _binds[context as Element] ??= HashMap();
-    final index = _bindIndex[context] ??= 0;
-    _bindIndex[context] = index + 1; // next provider index
+    final Binds binds;
+
+    if (_currentBinds?.context == context) {
+      binds = _currentBinds!;
+      binds.current = binds.current?.next;
+    } else {
+      binds = _currentBinds = _binds[context] ??= Binds(context);
+      binds.current = binds.firstOrNull;
+    }
 
     Bind<R> create() {
-      return binds[index] = provider.createBind()
-        .._element = context
-        .._index = index
-        .._owner = this
+      final bind = provider.createBind()
+        .._element = context as Element
+        .._scope = this as ScopeIt
         ..bind();
+
+      binds.add(bind);
+
+      return bind;
     }
 
     Bind<R> update(Bind<R> bind) {
@@ -52,20 +56,29 @@ mixin BindIt on InheritIt {
 
       _deactivateBind(bind);
 
-      return create();
+      final newBind = provider.createBind()
+        .._element = context as Element
+        .._scope = this as ScopeIt
+        ..bind();
+
+      bind.insertBefore(newBind);
+      bind.unlink();
+      binds.current = newBind;
+
+      return newBind;
     }
 
     bool canUpdate(Bind<R> bind) {
       return BindProvider.canUpdate(bind.provider, provider);
     }
 
-    final bind = switch (binds[index]) {
+    final bind = switch (binds.current) {
       null => create(),
       Bind<R> bind when canUpdate(bind) => update(bind),
-      final bind => replace(bind), // reassembled or key changed
+      _ => replace(binds.current!), // reassembled or key changed
     };
 
-    context.dependOnInheritedElement(_element!);
+    context.dependOnInheritedElement(this);
 
     return bind.build();
   }
@@ -76,9 +89,27 @@ mixin BindIt on InheritIt {
     }
   }
 
-  @internal
-  void deactivateBinds(BuildContext context) {
-    _binds[context]?.forEach((_, bind) => _deactivateBind(bind));
+  @override
+  void removeDependent(Element dependent) {
+    _binds[dependent]?.forEach(_deactivateBind);
+    super.removeDependent(dependent);
+
+    markDirty();
+  }
+
+  int _frame = 0;
+  bool _dirty = false;
+
+  void markDirty() {
+    if (_dirty) return;
+    _dirty = true;
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _frame++;
+      finalizeTree();
+      _dirty = false;
+    });
   }
 
   @internal
@@ -91,36 +122,48 @@ mixin BindIt on InheritIt {
     }());
 
     for (var bind in _inactiveBinds) {
-      final binds = _binds[bind.element]!;
-
-      // we check as it may be replaced by a new bind with the same index.
-      if (binds[bind.index] == bind) {
-        binds.remove(bind.index);
-        if (binds.isEmpty) _binds.remove(bind.element);
+      // we check as it may be replaced by a new bind in the same entry.
+      if (bind.list case final Binds binds) {
+        bind.unlink();
+        if (binds.isEmpty) _binds.remove(binds.context);
       }
 
       bind
         ..unbind()
-        .._owner = null
-        .._index = null
+        .._scope = null
         .._element = null;
     }
 
     _inactiveBinds.clear();
-    _bindIndex.clear();
+    _currentBinds = null;
   }
 
-  @internal
-  void reassembleTree() {
+  @override
+  void unmount() {
+    finalizeTree();
+    super.unmount();
+  }
+
+  @override
+  void reassemble() {
     assert(() {
       _reassembledBinds ??= HashSet();
       _binds.forEach((_, binds) {
-        binds.forEach((_, bind) {
+        for (var bind in binds) {
           // reassembled providers should update, otherwise we deactivate it.
           _reassembledBinds?.add(bind..reassemble());
-        });
+        }
       });
       return true;
     }());
+    super.reassemble();
   }
+}
+
+final class Binds extends LinkedList<Bind> {
+  Binds(BuildContext context) : context = context as Element;
+  final Element context;
+  Bind? current;
+
+  Bind? get firstOrNull => isEmpty ? null : first;
 }

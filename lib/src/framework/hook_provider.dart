@@ -10,7 +10,7 @@ abstract class HookProvider<T> extends BindProvider<T> {
   Bind<T> createBind() => HookBind(this);
 }
 
-class HookBind<T> extends Bind<T> {
+final class HookBind<T> extends Bind<T> {
   HookBind(HookProvider<T> super.provider) : _state = provider.createState() {
     state._bind = this;
   }
@@ -53,8 +53,8 @@ class HookBind<T> extends Bind<T> {
 
   @override
   void unbind() {
-    super.unbind();
     state.dispose();
+    super.unbind();
     _state = null;
   }
 

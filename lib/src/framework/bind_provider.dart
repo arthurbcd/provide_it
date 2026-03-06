@@ -1,6 +1,7 @@
 part of '../framework.dart';
 
 @internal
+@immutable
 abstract class BindProvider<R> with Diagnosticable {
   const BindProvider({this.key});
 
@@ -28,18 +29,14 @@ abstract class BindProvider<R> with Diagnosticable {
 }
 
 @internal
-sealed class Bind<R> with Diagnosticable {
+sealed class Bind<R> extends LinkedListEntry<Bind> {
   Bind(BindProvider<R> provider) : _provider = provider;
   BindProvider<R>? _provider;
   Element? _element;
-  int? _index;
-  BindIt? _owner;
+  ScopeIt? _scope;
 
   @visibleForTesting
   String get debugLabel;
-
-  @protected
-  int get index => _index!;
 
   @protected
   Element get element => _element!;
@@ -48,7 +45,7 @@ sealed class Bind<R> with Diagnosticable {
   BindProvider<R> get provider => _provider!;
 
   @internal
-  BindIt get owner => _owner!;
+  ScopeIt get scope => _scope!;
 
   @mustCallSuper
   void update(covariant BindProvider<R> newProvider) {
@@ -77,7 +74,7 @@ sealed class Bind<R> with Diagnosticable {
 
 extension ContextBind on BuildContext {
   R bind<R>(BindProvider<R> provider) {
-    return ProvideItContainer.of(this).bind(this, provider);
+    return ScopeIt.of(this).bind(this, provider);
   }
 }
 

@@ -21,7 +21,7 @@ abstract class InheritedProvider<T> extends BindProvider<void> {
   Bind<void> createBind() => InheritedBind(this);
 }
 
-class InheritedBind<T> extends Bind<void> {
+final class InheritedBind<T> extends Bind<void> {
   InheritedBind(InheritedProvider<T> super.provider)
     : _state = provider.createState() {
     state._bind = this;
@@ -34,7 +34,7 @@ class InheritedBind<T> extends Bind<void> {
 
   @override
   void bind() {
-    owner._registerType(state);
+    scope._inheritState(state);
     state.initState();
     super.bind();
   }
@@ -48,15 +48,17 @@ class InheritedBind<T> extends Bind<void> {
 
   @override
   void activate() {
-    owner._registerType(state);
     super.activate();
+    scope._inheritState(state);
   }
 
   @override
   void deactivate() {
-    _unwatch();
-    owner._unregisterType(state);
+    scope._disinheritState(state);
     super.deactivate();
+    if (watched) {
+      _unwatch();
+    }
   }
 
   @override
@@ -67,29 +69,35 @@ class InheritedBind<T> extends Bind<void> {
 
   @override
   void unbind() {
+    _watcher?.dispose(state.read() as T);
     state.dispose();
-    _state = null;
     super.unbind();
+    _watcher = _state = state._bind = null;
   }
 
   bool watched = false;
-  VoidCallback? _cancelWatcher;
+  Watcher<T>? _watcher;
 
   void _watch() {
-    _cancelWatcher = owner._element!.tryWatch<T>(state);
+    final value = state.read() as T;
+    _watcher = ProvideIt.watcherOf(element, value);
+    _watcher?.init(value, state.notifyDependents);
     watched = true;
   }
 
   void _unwatch() {
-    _cancelWatcher?.call();
+    final value = state.read() as T;
+    _watcher?.cancel(value, state.notifyDependents);
     watched = false;
   }
 
   @override
   void build() {
-    if (!watched && state.isReady() == null) {
-      _watch();
-    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (state.isReady() case T it when it != null && !watched) {
+        _watch();
+      }
+    });
   }
 }
 
@@ -128,7 +136,7 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   @visibleForTesting
   Set<Element> get dependents => _dependents.keys.toSet();
 
-  final _dependents = HashMap<Element, List<InheritedAspect>>();
+  final _dependents = HashMap<Element, List<InheritedAspect<T?>>>();
 
   @protected
   R get provider => _bind!.provider as R;
@@ -159,16 +167,16 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
     final value = read();
     assert(value is T, 'Cannot notify dependents when not ready.');
 
-    _dependents.forEach((Element element, List<InheritedAspect> aspects) {
+    _dependents.forEach((Element element, List<InheritedAspect<T?>> aspects) {
       for (var i = 0; i < aspects.length; i++) {
-        aspects[i].didChange(element, value);
+        aspects[i].didChange(element, value as T?);
       }
     });
   }
 
   @protected
   @mustCallSuper
-  void addDependent(Element dependent, InheritedAspect aspect) {
+  void addDependent(Element dependent, InheritedAspect<T?> aspect) {
     (_dependents[dependent] ??= []).add(aspect);
   }
 

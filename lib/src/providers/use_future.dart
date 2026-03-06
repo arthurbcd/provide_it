@@ -5,7 +5,7 @@ import 'package:provide_it/src/framework.dart';
 extension ContextUseFuture on BuildContext {
   /// Subscribes to a [Future] function and returns its snapshot.
   AsyncSnapshot<T> useFuture<T>(
-    FutureOr<T>? create()?, {
+    FutureOr<T> create()?, {
     T? initialData,
     Object? key,
   }) {
@@ -31,7 +31,7 @@ class _FutureHook<T> extends HookProvider<AsyncSnapshot<T>> {
     : create = null,
       label = 'useFutureValue';
 
-  final FutureOr<T>? Function()? create;
+  final FutureOr<T> Function()? create;
   final FutureOr<T>? value;
   final T? initialData;
   final String label;
@@ -79,8 +79,8 @@ class _FutureHookState<T> extends HookState<AsyncSnapshot<T>, _FutureHook<T>> {
   }
 
   void _subscribe() {
-    final future = provider.create?.call() ?? provider.value;
-    if (future == null) return;
+    if (provider.create == null && provider.value == null) return;
+    final future = (provider.create?.call() ?? provider.value) as FutureOr<T>;
 
     if (future is! Future<T>) {
       _snapshot = AsyncSnapshot<T>.withData(ConnectionState.done, future);

@@ -20,7 +20,6 @@ export 'src/providers/use_future.dart';
 export 'src/providers/use_single_ticker_provider.dart';
 export 'src/providers/use_stream.dart';
 export 'src/providers/use_value.dart';
-export 'src/utils/async_snapshot_extension.dart';
 export 'src/watchers/listenable.dart';
 
 // TODO(arthurbcd): add tests:

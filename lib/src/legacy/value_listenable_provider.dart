@@ -22,7 +22,7 @@ class ValueListenableProvider<T> extends ProviderWidget<T> {
 class ValueListenableProviderState<T>
     extends InheritedState<T, ValueListenableProvider<T>> {
   @override
-  String get debugLabel => 'ValueListenableProvider';
+  String get debugLabel => 'ValueListenableProvider<$T>';
 
   T? _previousValue;
 

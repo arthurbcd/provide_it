@@ -1,4 +1,4 @@
-import 'package:provide_it/injector.dart';
+import 'injector.dart';
 
 /// An abstract class representing a parameter of an instance constructor.
 ///
@@ -11,11 +11,7 @@ import 'package:provide_it/injector.dart';
 /// See: [NamedParam], [PositionalParam].
 sealed class Param {
   /// Creates a new instance of the [Param] class.
-  const Param(
-    this.rawType, {
-    required this.isRequired,
-    required this.owner,
-  });
+  const Param(this.rawType, {required this.isRequired, required this.owner});
 
   /// The owner of the parameter.
   final Injector owner;

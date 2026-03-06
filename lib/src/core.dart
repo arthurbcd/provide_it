@@ -5,7 +5,7 @@ import 'package:flutter/rendering.dart';
 import '../provide_it.dart';
 import 'framework.dart';
 
-/// Contextless [ContextReaders]. Reads the root [ProvideItContainer].
+/// Contextless [ContextReaders]. Reads the root [ProvideIt] scope.
 final readIt = ReadIt.instance;
 
 /// Extension methods that DO NOT depend on [BuildContext].
@@ -14,24 +14,24 @@ final readIt = ReadIt.instance;
 extension ContextReaders on BuildContext {
   /// Reads a previously bound value by [T].
   T read<T>() {
-    return container.read<T>(context: this);
+    return scope.read<T>(context: this);
   }
 
   /// Reads a previously bound value by [T].
   ///
   /// Returns a [Future] if the value is not ready.
   FutureOr<T> readAsync<T>() {
-    return container.readAsync<T>(context: this);
+    return scope.readAsync<T>(context: this);
   }
 
   /// The future when all [InheritedState.isReady] are completed.
   FutureOr<void> allReady() {
-    return container.allReady();
+    return scope.allReady();
   }
 
   /// The future when [T] is ready.
   FutureOr<void> isReady<T>() {
-    return container.isReady<T>(context: this);
+    return scope.isReady<T>(context: this);
   }
 }
 
@@ -155,7 +155,7 @@ extension ContextDependsOnInheritedProvider on BuildContext {
   /// - When deactivated, [InheritedState.removeDependent] will be called for each
   /// provider dependency that this `context` depends on.
   T dependOnInheritedProvider<T>({required InheritedAspect<T> aspect}) {
-    return container.dependOnInheritedProvider<T>(this as Element, aspect);
+    return scope.dependOnInheritedProvider<T>(this as Element, aspect);
   }
 }
 
@@ -165,7 +165,7 @@ extension ContextInheritProviders on BuildContext {
   /// This allows using [ContextReaders] and [ContextDependents] in simbling contexts,
   /// such as in dialogs, routes, overlays, etc.
   void inheritProviders(BuildContext ancestor) {
-    container.inheritProviders(this, ancestor);
+    scope.inheritProviders(this, ancestor);
   }
 
   /// Automatically calls [read] or [watch] based on the [listen] parameter.
@@ -174,11 +174,11 @@ extension ContextInheritProviders on BuildContext {
   /// the widget is currently in build/layout/paint pipeline, but you can
   /// enforce specific behavior by explicitly setting listen to true or false.
   T of<T>({Object? key, bool? listen}) {
-    return container.of<T>(this, listen: listen);
+    return scope.of<T>(this, listen: listen);
   }
 }
 
 extension on BuildContext {
   @internal
-  ProvideItContainer get container => ProvideItContainer.of(this);
+  ScopeIt get scope => ScopeIt.of(this);
 }

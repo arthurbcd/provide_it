@@ -13,7 +13,7 @@ Future<void> provideIt(
     ProvideIt(
       key: UniqueKey(),
       provide: provide,
-      scope: ReadIt.asNewInstance(),
+      scope: ReadIt.scoped(),
       child: Builder(builder: builder),
     ),
   );
@@ -307,7 +307,9 @@ void main() {
                   final counter = context.watch<Counter>();
                   return GestureDetector(
                     key: Key('${counter.value}'),
-                    onTap: () => counter.value++,
+                    onTap: () {
+                      counter.value++;
+                    },
                   );
                 },
               ),
@@ -331,7 +333,7 @@ void main() {
 
       // Increment counter
       await tester.tap(find.byKey(Key('42')));
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(find.byKey(Key('43')), findsOneWidget);
 
       // Change key
@@ -547,14 +549,14 @@ void main() {
       final counter = context.useValue(0);
       count = counter.value;
 
-      final container = ProvideItContainer.of(context);
+      final scope = ScopeIt.of(context);
 
       return Builder(
         key: Key(count.toString()),
         builder: (context) {
           contexts[counter.value] = context;
           context.watch<Counter>();
-          state = container.getInheritedState<Counter>();
+          state = scope.getInheritedState<Counter>();
 
           return GestureDetector(onTap: () => counter.value++);
         },
@@ -746,7 +748,7 @@ extension on BuildContext {
 }
 
 class _LifecyleProvider extends HookProvider<void> {
-  _LifecyleProvider({
+  const _LifecyleProvider({
     this.onInit,
     this.onDispose,
     this.onActivate,
