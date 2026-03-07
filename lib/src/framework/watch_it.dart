@@ -1,6 +1,12 @@
 part of '../framework.dart';
 
 mixin WatchIt on InheritIt {
+  @override
+  void changeNode(Node? prev, Node next) {
+    super.changeNode(prev, next);
+    next.dirty = true;
+  }
+
   @protected
   T dependOnInheritedProvider<T>(Element dependent, InheritedAspect<T> aspect) {
     final state = getInheritedState<T>(context: dependent);
@@ -9,7 +15,14 @@ mixin WatchIt on InheritIt {
       throw MissingProviderException('InheritedProvider<$T> not found.');
     }
 
-    dependent.dependOnInheritedElement(this, aspect: (state, aspect));
+    final node = dependent.dependOnScope(this);
+    if (node.dirty) {
+      node.clearDependencies();
+    }
+    final states = node.states ??= HashSet();
+
+    state.addDependent(dependent, aspect);
+    states.add(state);
 
     if (state.read() case T value) {
       aspect.didDepend(dependent, value);
@@ -20,44 +33,22 @@ mixin WatchIt on InheritIt {
   }
 
   @override
-  Dependencies? getDependencies(Element dependent) {
-    return super.getDependencies(dependent) as Dependencies?;
-  }
-
-  @override
-  void updateDependencies(Element dependent, Object? aspect) {
-    if (aspect case (InheritedState state, InheritedAspect aspect)) {
-      final dependencies =
-          getDependencies(dependent) ?? (frame: _frame, states: {});
-
-      if (dependencies.frame != _frame) {
-        // if new frame, we clear old dependencies
-        dependencies.states
-          ..forEach((state) => state.removeDependent(dependent)) // aspects
-          ..clear();
-      }
-
-      // context.dependOnInheritedProvider
-      state.addDependent(dependent, aspect);
-
-      // we tie the dependencies to the current frame
-      setDependencies(dependent, (
-        frame: _frame,
-        states: dependencies.states..add(state),
-      ));
-    }
-
-    markDirty();
-  }
-
-  @override
-  void removeDependent(Element dependent) {
-    final dependencies = getDependencies(dependent);
-    dependencies?.states.forEach((s) => s.removeDependent(dependent));
-
-    super.removeDependent(dependent);
+  void deactivateNode(Node node) {
+    node.clearDependencies();
+    super.deactivateNode(node);
   }
 }
 
 @internal
-typedef Dependencies = ({int frame, Set<InheritedState> states});
+typedef Dependency = ({int frame, Set<InheritedState> states});
+
+mixin Dependencies on Bindings {
+  Set<InheritedState>? states;
+  bool dirty = false;
+
+  void clearDependencies() {
+    states?.forEach((state) => state.removeDependent(dependent));
+    states?.clear();
+    dirty = false;
+  }
+}

@@ -167,15 +167,6 @@ extension ContextInheritProviders on BuildContext {
   void inheritProviders(BuildContext ancestor) {
     scope.inheritProviders(this, ancestor);
   }
-
-  /// Automatically calls [read] or [watch] based on the [listen] parameter.
-  ///
-  /// When listen is null (default), it automatically decides based on whether
-  /// the widget is currently in build/layout/paint pipeline, but you can
-  /// enforce specific behavior by explicitly setting listen to true or false.
-  T of<T>({Object? key, bool? listen}) {
-    return scope.of<T>(this, listen: listen);
-  }
 }
 
 extension on BuildContext {

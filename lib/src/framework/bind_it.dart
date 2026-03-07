@@ -1,10 +1,15 @@
 part of '../framework.dart';
 
 mixin BindIt on InheritedElement {
-  final _binds = HashMap<BuildContext, Binds>();
+  final _nodes = HashMap<BuildContext, Node>();
+  // final _binds = HashMap<BuildContext, Binds>();
   final _inactiveBinds = HashSet<Bind>();
   HashSet<Bind>? _reassembledBinds;
-  Binds? _currentBinds;
+  Node? _currentNode;
+
+  void changeNode(Node? prev, Node next) {
+    next.binds?.reset();
+  }
 
   @protected
   R bind<R>(BuildContext context, BindProvider<R> provider) {
@@ -14,19 +19,12 @@ mixin BindIt on InheritedElement {
       'Cannot bind a provider to an unstable context: wrap it in a Builder or refactor it into its own widget to obtain a stable context.',
     );
 
-    final Binds binds;
-
-    if (_currentBinds?.context == context) {
-      binds = _currentBinds!;
-      binds.current = binds.current?.next;
-    } else {
-      binds = _currentBinds = _binds[context] ??= Binds(context);
-      binds.current = binds.firstOrNull;
-    }
+    final node = context.dependOnScope(this);
+    final binds = node.binds ??= Binds();
 
     Bind<R> create() {
       final bind = provider.createBind()
-        .._element = context as Element
+        .._element = node.dependent
         .._scope = this as ScopeIt
         ..bind();
 
@@ -57,8 +55,8 @@ mixin BindIt on InheritedElement {
       _deactivateBind(bind);
 
       final newBind = provider.createBind()
-        .._element = context as Element
-        .._scope = this as ScopeIt
+        .._element = bind.element
+        .._scope = bind.scope
         ..bind();
 
       bind.insertBefore(newBind);
@@ -78,7 +76,7 @@ mixin BindIt on InheritedElement {
       _ => replace(binds.current!), // reassembled or key changed
     };
 
-    context.dependOnInheritedElement(this);
+    binds.next();
 
     return bind.build();
   }
@@ -89,15 +87,14 @@ mixin BindIt on InheritedElement {
     }
   }
 
-  @override
-  void removeDependent(Element dependent) {
-    _binds[dependent]?.forEach(_deactivateBind);
-    super.removeDependent(dependent);
-
-    markDirty();
+  void deactivateNode(Node node) {
+    if (node.binds case final Binds binds) {
+      binds.forEach(_deactivateBind);
+    } else {
+      _nodes.remove(node.dependent);
+    }
   }
 
-  int _frame = 0;
   bool _dirty = false;
 
   void markDirty() {
@@ -106,7 +103,6 @@ mixin BindIt on InheritedElement {
 
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _frame++;
       finalizeTree();
       _dirty = false;
     });
@@ -125,7 +121,7 @@ mixin BindIt on InheritedElement {
       // we check as it may be replaced by a new bind in the same entry.
       if (bind.list case final Binds binds) {
         bind.unlink();
-        if (binds.isEmpty) _binds.remove(binds.context);
+        if (binds.isEmpty) _nodes.remove(bind.element);
       }
 
       bind
@@ -135,7 +131,7 @@ mixin BindIt on InheritedElement {
     }
 
     _inactiveBinds.clear();
-    _currentBinds = null;
+    _currentNode = null;
   }
 
   @override
@@ -148,10 +144,12 @@ mixin BindIt on InheritedElement {
   void reassemble() {
     assert(() {
       _reassembledBinds ??= HashSet();
-      _binds.forEach((_, binds) {
-        for (var bind in binds) {
-          // reassembled providers should update, otherwise we deactivate it.
-          _reassembledBinds?.add(bind..reassemble());
+      _nodes.forEach((_, node) {
+        if (node.binds case final Binds binds) {
+          for (var bind in binds) {
+            // reassembled providers should update, otherwise we deactivate it.
+            _reassembledBinds?.add(bind..reassemble());
+          }
         }
       });
       return true;
@@ -160,10 +158,23 @@ mixin BindIt on InheritedElement {
   }
 }
 
-final class Binds extends LinkedList<Bind> {
-  Binds(BuildContext context) : context = context as Element;
-  final Element context;
-  Bind? current;
+extension on BuildContext {
+  /// Calls [ScopeIt.updateDependencies] which sets the current [Node].
+  Node dependOnScope(BindIt scope) {
+    dependOnInheritedElement(scope);
+    return scope._currentNode!;
+  }
+}
 
-  Bind? get firstOrNull => isEmpty ? null : first;
+final class Binds extends LinkedList<Bind> {
+  Bind? current;
+  @override
+  void add(Bind entry) => super.add(current = entry);
+  void next() => current = current?.next;
+  void reset() => current = isEmpty ? null : first;
+}
+
+mixin Bindings {
+  Element get dependent;
+  Binds? binds;
 }

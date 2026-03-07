@@ -160,22 +160,6 @@ extension type InheritedRef(BuildContext context) {
 
 typedef _Ref = ({Map<Type, InheritedState>? states, BuildContext? ancestor});
 
-extension ContextOf on ScopeIt {
-  /// Automatically calls [read] or [watch] based on the [listen] parameter.
-  ///
-  /// When `listen` is null (default), it automatically decides based on whether
-  /// the widget is currently in build/layout/paint pipeline, but you can enforce
-  /// specific behavior by explicitly setting `listen` to true or false.
-  ///
-  T of<T>(BuildContext context, {bool? listen}) {
-    if (listen ?? isBuilding) {
-      return context.watch<T>();
-    } else {
-      return read<T>(context: context);
-    }
-  }
-}
-
 class MissingProviderException implements Exception {
   MissingProviderException(this.message);
   final String message;

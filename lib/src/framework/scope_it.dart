@@ -12,12 +12,6 @@ class ScopeIt extends InheritedElement with BindIt, InheritIt, WatchIt, ReadIt {
   @override
   ProvideIt get widget => super.widget as ProvideIt;
 
-  bool get isBuilding => switch (SchedulerBinding.instance.schedulerPhase) {
-    SchedulerPhase.persistentCallbacks => true, // updating
-    SchedulerPhase.idle => _frame == 0, // mounting
-    _ => false,
-  };
-
   _ReadIt get _readIt => (widget.scope ?? ReadIt.instance) as _ReadIt;
 
   @override
@@ -104,12 +98,23 @@ class ScopeIt extends InheritedElement with BindIt, InheritIt, WatchIt, ReadIt {
   }
 
   @override
-  void reassemble() {
-    _reassembledFrame = _frame;
-    super.reassemble();
+  void updateDependencies(Element dependent, Object? aspect) {
+    if (_currentNode?.dependent != dependent) {
+      changeNode(
+        _currentNode,
+        _currentNode = _nodes[dependent] ??= Node(dependent),
+      );
+    }
+    markDirty();
   }
 
-  int? _reassembledFrame;
+  @override
+  void removeDependent(Element dependent) {
+    deactivateNode(_nodes[dependent]!);
+    super.removeDependent(dependent);
+
+    markDirty();
+  }
 
   @override
   Widget build() {
@@ -117,16 +122,12 @@ class ScopeIt extends InheritedElement with BindIt, InheritIt, WatchIt, ReadIt {
       key: _restartKey,
       builder: (context) {
         try {
-          // we provide the providers to the tree.
           widget.provide?.call(context);
         } catch (error, stackTrace) {
           return widget.errorBuilder(context, error, stackTrace);
         }
 
-        // we use `context.useFuture` hook to wait for all async binds.
-        final snapshot = context.useFuture(allReady, key: _reassembledFrame);
-
-        // if `allReady` is void (ready), we return child (super.build).
+        final snapshot = context.useFutureValue(allReady());
         switch (snapshot) {
           case AsyncSnapshot(connectionState: ConnectionState.waiting):
             return widget.loadingBuilder(context);
@@ -138,4 +139,11 @@ class ScopeIt extends InheritedElement with BindIt, InheritIt, WatchIt, ReadIt {
       },
     );
   }
+}
+
+class Node with Bindings, Dependencies {
+  Node(this.dependent);
+
+  @override
+  final Element dependent;
 }
