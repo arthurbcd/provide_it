@@ -12,7 +12,11 @@ part of '../framework.dart';
 ///
 /// See [InheritedState] for more details.
 abstract class InheritedProvider<T> extends BindProvider<void> {
-  const InheritedProvider({super.key});
+  const InheritedProvider({super.key, this.lazy});
+
+  /// Whether to create the value only when it's first read.
+  /// When false, value is immediately created on provide.
+  final bool? lazy;
 
   @protected
   InheritedState<T, InheritedProvider<T>> createState();
@@ -30,35 +34,74 @@ final class InheritedBind<T> extends Bind<void> {
   InheritedState<T, InheritedProvider<T>> get state => _state!;
 
   @override
+  InheritedProvider<T> get provider => super.provider as InheritedProvider<T>;
+
+  @override
   String get debugLabel => state.debugLabel;
+
+  String get type => state.type;
+
+  Symbol get symbol => Symbol(type);
+
+  @mustCallSuper
+  T depend(Element dependent, InheritedAspect<T?> aspect) {
+    state.addDependent(dependent, aspect);
+
+    final value = read();
+    if (value is Future<T>) {
+      throw ProviderNotReadyException('$debugLabel is not ready.');
+    }
+    if (_value != value && value != null) {
+      if (_value == null || _watcher != null) {
+        _watcher?.cancel(_value!, state.notifyDependents);
+        _watcher ??= scope.widget.resolveWatcher(value);
+        _watcher?.listen(value, state.notifyDependents);
+      }
+      _value = value;
+    }
+    aspect.didDepend(dependent, value);
+    return value;
+  }
+
+  // we can't type the covariant as T
+  Watcher? _watcher;
+  T? _value;
+
+  @mustCallSuper
+  void removeDependent(Element dependent) {
+    state.removeDependent(dependent);
+  }
 
   @override
   void bind() {
-    scope._inheritState(state);
-    state.initState();
     super.bind();
+    scope._inherit(this);
+    state.initState();
+    if (provider.lazy == false) {
+      state.read();
+    }
   }
 
   @override
   void update(InheritedProvider<T> newProvider) {
-    final oldProvider = provider as InheritedProvider<T>;
+    final oldProvider = provider;
     super.update(newProvider);
     state.updated(oldProvider);
+    if (state.selfDependent) state.removeDependent(dependent);
   }
 
   @override
   void activate() {
+    scope._inherit(this);
+    _watcher?.listen(_value!, state.notifyDependents);
     super.activate();
-    scope._inheritState(state);
   }
 
   @override
   void deactivate() {
-    scope._disinheritState(state);
+    scope._disinherit(this);
+    _watcher?.cancel(_value!, state.notifyDependents);
     super.deactivate();
-    if (watched) {
-      _unwatch();
-    }
   }
 
   @override
@@ -69,36 +112,18 @@ final class InheritedBind<T> extends Bind<void> {
 
   @override
   void unbind() {
-    _watcher?.dispose(state.read() as T);
+    _watcher?.dispose(_value!);
     state.dispose();
     super.unbind();
-    _watcher = _state = state._bind = null;
+    _watcher = _value = _state = state._bind = null;
   }
 
-  bool watched = false;
-  Watcher<T>? _watcher;
+  FutureOr<void> isReady() => state.isReady();
 
-  void _watch() {
-    final value = state.read() as T;
-    _watcher = ProvideIt.watcherOf(element, value);
-    _watcher?.init(value, state.notifyDependents);
-    watched = true;
-  }
-
-  void _unwatch() {
-    final value = state.read() as T;
-    _watcher?.cancel(value, state.notifyDependents);
-    watched = false;
-  }
+  FutureOr<T> read() => state.read();
 
   @override
-  void build() {
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (state.isReady() case T it when it != null && !watched) {
-        _watch();
-      }
-    });
-  }
+  void build() {}
 }
 
 /// An abstract class that represents the state of a [BindProvider].
@@ -123,26 +148,31 @@ final class InheritedBind<T> extends Bind<void> {
 ///
 abstract class InheritedState<T, R extends InheritedProvider<T>> {
   InheritedBind<T>? _bind;
+  final _dependents = HashMap<Element, List<InheritedAspect<T?>>>();
 
   @visibleForTesting
   String get debugLabel;
 
   @visibleForTesting
   final String type = switch (T.toString()) {
-    final type when null is! T => type,
-    final type => type.substring(0, type.length - 1),
+    final t when null is! T => t,
+    final t => t.substring(0, t.length - 1),
   };
 
   @visibleForTesting
   Set<Element> get dependents => _dependents.keys.toSet();
 
-  final _dependents = HashMap<Element, List<InheritedAspect<T?>>>();
+  @visibleForTesting
+  bool get selfDependent => _dependents.containsKey(_bind!.dependent);
+
+  @protected
+  ReadIt get scope => _bind!.scope;
+
+  @protected
+  BuildContext get context => _bind!.dependent;
 
   @protected
   R get provider => _bind!.provider as R;
-
-  @protected
-  BuildContext get context => _bind!.element;
 
   @mustCallSuper
   void initState() {}
@@ -161,15 +191,12 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   @protected
   @mustCallSuper
   void notifyDependents() {
-    if (dependents.isEmpty) {
-      return;
-    }
-    final value = read();
-    assert(value is T, 'Cannot notify dependents when not ready.');
+    // TODO: probably breaks readAsync
+    final value = read() as T;
 
     _dependents.forEach((Element element, List<InheritedAspect<T?>> aspects) {
       for (var i = 0; i < aspects.length; i++) {
-        aspects[i].didChange(element, value as T?);
+        aspects[i].didChange(element, value);
       }
     });
   }
@@ -195,7 +222,7 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   void dispose() {}
 
   @protected
-  FutureOr<void> isReady() => null;
+  FutureOr<void> isReady();
 
   @protected
   FutureOr<T> read();
@@ -205,10 +232,16 @@ abstract class InheritedAspect<T> {
   const InheritedAspect();
 
   @protected
-  void didDepend(Element dependent, T value) {
-    // Handles the initial value when first depending on the provider.
-  }
+  void didDepend(Element dependent, T value) {}
 
   @protected
   void didChange(Element dependent, T value);
+}
+
+class ProviderNotReadyException implements Exception {
+  ProviderNotReadyException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'LoadingProvideException: $message';
 }

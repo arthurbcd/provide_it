@@ -1,28 +1,12 @@
 part of '../framework.dart';
 
-@internal
 @immutable
 abstract class BindProvider<R> with Diagnosticable {
   const BindProvider({this.key});
 
-  /// Controls how one provider replaces another in the bind tree.
   /// Similar to [Widget.key].
+  /// Controls how one provider replaces another in the bind tree.
   final Object? key;
-
-  /// A [Widget.canUpdate] implementation for [BindProvider] with [equals].
-  static bool canUpdate(BindProvider oldProvider, BindProvider newProvider) {
-    return oldProvider.runtimeType == newProvider.runtimeType &&
-        equals(oldProvider.key, newProvider.key);
-  }
-
-  /// The default equality to use. Defaults to one-depth collections equality.
-  /// Override it to `DeepCollectionEquality.equals` to mimic lib `provider` behavior.
-  static Equals equals = (Object? a, Object? b) => switch ((a, b)) {
-    (List a, List b) => listEquals(a, b),
-    (Set a, Set b) => setEquals(a, b),
-    (Map a, Map b) => mapEquals(a, b),
-    _ => a == b,
-  };
 
   @protected
   Bind<R> createBind();
@@ -30,22 +14,27 @@ abstract class BindProvider<R> with Diagnosticable {
 
 @internal
 sealed class Bind<R> extends LinkedListEntry<Bind> {
+  /// Similar to [Widget.canUpdate].
+  static bool canUpdate(BindProvider oldProvider, BindProvider newProvider) {
+    return oldProvider.runtimeType == newProvider.runtimeType &&
+        ProvideIt.equals(oldProvider.key, newProvider.key);
+  }
+
   Bind(BindProvider<R> provider) : _provider = provider;
   BindProvider<R>? _provider;
-  Element? _element;
-  ScopeIt? _scope;
+  Node? _node;
 
   @visibleForTesting
   String get debugLabel;
 
   @protected
-  Element get element => _element!;
+  ScopeIt get scope => _node!.scope;
+
+  @protected
+  Element get dependent => _node!.dependent;
 
   @protected
   BindProvider<R> get provider => _provider!;
-
-  @internal
-  ScopeIt get scope => _scope!;
 
   @mustCallSuper
   void update(covariant BindProvider<R> newProvider) {
@@ -74,9 +63,11 @@ sealed class Bind<R> extends LinkedListEntry<Bind> {
 
 extension ContextBind on BuildContext {
   R bind<R>(BindProvider<R> provider) {
+    assert(
+      // e.g. ListView.builder, SliverList.builder
+      this is! RenderSliverBoxChildManager,
+      'Cannot bind a provider to an unstable context: wrap it in a Builder or refactor it into its own widget to obtain a stable context.',
+    );
     return ScopeIt.of(this).bind(this, provider);
   }
 }
-
-@internal
-typedef Equals = bool Function(Object? a, Object? b);

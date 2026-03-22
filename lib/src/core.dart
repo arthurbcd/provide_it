@@ -117,7 +117,7 @@ class _Select<T, S> extends InheritedAspect<T> {
   void didChange(Element dependent, T value) {
     final next = selector(value);
 
-    if (!BindProvider.equals(_prev, next)) {
+    if (!ProvideIt.equals(_prev, next)) {
       dependent.markNeedsBuild();
       _prev = next;
     }
@@ -139,7 +139,7 @@ class _ListenSelected<T, S> extends InheritedAspect<T> {
   void didChange(Element dependent, T value) {
     final next = selector(value);
 
-    if (!BindProvider.equals(_prev, next)) {
+    if (!ProvideIt.equals(_prev, next)) {
       listener(_prev, next);
       _prev = next;
     }
@@ -155,7 +155,7 @@ extension ContextDependsOnInheritedProvider on BuildContext {
   /// - When deactivated, [InheritedState.removeDependent] will be called for each
   /// provider dependency that this `context` depends on.
   T dependOnInheritedProvider<T>({required InheritedAspect<T> aspect}) {
-    return scope.dependOnInheritedProvider<T>(this as Element, aspect);
+    return scope.dependOnInheritedProvider<T>(this, aspect);
   }
 }
 
@@ -165,6 +165,7 @@ extension ContextInheritProviders on BuildContext {
   /// This allows using [ContextReaders] and [ContextDependents] in simbling contexts,
   /// such as in dialogs, routes, overlays, etc.
   void inheritProviders(BuildContext ancestor) {
+    assert(this != ancestor, 'Cannot inherit providers from itself.');
     scope.inheritProviders(this, ancestor);
   }
 }

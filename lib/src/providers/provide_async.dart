@@ -12,38 +12,29 @@ extension ContextProvideAsync on BuildContext {
     bool lazy = false,
     Object? key,
   }) {
-    bind(_InheritedAsync<T>(key: key, create, dispose: dispose, lazy: lazy));
+    bind(_ProvideAsync(key: key, create, dispose: dispose, lazy: lazy));
   }
 }
 
-class _InheritedAsync<T> extends InheritedProvider<T> {
-  const _InheritedAsync(this.create, {this.dispose, this.lazy, super.key});
+class _ProvideAsync<T> extends InheritedProvider<T> {
+  const _ProvideAsync(this.create, {this.dispose, super.lazy, super.key});
 
   final FutureOr<T> Function() create;
   final void Function(T value)? dispose;
-  final bool? lazy;
 
   @override
-  InheritedState<T, _InheritedAsync<T>> createState() => _InheritedAsyncState();
+  InheritedState<T, _ProvideAsync<T>> createState() => _ProvideAsyncState();
 }
 
 typedef _Error = (Object error, StackTrace stackTrace);
 
-class _InheritedAsyncState<T> extends InheritedState<T, _InheritedAsync<T>> {
+class _ProvideAsyncState<T> extends InheritedState<T, _ProvideAsync<T>> {
   @override
   String get debugLabel => 'provideAsync<$T>';
 
   bool _created = false;
   FutureOr<T>? _value;
   _Error? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    if (provider.lazy == false) {
-      _create();
-    }
-  }
 
   void _create() {
     _value = provider.create();

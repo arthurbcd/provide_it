@@ -8,7 +8,7 @@ class FutureProvider<T> extends ProviderWidget<T> {
     this.initialData,
     this.catchError,
     this.updateShouldNotify,
-    this.lazy,
+    super.lazy,
     super.builder,
     super.child,
   }) : future = null;
@@ -22,8 +22,7 @@ class FutureProvider<T> extends ProviderWidget<T> {
     this.catchError,
     super.builder,
     super.child,
-  }) : create = null,
-       lazy = null;
+  }) : create = null;
 
   final Create<Future<T>>? create;
   final T? initialData;
@@ -34,9 +33,6 @@ class FutureProvider<T> extends ProviderWidget<T> {
   /// Whether to notify dependents when the value changes.
   /// Defaults to `(T prev, T next) => prev != next`.
   final UpdateShouldNotify<T>? updateShouldNotify;
-
-  /// Whether to create the value only when it's first called.
-  final bool? lazy;
 
   /// The value to provide.
   final Future<T>? future;
@@ -67,7 +63,6 @@ class _FutureInheritedState<T> extends InheritedState<T, FutureProvider<T>> {
 
   @override
   void updated(oldProvider) {
-    super.updated(oldProvider);
     if (oldProvider.future != provider.future ||
         (provider.create == null) != (oldProvider.create == null)) {
       if (_value is Future<T>) {
@@ -75,6 +70,7 @@ class _FutureInheritedState<T> extends InheritedState<T, FutureProvider<T>> {
       }
     }
     _subscribe();
+    super.updated(oldProvider);
   }
 
   @override

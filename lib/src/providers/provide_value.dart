@@ -8,15 +8,15 @@ extension ContextProvideValue on BuildContext {
     Object? key,
   }) {
     bind(
-      _ValueInherited(value, key: key, updateShouldNotify: updateShouldNotify),
+      _ProvideValue(value, key: key, updateShouldNotify: updateShouldNotify),
     );
 
     return value;
   }
 }
 
-class _ValueInherited<T> extends InheritedProvider<T> {
-  const _ValueInherited(this.value, {super.key, this.updateShouldNotify});
+class _ProvideValue<T> extends InheritedProvider<T> {
+  const _ProvideValue(this.value, {super.key, this.updateShouldNotify});
 
   /// An already created [value].
   final T value;
@@ -25,16 +25,15 @@ class _ValueInherited<T> extends InheritedProvider<T> {
   final bool Function(T prev, T next)? updateShouldNotify;
 
   @override
-  _ValueInheritedState<T> createState() => _ValueInheritedState<T>();
+  _ProvideValueState<T> createState() => _ProvideValueState<T>();
 }
 
-class _ValueInheritedState<T> extends InheritedState<T, _ValueInherited<T>> {
+class _ProvideValueState<T> extends InheritedState<T, _ProvideValue<T>> {
   @override
   String get debugLabel => 'provideValue<$T>';
 
   @override
-  void updated(covariant _ValueInherited<T> oldProvider) {
-    super.updated(oldProvider);
+  void updated(covariant _ProvideValue<T> oldProvider) {
     if (provider.updateShouldNotify case final shouldNotify?) {
       if (shouldNotify(oldProvider.value, provider.value)) {
         notifyDependents();
@@ -42,7 +41,11 @@ class _ValueInheritedState<T> extends InheritedState<T, _ValueInherited<T>> {
     } else if (oldProvider.value != provider.value) {
       notifyDependents();
     }
+    super.updated(oldProvider);
   }
+
+  @override
+  void isReady() {}
 
   @override
   T read() {

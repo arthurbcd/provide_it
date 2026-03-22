@@ -1,250 +1,149 @@
 # Provide It
 
-ProvideIt is a provider-like state binding, management, and injection using only context extensions.
+A minimalist state sharing library.
 
-## Use
+## Setup
 
 ```dart
-void main() {
-  runApp(
-    ProvideIt(
-      // Auto-injects dependencies
-      provide: (context) {
-        context.provide(CounterService.async); // <- Future
-        context.provide(CounterRepository.new);
-        context.provide(Counter.new);
-      },
-      // Auto-injects path parameters
-      locator: (param) => pathParameters[param.name], // e.g: go_router
-
-      // ProvideIt will take care of loading/error, but you can customize it:
-      // - loadingBuilder: (context) => (...),
-      // - errorBuilder: (context, error, trace) => (...),
-      child: MaterialApp(
-        home: Builder(
-          builder: (context) {
-            final counter = context.watch<Counter>();
-
-            context.listen<Counter>((counter) {
-              // do something
-            });
-
-            return Center(
-              child: ElevatedButton(
-                onPressed: counter.increment,
-                child: Text('${counter.count}'),
-              ),
-            );
-          },
-        ),
-      ),
-    ),
-  );
-}
+// Wrap your app with ProvideIt.
+void main() => runApp(ProvideIt(child: MyApp()));
 ```
 
-### Setup
+## Usage
 
-Set `ProvideIt` above your app.
+For handling local state quickly.
 
+### Local State (Hooks)
 ```dart
-void main() {
-  runApp(
-    ProvideIt(
-      child: App(), // Ex: MaterialApp
-    ),
-  );
-}
+// Hook & use locally.
+final counter = context.use(() => Counter());
+final (count, setCount) = context.useValue(0);
 ```
 
-### 1. Providing
-
-#### `context.provide`
-
-Use `provide` method to bind a value to a context. The value will be unbound/disposed when the same context is unmounted.
-
-This is equivalent to a widget-less `Provider` in the provider package.
-
+### Hook Example
 ```dart
-class CounterProvider extends StatelessWidget {
-  const CounterProvider({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    context.provide(Counter.new);
-
-    return ElevatedButton(
-      onPressed: () => context.read<Counter>().increment(),
-      child: Text('Count: ${context.watch<Counter>().count}'),
-    );
-  }
-}
-```
-
-Did you see the `.new`? This is a new feature that allows you automatically inject instances that were previously bound.
-
-By default, its located by instance type: `read<Type>`.
-
-You can manually specify one using `locator` parameter:
-
-```dart
-ProvideIt(
-  locator: (param) => pathParameters[param.name], // e.g: go_router
-)
-```
-
-This will automatically inject the parameters to the constructor.
-
-When needed, you can also specify the parameters to inject using `parameters`:
-
-```dart
- context.provide(Counter.new, parameters: {
-  'counterId': 'my-id', // by name
-  'String': 'my-id', // by type
-  '0': 'my-id', // by position
- });
-```
-
-> Both `locator` and `parameters` are optional and fallback to the default behavior (injecting providers by Type) when `null`.
-
-#### `context.use` & `context.useValue`
-
-Similar to `context.provide` & `context.provideValue` but for single-use.
-
-Useful for self-contained simple state-management.
-
-```dart
-class CounterProvider extends StatelessWidget {
-  const CounterProvider({super.key});
+class CounterExample extends StatelessWidget {
+  const CounterExample({super.key});
 
   @override
   Widget build(BuildContext context) {
     final (count, setCount) = context.useValue(0);
 
-    return ElevatedButton(
-      onPressed: () => setCount(count + 1),
-      child: Text('Counter: $count'),
+    return GestureDetector(
+      onTap: () => setCount(count + 1),
+      child: Text('Increment: $count'),
     );
   }
 }
 ```
 
-When using complex objects, you can use `context.use` to create a new instance. The objects will persist until the context is unmounted, then they will be disposed.
+### Shared State (DI)
+
+For sharing state across screens and routes.
 
 ```dart
-class CounterProvider extends StatelessWidget {
-  const CounterProvider({super.key});
+// Provide it...
+context.provide(Counter.new);
+context.provideValue(0);
+
+// ... and use it anywhere
+final counter = context.watch<Counter>();
+final count = context.select((Counter c) => c.count);
+
+// ... or just listen for side-effects!
+context.listen<Counter>((it) => print(it.count));
+context.listenSelected((Counter it) => it.count, (prev, next) {
+  print('Count changed $prev -> $next');
+});
+```
+
+### Inherited Example
+
+```dart
+class InheritedExample extends StatelessWidget {
+  const InheritedExample({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.use(() => AnimationController());
+    // handle local state with HookProvider
+    final snapshot = context.useFuture(() async => fetchData());
 
-    return ElevatedButton(
-      onPressed: () => controller.forward(),
-      child: Text('Animation: ${controller.value}'),
-    );
+    // provide shared state with InheritedProvider
+    context.provideValue(snapshot.data);
+
+    return switch (snapshot) {
+      AsyncSnapshot(:final data?) => Text('data: $data'),
+      AsyncSnapshot(:final error?) => Text('error: $error'),
+      _ => Text('loading'),
+    };
   }
 }
 ```
 
-Easily create your own custom use through extensions:
+> You can also use `ReadIt.instance` / `readIt`, to read the root ProvideIt scope contextlessly.
 
-```dart
-extension MyCustomUse on BuildContext {
-  (double, VoidCallback) useAnimationToggle() {
-    final controller = use((c) => AnimationController(vsync: c.vsync)); // auto-listens &auto-dispose
-    final (isActive, setActive) = useValue(false);
+### Available Providers
 
-    return (controller.value, () {
-      if (isActive) {
-        controller.forward();
-      } else {
-        controller.reverse();
-      }
-      setActive(!isActive);
-    });
-  }
-}
-```
+Below is a list of all `context` providers currently available.
 
-> Both `value` and `create` will watch the `context` and rebuilt on it. By default, it watches `Listenable` objects. You can add a custom `Watcher` to watch other objects. See [Additional Watchers](#4-additional-watchers).
+| Extension method | Provider type | Description |
+|------------------|---------------|-------------|
+| `context.provide` | InheritedProvider | Provides a value with dependency injection |
+| `context.provideAsync` | InheritedProvider | Provides a `Future` value asynchronously |
+| `context.provideValue` | InheritedProvider | Provides an existing value with optional update callback |
+| `context.use` | HookProvider | Creates a local value tied to the context |
+| `context.useValue` | HookProvider | Returns a mutable value record |
+| `context.useStream` | HookProvider | Subscribes to a `Stream` and returns `AsyncSnapshot` |
+| `context.useStreamValue` | HookProvider | Subscribes to an existing `Stream` |
+| `context.useFuture` | HookProvider | Subscribes to a `Future` and returns `AsyncSnapshot` |
+| `context.useFutureValue` | HookProvider | Subscribes to an existing `Future` |
+| `context.useSingleTickerProvider` | HookProvider | Provides a `TickerProvider` for animations |
+| `context.useAnimationController` | HookProvider | Creates an `AnimationController` tied to context |
+| `context.useAutomaticKeepAlive` | HookProvider | Enables/disables automatic keep-alive for the subtree |
 
-### 2. Accessing
+---
 
-For accessing a state, several methods are available:
+### The "What Ifs" behind the Magic
 
-```dart
-final count = context.watch<CounterNotifier>().count;
-final count2 = context.read<int>(); // read only
-final count3 = context.select((CounterNotifier counter) => counter.count);
-```
+ProvideIt was born from a few questions:
 
-You can contextlessly read using `ReadIt.intance` or simply `readIt`.
+- *What if I could context.listen with provider?*
+- *What if I could scope and auto-dispose with get_it?*
+- *What if I could provide/hook state without custom widgets?*
 
-Equivalent deprecations were included to help migrating from `provider`/`get_it` packages.
+### Inspirations
 
-```dart
-final count = readIt<CounterNotifier>().count; // <- callable
-final count = readIt.read<CounterNotifier>().count;
-```
+This project took cues from several existing packages and ideas:
 
-### 3. Listening
+- **provider & get_it** – syntax and lookup logic.
+- **flutter_hooks & watch_it** – binding and reactivity engine.
+- **auto_injector** – automatic injection without code generation.
 
-A highly requested feature is the ability to listen to a state without rebuilding the widget.
+> And of course  **flutter**, by using native tools like `Listenable`, `ValueNotifier` and `AsyncSnapshot`. This package depends only on flutter/widgets.
 
-There is no equivalent in the `provider` package.
+### How it Works: The "Unicorn" Architecture
 
-```dart
-context.listen<CounterNotifier>((counter) {
-  print('Counter changed: ${counter.count}');
-});
-```
+ProvideIt doesn't behave exactly like **get_it** or **provider**. It's a hybrid engine designed to give you the best of both worlds.
 
-And you can also listen with a selector:
+- **Not a Service Locator**: Unlike **get_it**, ProvideIt is lifecycle-aware. It knows when a widget dies and cleans up the mess.
 
-```dart
-context.listenSelected((CounterNotifier it) => it.count, (prev, next) {
-  print('Counter changed: $prev -> $next');
-});
-```
+- **Not a Scoped Wrapper**: Unlike provider, it isn't strictly chained to the parent-child hierarchy. You can access states in sibling routes or dialogs without complex nesting.
 
-### 4. Additional Watchers
+### State Binding
 
-You can implement a custom [Watcher] to tell the framework how to watch an observable.
+At its core, ProvideIt is a **single** `InheritedWidget` acting as a container. When you use an extension like `context.useValue` or `context.provide`, you are performing State Binding.
 
-```dart
-import 'package:bloc/bloc.dart';
+There are two types of bindings:
 
-class CubitWatcher extends Watcher<Cubit> {
-  final subscriptions = <Object, StreamSubscription>{};
+1. **HookProvider** (Local): Private state. It lives and dies with that specific widget.
+2. **InheritedProvider** (Shared): Global-ish state. It's registered in the container and becomes available to other contexts.
 
-  @override
-  void init(Cubit observable, VoidCallback notify) {
-    subscriptions[notify] = observable.stream.listen((_) => notify());
-  }
+### Scoping & Disambiguation
 
-  @override
-  void cancel(Cubit observable, VoidCallback notify) {
-    subscriptions.remove(notify)?.cancel();
-  }
+Wait, if it's a single container, how does it handle multiple states of the same type?
+ProvideIt is **smart about context**:
 
-  @override
-  void dispose(Cubit observable) {
-    observable.close();
-  }
-}
-```
+- **Closest Wins**: If you have two providers of the same type, ProvideIt looks for the one closest to your current context.
+- **Sibling Safety**: If you try to access a state that exists in two different sibling branches (like two different routes) at the same time, ProvideIt throws an exception to prevent bugs.
 
-Then you can add it:
-
-```dart
-ProvideIt(
-  additionalWatchers: [CubitWatcher()],
-);
-```
-
-And now you can watch it with `watch`, `select` and `listen` as usual:
-
-```dart
-final state = context.watch<MyCubit>().state;
-```
+This makes ProvideIt "retro-compatible" with the provider mental model, but with the freedom to reach across the app tree.

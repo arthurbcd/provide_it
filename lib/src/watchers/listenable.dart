@@ -4,13 +4,13 @@ class ListenableWatcher extends Watcher<Listenable> {
   const ListenableWatcher();
 
   @override
-  void init(Listenable value, VoidCallback listener) {
-    value.addListener(listener);
+  void listen(Listenable value, VoidCallback notify) {
+    value.addListener(notify);
   }
 
   @override
-  void cancel(Listenable value, VoidCallback listener) {
-    value.removeListener(listener);
+  void cancel(Listenable value, VoidCallback notify) {
+    value.removeListener(notify);
   }
 
   @override

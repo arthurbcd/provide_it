@@ -59,7 +59,7 @@ final class HookBind<T> extends Bind<T> {
   }
 
   @override
-  T build() => state.build(element);
+  T build() => state.build(dependent);
 }
 
 abstract class HookState<T, R extends HookProvider<T>> {
@@ -72,7 +72,7 @@ abstract class HookState<T, R extends HookProvider<T>> {
   R get provider => _bind!.provider as R;
 
   @protected
-  BuildContext get context => _bind!.element;
+  BuildContext get context => _bind!.dependent;
 
   @mustCallSuper
   void didUpdateProvider(covariant R oldProvider) {}
@@ -80,7 +80,7 @@ abstract class HookState<T, R extends HookProvider<T>> {
   @mustCallSuper
   void setState(VoidCallback fn) {
     fn();
-    _bind!._element!.markNeedsBuild();
+    _bind!.dependent.markNeedsBuild();
   }
 
   @mustCallSuper

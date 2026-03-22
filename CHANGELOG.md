@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.32.0
+
+- Major refactor to simplify the api and internal logic.
+
 ## 0.31.0
 
 - Simplified `Watcher` api.

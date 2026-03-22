@@ -1,3 +1,5 @@
+// ignore_for_file: unused_local_variable, avoid_print
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -5,117 +7,109 @@ import 'package:provide_it/provide_it.dart';
 
 void main() {
   runApp(
+    // You must set ProvideIt in the root of your app for any provider (hook/inherited) to work.
     ProvideIt(
       provide: (context) {
-        context.provideAsync(() async {
-          await Future.delayed(Duration(seconds: 2));
-          return Size(1, 2);
+        ElevatedButton;
+        StreamBuilder;
+        // provide async dependencies
+        context.provideAsync<CounterService>(() async {
+          await Future.delayed(Duration(seconds: 3));
+          return MyCounterService();
         });
-        context.provideValue(AppAnalytics.instance);
-        context.provideAsync<CounterService>(CounterServiceImpl.init);
 
-        // auto-inject dependencies by type:
+        // Zero boilerplate injection
         context.provide(CounterRepository.new);
-        context.provide(Counter.new);
+        context.provide(Counter.new); // <- auto-injects CounterRepository
       },
-      // provide custom values by parameter type or name:
-      locator: (param) => pathParameters[param.name],
+      // customize injection parameters
+      locator: (param) => myParameters[param.name],
 
-      // show something while waiting for async providers to be ready.
+      // show something while loading async dependencies, defaults to black screen
       loadingBuilder: (context) {
-        return Center(child: CircularProgressIndicator());
+        return Center(child: Text('loading'));
       },
-      child: MaterialApp(
-        scaffoldMessengerKey: messengerKey,
-        home: const Scaffold(body: AppBody()),
+      // by default auto-notify/dispose listenable/notifier inherited providers
+      watchers: [const ListenableWatcher()], // empty disables
+      child: WidgetsApp(
+        color: Color(0xFF7B0328),
+        builder: (context, child) => Home(),
       ),
     ),
   );
 }
 
-final pathParameters = {'counterId': 'my-counter-id'};
-final messengerKey = GlobalKey<ScaffoldMessengerState>();
+final myParameters = {'counterId': ''};
 
-class AppBody extends StatelessWidget {
-  const AppBody({super.key});
+class Home extends StatelessWidget {
+  const Home({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // read you inherited Counter with read, watch or select
+    final counter = context.watch<Counter>();
+    final count = context.select((Counter c) => c.count);
+
+    // side-effect with listen or listenSelected
     context.listen<Counter>((counter) {
-      messengerKey.currentState?.hideCurrentSnackBar();
-      messengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text('Counter changed: ${counter.count}')),
-      );
+      print('Counter updated: ${counter.count}');
     });
-    context.listenSelected((Counter e) => e.count, (prev, next) {
-      print('Counter changed from $prev to $next');
+    context.listenSelected((Counter it) => it.count, (prev, next) {
+      print('count changed: $prev -> $next');
     });
-    return Column(
-      children: [
-        ElevatedButton(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) {
-                final counter = context.watch<Counter>();
 
-                return AlertDialog(
-                  title: Text('You can watch inside the dialog!'),
-                  content: Text('${counter.count}'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => counter.increment(),
-                      child: const Text('Increment'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-          child: Text('Open Counter dialog'),
-        ),
-        Expanded(
-          child: ListView.builder(
-            itemBuilder: (context, index) {
-              // we wrap with Builder to obtain a stable context for each item
-              return Builder(
-                builder: (context) {
-                  // we can bind hook providers, for local state management
-                  context.useAutomaticKeepAlive();
-                  final (count, setCount) = context.useValue(0);
-
-                  return ListTile(
-                    title: Text('Counter: $count'),
-                    onTap: () {
-                      setCount(count + 1);
-                    },
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
+    return GestureDetector(
+      // you can also read singletons contextlessly with [readIt]. fails on duplicates.
+      onTap: () => readIt<Counter>().increment(),
+      child: Text('Count: $count'),
     );
   }
 }
 
-class CounterServiceImpl extends CounterService {
-  CounterServiceImpl._();
-  static Future<CounterServiceImpl> init() async {
-    await Future.delayed(Duration(seconds: 3));
-    return CounterServiceImpl._();
+/// you can also use [HookProvider]'s for local state, they can't be read elsewhere!
+class HookExample extends StatelessWidget {
+  const HookExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final (count, setCount) = context.useValue(0);
+
+    return GestureDetector(
+      onTap: () => setCount(count + 1),
+      child: Text('Count: $count'),
+    );
   }
 }
 
-class AppAnalytics {
-  AppAnalytics._();
-  static final instance = AppAnalytics._();
+class CombinedExample extends StatelessWidget {
+  const CombinedExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    // handle async state locally with useFuture/useStream or useFutureValue/useStreamValue.
+    final snapshot = context.useFuture(() async => 'Hello World!');
+
+    // optionally provide for descendants without needing a provider class
+    context.provideValue(snapshot.data);
+
+    return switch (snapshot) {
+      AsyncSnapshot(:final data?) => Text('data: $data'),
+      AsyncSnapshot(:final error?) => Text('error: $error'),
+      _ => Text('loading'),
+    };
+  }
 }
+
+// create your own reusable providers through context extension!
+extension CustomProviders on BuildContext {
+  AsyncSnapshot<T> provideFuture<T>(Future<T> Function() future) {
+    final snapshot = useFuture(() => future());
+    provideValue(snapshot.data);
+    return snapshot;
+  }
+}
+
+class MyCounterService extends CounterService {}
 
 class CounterService {}
 
@@ -135,5 +129,18 @@ class Counter extends ChangeNotifier {
   void increment() {
     _count++;
     notifyListeners();
+  }
+}
+
+class CounterExample extends StatelessWidget {
+  const CounterExample({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final (count, setCount) = context.useValue(0);
+    return GestureDetector(
+      onTap: () => setCount(count + 1),
+      child: Text('Count: $count'),
+    );
   }
 }

@@ -39,11 +39,6 @@ class Injector<T> {
     this.ignorePrivateTypes = true,
   });
 
-  /// The default [ParamLocator] to use. Applied to all [Injector].
-  ///
-  /// This is called when [locator] returns `null`.
-  static ParamLocator? defaultLocator;
-
   /// The [T] function to inject.
   final Function create;
 
@@ -59,9 +54,9 @@ class Injector<T> {
   ///   '$TextAlign': TextAlign.center, // by type
   /// });
   /// ```
-  final Map<String, dynamic>? parameters;
+  final Map<Symbol, dynamic>? parameters;
 
-  /// Whether to ignore private types.
+  /// Whether to ignore private types. Ex: `_MyPrivateClass`.
   final bool ignorePrivateTypes;
 
   /// The deferred return type of [create] function.
@@ -86,9 +81,8 @@ class Injector<T> {
   }
 
   String _type() {
-    if (!isAsync) return rawType.replaceAll('?', '');
-
-    return rawType.split('<').last.split('>').first.replaceAll('?', '');
+    if (!rawType.endsWith('?')) return rawType;
+    return rawType.substring(0, rawType.length - 1);
   }
 
   String _rawType() {
@@ -140,7 +134,7 @@ class Injector<T> {
   /// final user = userInjector({'id': 1, 'name': 'John'});
   /// ```
   ///
-  FutureOr<T> call([Map<String, dynamic>? parameters]) {
+  FutureOr<T> call([Map<Symbol, dynamic>? parameters]) {
     if (!hasParams) return this.create();
 
     if (this.parameters != null || parameters != null) {
@@ -151,14 +145,17 @@ class Injector<T> {
 
     locate(Param param) {
       try {
-        return parameters?['${param.name ?? param.index}'] ??
-            parameters?[param.type] ??
-            locator?.call(param) ??
-            defaultLocator?.call(param);
+        return parameters?[Symbol('${param.name ?? param.index}')] ??
+            parameters?[Symbol(param.type)] ??
+            locator?.call(param);
       } catch (e, s) {
         if (kDebugMode) {
-          log('Throwed while locating $param',
-              name: 'Injector', error: e, stackTrace: s);
+          log(
+            'Throwed while locating $param',
+            name: 'Injector',
+            error: e,
+            stackTrace: s,
+          );
         }
         if (e is TypeError && !param.hasDefaultValue) {
           throw InjectorError.from(e, this);
@@ -215,8 +212,9 @@ class Injector<T> {
   late final _createTexts = _createText.splitBetween('(', ')')..removeAt(0);
   late final _input = _createTexts.first;
   late final _namedInput = _input.firstMatch(r'\{(.+)\}')?.group(1);
-  late final _positionalInput =
-      _namedInput != null ? _input.replaceAll('{$_namedInput}', '') : _input;
+  late final _positionalInput = _namedInput != null
+      ? _input.replaceAll('{$_namedInput}', '')
+      : _input;
 
   // lazy params
   late final _params = [..._positional, ..._named];
@@ -238,12 +236,9 @@ class Injector<T> {
 
       if (ignorePrivateTypes && rawType.startsWith('_')) continue;
 
-      list.add(NamedParam(
-        rawType,
-        name: name,
-        isRequired: isRequired,
-        owner: this,
-      ));
+      list.add(
+        NamedParam(rawType, name: name, isRequired: isRequired, owner: this),
+      );
     }
 
     return list;
@@ -275,12 +270,14 @@ class Injector<T> {
 
       if (ignorePrivateTypes && rawType.startsWith('_')) continue;
 
-      list.add(PositionalParam(
-        rawType,
-        index: list.length,
-        isRequired: isRequired,
-        owner: this,
-      ));
+      list.add(
+        PositionalParam(
+          rawType,
+          index: list.length,
+          isRequired: isRequired,
+          owner: this,
+        ),
+      );
     }
 
     return list;
@@ -377,9 +374,7 @@ class InjectorError implements TypeError {
 
 extension on String {
   RegExpMatch? firstMatch(String regex) => RegExp(regex).firstMatch(this);
-}
 
-extension SplitBetweenExtension on String {
   List<String> splitBetween(String start, String end) {
     if (start.length != 1 || end.length != 1) {
       throw ArgumentError('Delimiter must be a single character');
@@ -403,16 +398,18 @@ extension SplitBetweenExtension on String {
     return [
       substring(0, startIndex), // before
       substring(startIndex + 1, currentIndex - 1), // between
-      substring(currentIndex) // after
+      substring(currentIndex), // after
     ];
   }
 }
 
-extension TypeExtension on Type {
+extension TypeStringExtension on Type {
   String get type {
     final type = toString();
     if (!type.endsWith('?')) return type;
 
     return type.substring(0, type.length - 1);
   }
+
+  Symbol get asSymbol => Symbol(toString());
 }

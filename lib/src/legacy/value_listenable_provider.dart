@@ -62,6 +62,9 @@ class ValueListenableProviderState<T>
   }
 
   @override
+  void isReady() {}
+
+  @override
   T read() {
     return provider._valueListenable.value;
   }

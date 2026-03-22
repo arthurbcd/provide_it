@@ -4,19 +4,21 @@ import 'package:provide_it/src/framework.dart';
 
 import 'injector_test.dart';
 
-Future<void> provideIt(
+Future<ReadIt> provideIt(
   WidgetTester tester,
   WidgetBuilder builder, {
   void Function(BuildContext context)? provide,
 }) async {
+  final scope = ReadIt.scoped();
   await tester.pumpWidget(
     ProvideIt(
       key: UniqueKey(),
       provide: provide,
-      scope: ReadIt.scoped(),
+      scope: scope,
       child: Builder(builder: builder),
     ),
   );
+  return scope;
 }
 
 void main() {
@@ -114,6 +116,7 @@ void main() {
         context.provide((int a, String b) => (a, b));
         context.provide(() => 'b');
         context.provide(() => 1);
+
         return Container();
       });
 
@@ -149,6 +152,139 @@ void main() {
       expect(value3, 1);
       expect(value4, 'b');
     });
+
+    testWidgets(
+      'provides/read same type in different contexts (disambiguation)',
+      (tester) async {
+        int? outerValue;
+        int? innerValue;
+
+        await provideIt(tester, (context) {
+          // Provedor externo
+          context.provide<int>(() => 1);
+
+          return Builder(
+            builder: (context) {
+              outerValue = context.read<int>();
+              return Builder(
+                builder: (context) {
+                  context.provide<int>(() => 2);
+                  return Builder(
+                    builder: (context) {
+                      innerValue = context.read<int>();
+                      return Container();
+                    },
+                  );
+                },
+              );
+            },
+          );
+        });
+
+        await tester.pump();
+
+        expect(outerValue, 1);
+        expect(innerValue, 2);
+      },
+    );
+    testWidgets(
+      'provide same type in different contexts & read in the same context',
+      (tester) async {
+        int? outerValue;
+        int? innerValue;
+        Element? readContext;
+
+        await provideIt(tester, (context) {
+          // Provedor externo
+          context.provide<int>(() => 1);
+
+          return Builder(
+            builder: (context) {
+              context.provide<int>(() => 2);
+
+              return Builder(
+                builder: (context) {
+                  readContext = context as Element;
+                  outerValue = context.read<int>();
+                  context.provide<int>(() => 3);
+                  innerValue = context.read<int>();
+                  return Container();
+                },
+              );
+            },
+          );
+        });
+
+        await tester.pump();
+
+        expect(outerValue, 2);
+        expect(innerValue, 3);
+
+        readContext?.markNeedsBuild();
+        await tester.pump();
+
+        expect(outerValue, 2);
+        expect(innerValue, 3);
+      },
+    );
+
+    testWidgets(
+      'inherits providers from a sibling context (logical ancestor)',
+      (tester) async {
+        late BuildContext contextA;
+        late BuildContext contextB;
+        late BuildContext contextC;
+
+        await provideIt(tester, (context) {
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: Column(
+              children: [
+                // Branch A
+                Builder(
+                  builder: (context) {
+                    contextA = context;
+                    context.provide(() => 'A');
+                    return const Text('Provider Branch');
+                  },
+                ),
+                // Branch B
+                Builder(
+                  builder: (context) {
+                    contextB = context;
+                    context.provide(() => 'B');
+                    return const Text('Provider Branch');
+                  },
+                ),
+
+                // Branch C
+                Builder(
+                  builder: (context) {
+                    contextC = context;
+                    return const Text('Consumer Branch');
+                  },
+                ),
+              ],
+            ),
+          );
+        });
+
+        expect(
+          () => contextC.read<String>(),
+          throwsA(isA<ProviderMultipleFoundException>()),
+        );
+
+        contextC.inheritProviders(contextA);
+        expect(contextC.read<String>(), 'A');
+
+        expect(
+          () => contextC.inheritProviders(contextB),
+          throwsA(
+            isA<AssertionError>(),
+          ), // cannot inherit from multiple ancestors
+        );
+      },
+    );
   });
 
   group('ContextStates', () {
@@ -295,7 +431,7 @@ void main() {
             Expanded(
               child: Builder(
                 builder: (context) {
-                  context.provide(
+                  context.provideAsync(
                     () {
                       createCount++;
                       return Counter(42);
@@ -442,7 +578,9 @@ void main() {
 
       await provideIt(tester, (context) {
         context.provideValue(value);
-        context.listen<int>((v) => listenedValue = v);
+        context.listen<int>((v) {
+          listenedValue = v;
+        });
         return GestureDetector(
           key: Key('$value'),
           onTap: () {
@@ -556,7 +694,7 @@ void main() {
         builder: (context) {
           contexts[counter.value] = context;
           context.watch<Counter>();
-          state = scope.getInheritedState<Counter>();
+          state = scope.getInheritedBind<Counter>()?.state;
 
           return GestureDetector(onTap: () => counter.value++);
         },
@@ -668,6 +806,8 @@ void main() {
     expect(providerEvents, ['deactivate', 'activate', 'update']);
   });
 }
+
+typedef IntString = (int, String);
 
 class _LifecycleBuilder extends StatefulWidget {
   const _LifecycleBuilder({

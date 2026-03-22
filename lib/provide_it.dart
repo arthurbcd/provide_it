@@ -1,4 +1,3 @@
-/// @docImport 'package:collection/collection.dart';
 library;
 
 export 'src/core.dart';
@@ -21,8 +20,3 @@ export 'src/providers/use_single_ticker_provider.dart';
 export 'src/providers/use_stream.dart';
 export 'src/providers/use_value.dart';
 export 'src/watchers/listenable.dart';
-
-// TODO(arthurbcd): add tests:
-// ## 0.18.4
-// ## 0.18.5
-// ## 0.18.6

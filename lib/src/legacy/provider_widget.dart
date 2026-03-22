@@ -1,8 +1,10 @@
 part of '../legacy.dart';
 
 sealed class ProviderWidget<T> extends Widget implements InheritedProvider<T> {
-  const ProviderWidget({super.key, this.builder, this.child});
+  const ProviderWidget({super.key, this.lazy, this.builder, this.child});
 
+  @override
+  final bool? lazy;
   final TransitionBuilder? builder;
   final Widget? child;
 

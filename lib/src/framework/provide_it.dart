@@ -42,9 +42,8 @@ ProvideIt(
 );
 ''');
 
-  /// Restart the nearest [ProvideIt] subtree and all its bind dependencies.
-  static void restart(BuildContext context) {
-    ScopeIt.of(context).restart();
+  static ProvideIt? of(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<ProvideIt>();
   }
 
   static Widget _loadingBuilder(BuildContext context) {
@@ -55,34 +54,14 @@ ProvideIt(
     return ErrorWidget(e);
   }
 
-  /// Creates an [Injector] of type [T] that auto-injects registered dependencies.
-  /// - Uses [locator] & [parameters] for additional dependency injection.
-  ///
-  /// Used by [ContextProvide] to inject dependencies.
-  static Injector<T> injectorOf<T>(BuildContext context, Function create) {
-    final ScopeIt scope = ScopeIt.of(context);
-    final ProvideIt it = scope.widget;
-
-    return Injector<T>(
-      create,
-      parameters: it.parameters,
-      locator: (param) {
-        return it.locator?.call(param) ?? scope.readAsync(type: param.type);
-      },
-    );
-  }
-
-  static Watcher<T>? watcherOf<T>(BuildContext context, T value) {
-    final watchers = ScopeIt.of(context).widget.watchers;
-
-    for (var i = 0; i < watchers.length; i++) {
-      final watcher = watchers[i];
-      if (watcher.canWatch(value)) {
-        return watcher as Watcher<T>;
-      }
-    }
-    return null;
-  }
+  /// The default equality to use. Defaults to one-depth collections equality.
+  /// Override it to `DeepCollectionEquality.equals` to mimic lib `provider` behavior.
+  static Equals equals = (Object? a, Object? b) => switch ((a, b)) {
+    (List a, List b) => listEquals(a, b),
+    (Set a, Set b) => setEquals(a, b),
+    (Map a, Map b) => mapEquals(a, b),
+    _ => a == b,
+  };
 
   /// Initializes [ProvideIt] and sets up root [ContextProviders].
   ///
@@ -134,8 +113,8 @@ ProvideIt(
   /// ```
   final ParamLocator? locator;
 
-  /// The [Injector.parameters] to use in all injectors below this [ProvideIt].
-  final Map<String, dynamic>? parameters;
+  /// Shared [Injector.parameters] for all [ContextProvide] below this [ProvideIt].
+  final Map<Symbol, dynamic>? parameters;
 
   /// The [ReadIt] scope to use. When `null`, defaults to:
   /// - [ReadIt.instance] when root.
@@ -145,6 +124,19 @@ ProvideIt(
   @override
   bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
 
+  /// Returns the first matching [Watcher] for the given value.
+  Watcher? resolveWatcher(Object value) {
+    for (var i = 0; i < watchers.length; i++) {
+      if (watchers[i] case final watcher when watcher.canWatch(value)) {
+        return watcher;
+      }
+    }
+    return null;
+  }
+
   @override
   InheritedElement createElement() => ScopeIt(this);
 }
+
+@internal
+typedef Equals = bool Function(Object? a, Object? b);

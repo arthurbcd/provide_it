@@ -4,16 +4,14 @@ part of '../legacy.dart';
 class Provider<T> extends ProviderWidget<T> {
   const Provider({
     super.key,
+    super.lazy = true,
     this.create,
-    this.lazy,
     this.dispose,
     super.builder,
     super.child,
   }) : value = null,
        updateShouldNotify = null;
 
-  /// Whether to create the value only when it's first called.
-  final bool? lazy;
   final Create<T>? create;
   final Dispose<T>? dispose;
 
@@ -24,8 +22,7 @@ class Provider<T> extends ProviderWidget<T> {
     this.updateShouldNotify,
     super.builder,
     super.child,
-  }) : lazy = null,
-       create = null,
+  }) : create = null,
        dispose = null;
 
   @protected
@@ -51,14 +48,6 @@ class _ProviderState<T> extends InheritedState<T, Provider<T>> {
   T? _value;
   bool _created = false;
 
-  @override
-  void initState() {
-    super.initState();
-    if (provider.lazy == false) {
-      _create();
-    }
-  }
-
   void _create() {
     _value = provider.create?.call(context) ?? provider.value;
     _created = true;
@@ -66,14 +55,13 @@ class _ProviderState<T> extends InheritedState<T, Provider<T>> {
 
   @override
   void updated(covariant Provider<T> oldProvider) {
-    super.updated(oldProvider);
-
     if (provider.value case var value?) {
       _value = value;
       if (_updateShouldNotify(oldProvider)) {
         notifyDependents();
       }
     }
+    super.updated(oldProvider);
   }
 
   bool _updateShouldNotify(Provider<T> oldProvider) {
@@ -91,6 +79,9 @@ class _ProviderState<T> extends InheritedState<T, Provider<T>> {
     }
     super.dispose();
   }
+
+  @override
+  void isReady() {}
 
   @override
   T read() {

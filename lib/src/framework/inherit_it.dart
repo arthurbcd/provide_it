@@ -1,47 +1,64 @@
 part of '../framework.dart';
 
-/// Engine for [InheritedProvider] that manages provider inheritance and lookup.
-mixin InheritIt on BindIt {
-  // inherited state cache by type
-  final _inheritedCache = HashMap<String, InheritedCache>();
+typedef TypeOf<T> = T;
 
-  void _inheritState(InheritedState state) {
-    _inheritedCache.update(
-      state.type,
-      (cache) => cache.add(state),
-      ifAbsent: () => InheritedCache.single(state),
-    );
+/// Engine for [InheritedProvider] that manages provider inheritance and lookup.
+mixin InheritIt on InheritedScope {
+  final _byType = HashMap<Type, InheritedCache>.identity();
+  final _bySymbol = HashMap<String, InheritedCache>();
+
+  final _types = HashMap<String, Type>();
+
+  void _inherit<T>(InheritedBind<T> bind) {
+    if (T != dynamic && T != TypeOf<Object?>) _types[bind.type] ??= TypeOf<T?>;
+
+    final type = _types[bind.type] ?? bind.type;
+    final map = type is Type ? _byType : _bySymbol;
+    map[type] = map[type]?.add(bind) ?? InheritedCache.single(bind);
   }
 
-  void _disinheritState(InheritedState state) {
-    if (_inheritedCache[state.type]?.remove(state) case final cache?) {
-      _inheritedCache[state.type] = cache;
+  void _disinherit<T>(InheritedBind<T> bind) {
+    final type = _types[bind.type] ?? bind.type;
+    final map = type is Type ? _byType : _bySymbol;
+
+    if (map[type]!.remove(bind) case final cache?) {
+      map[type] = cache;
     } else {
-      _inheritedCache.remove(state.type);
+      map.remove(_types.remove(bind.type) ?? bind.type)!;
     }
   }
 
   @protected
-  InheritedState? getInheritedState<T>({String? type, BuildContext? context}) {
-    // we return it right away when null or single
-    final InheritedCache? cache = _inheritedCache[type ??= T.type];
-    if (cache case InheritedState? state) return state;
+  InheritedBind? getInheritedBind<T>({String? type, BuildContext? context}) {
+    final Type t = TypeOf<T?>;
+    var cache = _byType[t];
+
+    if (cache == null) {
+      if (type != null) {
+        cache = _byType[_types[type]] ?? _bySymbol[type];
+      } else if (_bySymbol.remove(type ??= T.type) case final match?) {
+        cache = _byType[_types[type] = t] = match;
+      }
+    }
+    if (cache case InheritedBind? bind) return bind;
 
     // we disambiguate by inheritance, like InheritedWidget.
-    if (context is Element) {
-      final ref = InheritedRef(context);
-      if (ref.read<T>() case final state?) {
-        return state;
+    if (context != null) {
+      if (cache?[context] case final bind? when bind.wasDiscovered) {
+        return bind;
       }
 
-      bool visit(Element element) {
-        if (cache[element] case final state?) {
-          ref.write<T>(state);
+      final ref = InheritedRef(context);
+      if (ref.read<T>() case final bind?) return bind;
+
+      bool visit(BuildContext element) {
+        if (cache?[element] case final bind?) {
+          ref.write<T>(bind);
           return false; // closest found, stop visiting
         }
 
         // we jump to the next binding context
-        if (InheritedRef(element).ancestor case Element ancestor) {
+        if (InheritedRef(element).ancestor case final ancestor?) {
           if (visit(ancestor)) ancestor.visitAncestorElements(visit);
           return false; // redirected
         }
@@ -49,73 +66,92 @@ mixin InheritIt on BindIt {
       }
 
       if (visit(context)) context.visitAncestorElements(visit);
-      if (ref.read<T>() case final state?) return state;
+
+      if (ref.read<T>() case final bind?) return bind;
     }
 
-    throw StateError('Multiple provide<$type> found.');
+    throw ProviderMultipleFoundException('Multiple $type found');
   }
 
   /// Makes [context] inherit providers from another [ancestor] context. Essentially
   /// making it an "ancestor" for provider lookup purposes.
   ///
-  /// This allows [getInheritedState] to traverse the provider tree when looking
+  /// This allows [getInheritedBind] to traverse the provider tree when looking
   /// for providers in sibling contexts, essentially inheriting providers from [ancestor].
   @protected
   void inheritProviders(BuildContext context, BuildContext ancestor) {
-    assert(context != ancestor, 'Cannot inherit providers from itself.');
     InheritedRef(context).ancestor = ancestor;
   }
 }
 
-/// An optimized cache that can hold either a single state or many,
+extension on Bind {
+  /// Whether this bind was discovered in this frame, and its ready to be read.
+  /// Ensures we won't read a bind that was bound later in the same build node.
+  /// O(1) in most cases.
+  bool get wasDiscovered {
+    final binds = scope.currentNode?.binds;
+    if (!identical(binds, list)) return false; // reading before binds
+
+    // when null (end-of-list), all binds were discovered, safe to read
+    var bind = binds?.current?.previous;
+    if (bind == null) return true; // reading after binds
+
+    // when not, we check if it was previously discovered
+    for (; bind != null; bind = bind.previous) {
+      if (identical(bind, this)) return true; // reading between binds
+    }
+
+    return false;
+  }
+}
+
+/// An optimized union that can hold either a single state or many,
 /// as most providers usually have only one state per type.
 @internal
 extension type InheritedCache._(Object _) {
-  factory InheritedCache.single(InheritedState value) {
+  factory InheritedCache.single(InheritedBind value) {
     return InheritedCache._(value);
   }
 
-  // TODO: consider allowing overriding providers in the same context by type,
-  // which would simplify this logic. removing asserts.
-  InheritedCache add(InheritedState state) {
+  InheritedCache add(InheritedBind state) {
     switch (this) {
-      case InheritedState single:
+      case InheritedBind single:
         assert(
-          single.context != state.context,
+          single.dependent != state.dependent,
           'Duplicate ${state.debugLabel}.',
         );
-        final map = HashMap<BuildContext, InheritedState>();
-        map[single.context] = single;
-        map[state.context] = state;
+        final map = HashMap<BuildContext, InheritedBind>();
+        map[single.dependent] = single;
+        map[state.dependent] = state;
         return InheritedCache._(map);
-      case Map<BuildContext, InheritedState> map:
+      case Map<BuildContext, InheritedBind> map:
         assert(
-          !map.containsKey(state.context),
+          !map.containsKey(state.dependent),
           'Duplicate ${state.debugLabel}.',
         );
-        map[state.context] = state;
+        map[state.dependent] = state;
         return this;
       default:
         throw StateError('Invalid InheritedCache: $this');
     }
   }
 
-  InheritedCache? remove(InheritedState state) {
+  InheritedCache? remove(InheritedBind state) {
     switch (this) {
-      case InheritedState prev when prev == state:
+      case InheritedBind prev when prev == state:
         return null;
-      case Map map when map.remove(state.context) != null && map.length == 1:
+      case Map map when map.remove(state.dependent) != null && map.length == 1:
         return InheritedCache.single(map.values.first);
       default:
         return this;
     }
   }
 
-  void forEach(void action(InheritedState state)) {
+  void forEach(void action(InheritedBind state)) {
     switch (this) {
-      case InheritedState state:
+      case InheritedBind state:
         action(state);
-      case Map<BuildContext, InheritedState> map:
+      case Map<BuildContext, InheritedBind> map:
         map.forEach((_, state) => action(state));
       default:
         throw StateError('Invalid InheritedCache: $this');
@@ -123,13 +159,13 @@ extension type InheritedCache._(Object _) {
   }
 
   // disambiguates providers by context.
-  InheritedState? operator [](BuildContext context) => switch (this) {
-    Map<BuildContext, InheritedState> map => map[context],
+  InheritedBind? operator [](BuildContext context) => switch (this) {
+    Map<BuildContext, InheritedBind> map => map[context],
     _ => null,
   };
 }
 
-/// Weak reference to [InheritedState] that optimizes lookups when
+/// Weak reference to [InheritedBind] that optimizes lookups when
 /// disambiguating providers by [Type] & [BuildContext] scope.
 @internal
 extension type InheritedRef(BuildContext context) {
@@ -138,32 +174,46 @@ extension type InheritedRef(BuildContext context) {
   BuildContext? get ancestor => _ref[context]?.ancestor;
 
   set ancestor(BuildContext? ancestor) {
-    _ref[context] = (states: _ref[context]?.states, ancestor: ancestor);
+    final ref = _ref[context];
+    assert(
+      ref?.ancestor == null || ref!.ancestor == ancestor,
+      'Context $context is already inheriting providers from ${ref.ancestor}.',
+    );
+    _ref[context] = (binds: ref?.binds, ancestor: ancestor);
   }
 
-  InheritedState? read<T>() => _ref[context]?.states?[T];
+  InheritedBind? read<T>() => _ref[context]?.binds?[TypeOf<T>];
 
-  void write<T>(InheritedState state) {
+  void write<T>(InheritedBind state) {
     final ref = _ref[context];
+    final t = TypeOf<T>;
 
-    switch (ref?.states) {
+    switch (ref?.binds) {
       case null:
         _ref[context] = (
-          states: HashMap()..[T] = state,
+          binds: HashMap()..[t] = state,
           ancestor: ref?.ancestor,
         );
       case final states:
-        states[T] = state;
+        states[t] = state;
     }
   }
 }
 
-typedef _Ref = ({Map<Type, InheritedState>? states, BuildContext? ancestor});
+typedef _Ref = ({Map<Type, InheritedBind>? binds, BuildContext? ancestor});
 
-class MissingProviderException implements Exception {
-  MissingProviderException(this.message);
+class ProviderNotFoundException implements Exception {
+  ProviderNotFoundException(this.message);
   final String message;
 
   @override
-  String toString() => 'MissingProvideException: $message';
+  String toString() => 'ProviderNotFoundException: $message';
+}
+
+class ProviderMultipleFoundException implements Exception {
+  ProviderMultipleFoundException(this.message);
+  final String message;
+
+  @override
+  String toString() => 'ProviderMultipleFoundException: $message';
 }
