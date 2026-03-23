@@ -1,13 +1,8 @@
 # Changelog
 
-## 0.32.0
-
-- Major refactor to simplify the api and internal logic.
-
 ## 0.31.0
 
-- Simplified `Watcher` api.
-    - Removed `ProvideIt.additionalWatchers` & `ProvideIt.defaultWatchers`.
+- Breaking. Major refactor to simplify api and internal logic.
 
 ## 0.30.0
 
