@@ -31,10 +31,7 @@ sealed class Param {
   /// The type name, without nullable operator.
   /// If [rawType] is a [Future] or [Stream], the subtype is returned.
   String get type {
-    // if (!isAsync)
-    return rawType.replaceAll('?', '');
-
-    // return rawType.split('<').last.split('>').first.replaceAll('?', '');
+    return isNullable ? rawType.substring(0, rawType.length - 1) : rawType;
   }
 
   /// Whether the type is nullable.

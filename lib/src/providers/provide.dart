@@ -87,18 +87,12 @@ class _ProvideState<T> extends InheritedState<T, _Provide<T>> {
   _Error? _error;
   bool _created = false;
 
-  late final _injector = () {
-    final scope = super.scope as ScopeIt;
-    final provideIt = scope.widget;
-
-    return Injector<T>(
-      provider.create,
-      parameters: provideIt.parameters,
-      locator: (p) {
-        return provideIt.locator?.call(p) ?? scope.readAsync(type: p.type);
-      },
-    );
-  }();
+  late final _injector = Injector<T>(
+    provider.create,
+    locator: (p) {
+      return (scope as ScopeIt).readAsync(context: context, type: p.type);
+    },
+  );
 
   void _create() {
     _created = true;

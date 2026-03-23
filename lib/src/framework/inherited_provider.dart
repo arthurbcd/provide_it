@@ -191,7 +191,6 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   @protected
   @mustCallSuper
   void notifyDependents() {
-    // TODO: probably breaks readAsync
     final value = read() as T;
 
     _dependents.forEach((Element element, List<InheritedAspect<T?>> aspects) {

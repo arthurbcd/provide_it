@@ -147,3 +147,4 @@ ProvideIt is **smart about context**:
 - **Sibling Safety**: If you try to access a state that exists in two different sibling branches (like two different routes) at the same time, ProvideIt throws an exception to prevent bugs.
 
 This makes ProvideIt "retro-compatible" with the provider mental model, but with the freedom to reach across the app tree.
+

@@ -11,8 +11,6 @@ class ProvideIt extends InheritedWidget {
     this.watchers = const [ListenableWatcher()],
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
-    this.locator,
-    this.parameters,
     required super.child,
   }) : assert(
          scope is! _ReadItRoot,
@@ -91,30 +89,6 @@ ProvideIt(
   /// Watchers are not used by `context.use` / `context.useValue`.
   ///
   final List<Watcher> watchers;
-
-  /// Injects a [Param] during creation.
-  ///
-  /// Example with router path parameters:
-  ///
-  /// ```dart
-  /// ProvideIt(
-  ///   locator: (param) => myRouter.pathParameters[param.name],
-  ///   child: MyApp(),
-  /// );
-  /// ```
-  ///
-  /// Auto-injects `pathParameters` to `MyClass.new`:
-  ///
-  /// ```dart
-  /// class MyClass {
-  ///   MyClass({required this.myId});
-  ///   final String myId; // auto-injected if pathParameters['myId'] exists.
-  /// }
-  /// ```
-  final ParamLocator? locator;
-
-  /// Shared [Injector.parameters] for all [ContextProvide] below this [ProvideIt].
-  final Map<Symbol, dynamic>? parameters;
 
   /// The [ReadIt] scope to use. When `null`, defaults to:
   /// - [ReadIt.instance] when root.

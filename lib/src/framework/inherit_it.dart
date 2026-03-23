@@ -4,40 +4,36 @@ typedef TypeOf<T> = T;
 
 /// Engine for [InheritedProvider] that manages provider inheritance and lookup.
 mixin InheritIt on InheritedScope {
-  final _byType = HashMap<Type, InheritedCache>.identity();
-  final _bySymbol = HashMap<String, InheritedCache>();
-
+  final _cache = HashMap<Object, InheritedCache>();
   final _types = HashMap<String, Type>();
 
   void _inherit<T>(InheritedBind<T> bind) {
     if (T != dynamic && T != TypeOf<Object?>) _types[bind.type] ??= TypeOf<T?>;
 
     final type = _types[bind.type] ?? bind.type;
-    final map = type is Type ? _byType : _bySymbol;
-    map[type] = map[type]?.add(bind) ?? InheritedCache.single(bind);
+    _cache[type] = _cache[type]?.add(bind) ?? InheritedCache.single(bind);
   }
 
   void _disinherit<T>(InheritedBind<T> bind) {
     final type = _types[bind.type] ?? bind.type;
-    final map = type is Type ? _byType : _bySymbol;
 
-    if (map[type]!.remove(bind) case final cache?) {
-      map[type] = cache;
-    } else {
-      map.remove(_types.remove(bind.type) ?? bind.type)!;
+    switch (_cache[type]!.remove(bind)) {
+      case final cache? when cache is InheritedBind:
+        _cache[type] = cache;
+      case null:
+        _cache.remove(_types.remove(bind.type) ?? bind.type)!;
     }
   }
 
   @protected
   InheritedBind? getInheritedBind<T>({String? type, BuildContext? context}) {
-    final Type t = TypeOf<T?>;
-    var cache = _byType[t];
+    InheritedCache? cache = _cache[TypeOf<T?>];
 
     if (cache == null) {
       if (type != null) {
-        cache = _byType[_types[type]] ?? _bySymbol[type];
-      } else if (_bySymbol.remove(type ??= T.type) case final match?) {
-        cache = _byType[_types[type] = t] = match;
+        cache = _cache[_types[type] ?? type];
+      } else if (_cache.remove(type ??= T.type) case final match?) {
+        cache = _cache[_types[type] = TypeOf<T?>] = match;
       }
     }
     if (cache case InheritedBind? bind) return bind;
@@ -50,10 +46,12 @@ mixin InheritIt on InheritedScope {
 
       final ref = InheritedRef(context);
       if (ref.read<T>() case final bind?) return bind;
+      InheritedBind? bind;
 
       bool visit(BuildContext element) {
-        if (cache?[element] case final bind?) {
-          ref.write<T>(bind);
+        if (cache?[element] case final found?) {
+          if (type == null) ref.write<T>(found);
+          bind = found;
           return false; // closest found, stop visiting
         }
 
@@ -66,8 +64,7 @@ mixin InheritIt on InheritedScope {
       }
 
       if (visit(context)) context.visitAncestorElements(visit);
-
-      if (ref.read<T>() case final bind?) return bind;
+      if (bind != null) return bind;
     }
 
     throw ProviderMultipleFoundException('Multiple $type found');
@@ -182,20 +179,17 @@ extension type InheritedRef(BuildContext context) {
     _ref[context] = (binds: ref?.binds, ancestor: ancestor);
   }
 
-  InheritedBind? read<T>() => _ref[context]?.binds?[TypeOf<T>];
+  InheritedBind? read<T>() => _ref[context]?.binds?[TypeOf<T?>];
 
-  void write<T>(InheritedBind state) {
+  void write<T>(InheritedBind bind) {
     final ref = _ref[context];
-    final t = TypeOf<T>;
+    final t = TypeOf<T?>;
 
     switch (ref?.binds) {
       case null:
-        _ref[context] = (
-          binds: HashMap()..[t] = state,
-          ancestor: ref?.ancestor,
-        );
+        _ref[context] = (binds: HashMap()..[t] = bind, ancestor: ref?.ancestor);
       case final states:
-        states[t] = state;
+        states[t] = bind;
     }
   }
 }

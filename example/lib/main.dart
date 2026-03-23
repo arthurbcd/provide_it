@@ -10,8 +10,6 @@ void main() {
     // You must set ProvideIt in the root of your app for any provider (hook/inherited) to work.
     ProvideIt(
       provide: (context) {
-        ElevatedButton;
-        StreamBuilder;
         // provide async dependencies
         context.provideAsync<CounterService>(() async {
           await Future.delayed(Duration(seconds: 3));
@@ -22,9 +20,6 @@ void main() {
         context.provide(CounterRepository.new);
         context.provide(Counter.new); // <- auto-injects CounterRepository
       },
-      // customize injection parameters
-      locator: (param) => myParameters[param.name],
-
       // show something while loading async dependencies, defaults to black screen
       loadingBuilder: (context) {
         return Center(child: Text('loading'));
@@ -38,8 +33,6 @@ void main() {
     ),
   );
 }
-
-final myParameters = {'counterId': ''};
 
 class Home extends StatelessWidget {
   const Home({super.key});

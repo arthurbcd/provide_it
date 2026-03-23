@@ -44,8 +44,7 @@ class ScopeIt extends InheritedScope with BindIt, InheritIt, DependIt, ReadIt {
       }
     }
 
-    _byType.forEach((_, cache) => cache.forEach(isReady));
-    _bySymbol.forEach((_, cache) => cache.forEach(isReady));
+    _cache.forEach((_, cache) => cache.forEach(isReady));
 
     if (futures.isNotEmpty) {
       return Future.wait(futures, eagerError: true).then((_) {});
