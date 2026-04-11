@@ -82,22 +82,27 @@ class ScopeIt extends InheritedScope with BindIt, InheritIt, DependIt, ReadIt {
 
   @override
   Widget build() {
+    switch (useFuture(widget.setup)) {
+      case AsyncSnapshot(connectionState: ConnectionState.waiting):
+        return widget.loadingBuilder(this);
+      case AsyncSnapshot(:final error?, :final stackTrace?):
+        return widget.errorBuilder(this, error, stackTrace);
+    }
+
     try {
       widget.provide?.call(this);
     } catch (error, stackTrace) {
       return widget.errorBuilder(this, error, stackTrace);
     }
 
-    final snapshot = useFuture(allReady);
-
-    switch (snapshot) {
+    switch (useFuture(allReady)) {
       case AsyncSnapshot(connectionState: ConnectionState.waiting):
         return widget.loadingBuilder(this);
       case AsyncSnapshot(:final error?, :final stackTrace?):
         return widget.errorBuilder(this, error, stackTrace);
-      default:
-        return widget.child;
     }
+
+    return widget.child;
   }
 }
 

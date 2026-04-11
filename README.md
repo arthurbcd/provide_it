@@ -43,7 +43,8 @@ For sharing state across screens and routes.
 
 ```dart
 // Provide it...
-context.provide(Counter.new);
+context.provide(() => Counter()); // classic
+context.provideAuto(Counter.new); // auto-injects dependencies
 context.provideValue(0);
 
 // ... and use it anywhere
@@ -88,7 +89,8 @@ Below is a list of all `context` providers currently available.
 
 | Extension method | Provider type | Description |
 |------------------|---------------|-------------|
-| `context.provide` | InheritedProvider | Provides a value with dependency injection |
+| `context.provide` | InheritedProvider | Provides a value using a manual factory |
+| `context.provideAuto` | InheritedProvider | Provides a value with auto-dependency injection |
 | `context.provideAsync` | InheritedProvider | Provides a `Future` value asynchronously |
 | `context.provideValue` | InheritedProvider | Provides an existing value with optional update callback |
 | `context.use` | HookProvider | Creates a local value tied to the context |

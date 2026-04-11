@@ -143,7 +143,7 @@ final class InheritedBind<T> extends Bind<void> {
 /// - [R]: The [BindProvider] type that this state is associated with.
 ///
 /// See also:
-/// - [ContextProvide]
+/// - [ContextProvideAuto]
 /// - [ContextProvideValue]
 ///
 abstract class InheritedState<T, R extends InheritedProvider<T>> {

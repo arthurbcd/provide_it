@@ -16,7 +16,7 @@ mixin DependIt on InheritIt {
 
     // bind handles self-dependency
     if (node.dependent != bind.dependent) {
-      (node.dependencies ??= HashSet.identity()).add(bind);
+      (node.dependencies ??= HashSet()).add(bind);
     }
 
     return bind.depend(node.dependent, aspect);

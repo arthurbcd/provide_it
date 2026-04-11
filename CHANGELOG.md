@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.32.0
+
+- Broken `context.provide` into `context.provide` & `context.provideAuto`.
+- Added `ProvideIt.setup` for async setup before providing.
+- Improved binding lookup speed & cleanup.
+
 ## 0.31.0
 
 - Breaking. Major refactor to simplify api and internal logic.

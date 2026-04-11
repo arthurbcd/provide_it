@@ -27,7 +27,7 @@ void main() {
       bool createCalled = false;
 
       await provideIt(tester, (context) {
-        context.provide<int>(() {
+        context.provideAuto<int>(() {
           createCalled = true;
           return 42;
         }, lazy: false);
@@ -41,7 +41,7 @@ void main() {
       int createCount = 0;
 
       await provideIt(tester, (context) {
-        context.provide<int>(() {
+        context.provideAuto<int>(() {
           createCount++;
           return 42;
         }, lazy: true);
@@ -83,9 +83,9 @@ void main() {
       BuildContext? ctx;
       await provideIt(tester, (context) {
         ctx = context;
-        context.provide(() => 1);
-        context.provide(() => 'b');
-        context.provide((int a, String b) => (a, b));
+        context.provideAuto(() => 1);
+        context.provideAuto(() => 'b');
+        context.provideAuto((int a, String b) => (a, b));
         return Container();
       });
 
@@ -98,9 +98,9 @@ void main() {
       BuildContext? ctx;
       await provideIt(tester, (context) {
         ctx = context;
-        context.provide((int a, String b) => (a, b));
-        context.provide(() => 'b');
-        context.provide(() => 1);
+        context.provideAuto((int a, String b) => (a, b));
+        context.provideAuto(() => 'b');
+        context.provideAuto(() => 1);
         return Container();
       });
 
@@ -113,9 +113,9 @@ void main() {
       BuildContext? ctx;
       await provideIt(tester, (context) {
         ctx = context;
-        context.provide((int a, String b) => (a, b));
-        context.provide(() => 'b');
-        context.provide(() => 1);
+        context.provideAuto((int a, String b) => (a, b));
+        context.provideAuto(() => 'b');
+        context.provideAuto(() => 1);
 
         return Container();
       });
@@ -131,9 +131,9 @@ void main() {
       Object? value3;
       Object? value4;
       await provideIt(tester, (context) {
-        context.provide((int a, String b) => (a, b));
-        context.provide(() => 'b');
-        context.provide(() => 1);
+        context.provideAuto((int a, String b) => (a, b));
+        context.provideAuto(() => 'b');
+        context.provideAuto(() => 1);
         return Builder(
           builder: (context) {
             value1 = context.select(((int, String) s) => s.$1);
@@ -161,14 +161,14 @@ void main() {
 
         await provideIt(tester, (context) {
           // Provedor externo
-          context.provide<int>(() => 1);
+          context.provideAuto<int>(() => 1);
 
           return Builder(
             builder: (context) {
               outerValue = context.read<int>();
               return Builder(
                 builder: (context) {
-                  context.provide<int>(() => 2);
+                  context.provideAuto<int>(() => 2);
                   return Builder(
                     builder: (context) {
                       innerValue = context.read<int>();
@@ -196,17 +196,17 @@ void main() {
 
         await provideIt(tester, (context) {
           // Provedor externo
-          context.provide<int>(() => 1);
+          context.provideAuto<int>(() => 1);
 
           return Builder(
             builder: (context) {
-              context.provide<int>(() => 2);
+              context.provideAuto<int>(() => 2);
 
               return Builder(
                 builder: (context) {
                   readContext = context as Element;
                   outerValue = context.read<int>();
-                  context.provide<int>(() => 3);
+                  context.provideAuto<int>(() => 3);
                   innerValue = context.read<int>();
                   return Container();
                 },
@@ -244,7 +244,7 @@ void main() {
                 Builder(
                   builder: (context) {
                     contextA = context;
-                    context.provide(() => 'A');
+                    context.provideAuto(() => 'A');
                     return const Text('Provider Branch');
                   },
                 ),
@@ -252,7 +252,7 @@ void main() {
                 Builder(
                   builder: (context) {
                     contextB = context;
-                    context.provide(() => 'B');
+                    context.provideAuto(() => 'B');
                     return const Text('Provider Branch');
                   },
                 ),
@@ -491,7 +491,7 @@ void main() {
       int buildCount = 0;
       await provideIt(tester, (context) {
         buildCount++;
-        context.provide(() => Counter(0));
+        context.provideAuto(() => Counter(0));
 
         return Builder(
           builder: (context) {
@@ -523,7 +523,7 @@ void main() {
 
       await provideIt(tester, (context) {
         rootBuildCount++;
-        context.provide(() => Counter(0));
+        context.provideAuto(() => Counter(0));
         return Builder(
           builder: (context) {
             newBuildCount++;
@@ -607,9 +607,9 @@ void main() {
         provide: (context) {
           context.provideAsync(NestedA.init);
           context.provideAsync(NestedB.init);
-          context.provide(Nested.new); // needs NestedA and NestedB
+          context.provideAuto(Nested.new); // needs NestedA and NestedB
           context.provideAsync(Async.init);
-          context.provide(Leaf.new); // needs Nested and Async
+          context.provideAuto(Leaf.new); // needs Nested and Async
         },
         (context) {
           value = context.watch<Leaf>();
@@ -654,7 +654,7 @@ void main() {
         builder: (context) {
           contexts[counter.value] = context;
 
-          context.provide(
+          context.provideAuto(
             () => Counter(0),
             lazy: false,
             dispose: (_) => disposed = true,
@@ -683,7 +683,7 @@ void main() {
     InheritedState? state;
 
     await provideIt(tester, (context) {
-      context.provide(() => Counter(0));
+      context.provideAuto(() => Counter(0));
       final counter = context.useValue(0);
       count = counter.value;
 
@@ -726,7 +726,7 @@ void main() {
       return Builder(
         key: Key(counter.value.toString()),
         builder: (context) {
-          context.provide(
+          context.provideAuto(
             () {
               createCount++;
               return '';

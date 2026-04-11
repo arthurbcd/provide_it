@@ -13,18 +13,16 @@ typedef ParamLocator = FutureOr Function(Param param);
 /// A class that injects dependencies into a function.
 ///
 /// You must provide [T] if you wanna inject an abstract class.
-/// Otherwise, it will be inferred from the [create] function.
+/// Otherwise, it will be inferred from the [constructor] function.
 class Injector<T> {
   /// Creates a new instance of [Injector].
   ///
-  /// The [create] function is used to extract the constructor parameters.
+  /// The [constructor] function is used to extract the constructor parameters.
   /// All parameters are lazily resolved.
   ///
   /// - [locator] is used to locate the dependencies by type.
   /// - [parameters] is used to manually provide a dependency by name or type.
   /// - [ignorePrivateTypes] is used to ignore private types.
-  ///
-  /// A default [ParamLocator] can be set using [Injector.defaultLocator].
   ///
   /// Example:
   /// ```dart
@@ -33,14 +31,14 @@ class Injector<T> {
   /// ```
   ///
   Injector(
-    this.create, {
+    this.constructor, {
     this.locator,
     this.parameters,
     this.ignorePrivateTypes = true,
   });
 
   /// The [T] function to inject.
-  final Function create;
+  final Function constructor;
 
   /// The locate args by [Param] while injecting.
   final ParamLocator? locator;
@@ -59,9 +57,9 @@ class Injector<T> {
   /// Whether to ignore private types. Ex: `_MyPrivateClass`.
   final bool ignorePrivateTypes;
 
-  /// The deferred return type of [create] function.
+  /// The deferred return type of [constructor] function.
   ///
-  /// If [create] is a [Future] or [Stream], the subtype is returned.
+  /// If [constructor] is a [Future] or [Stream], the subtype is returned.
   /// Ex: `Injector<Future<bool>>.type == Injector<bool>.type`
   late final type = _type();
 
@@ -69,12 +67,12 @@ class Injector<T> {
   /// Fallbacks to [returnType] when `T` is generic.
   late final rawType = _rawType();
 
-  /// The original return type of [create] function.
+  /// The original return type of [constructor] function.
   ///
   /// This is the full return type, always including `Future` or `Stream`.
   late final returnType = _returnType();
 
-  /// Whether the [create] function is async.
+  /// Whether the [constructor] function is async.
   bool get isAsync {
     return returnType.startsWith(Param.futureType) ||
         returnType.startsWith(Param.streamType);
@@ -92,7 +90,7 @@ class Injector<T> {
   }
 
   String _returnType() {
-    final typeLine = _createTexts.last.replaceFirst(' => ', '');
+    final typeLine = _constructorTexts.last.replaceFirst(' => ', '');
     final buffer = StringBuffer();
     var nestedLevel = 0;
 
@@ -109,9 +107,9 @@ class Injector<T> {
     return buffer.toString();
   }
 
-  /// Whether [create] has parameters.
+  /// Whether [constructor] has parameters.
   /// If false, we can treat it as a [ValueGetter] of [T].
-  late final hasParams = !_createText.startsWith('() => ');
+  late final hasParams = !_constructorText.startsWith('() => ');
 
   /// All parameters of the constructor.
   List<Param> get params => List.unmodifiable(_params);
@@ -135,7 +133,7 @@ class Injector<T> {
   /// ```
   ///
   FutureOr<T> call([Map<Symbol, dynamic>? parameters]) {
-    if (!hasParams) return this.create();
+    if (!hasParams) return constructor();
 
     if (this.parameters != null || parameters != null) {
       parameters = {...?this.parameters, ...?parameters};
@@ -196,7 +194,7 @@ class Injector<T> {
 
     FutureOr<T> create() {
       try {
-        return Function.apply(this.create, positionalArgs, namedArgs);
+        return Function.apply(constructor, positionalArgs, namedArgs);
       } on TypeError catch (e) {
         throw InjectorError.from(e, this);
       }
@@ -208,9 +206,10 @@ class Injector<T> {
   }
 
   // lazy cache
-  late final _createText = create.runtimeType.toString();
-  late final _createTexts = _createText.splitBetween('(', ')')..removeAt(0);
-  late final _input = _createTexts.first;
+  late final _constructorText = constructor.runtimeType.toString();
+  late final _constructorTexts = _constructorText.splitBetween('(', ')')
+    ..removeAt(0);
+  late final _input = _constructorTexts.first;
   late final _namedInput = _input.firstMatch(r'\{(.+)\}')?.group(1);
   late final _positionalInput = _namedInput != null
       ? _input.replaceAll('{$_namedInput}', '')

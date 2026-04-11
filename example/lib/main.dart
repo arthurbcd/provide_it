@@ -17,8 +17,8 @@ void main() {
         });
 
         // Zero boilerplate injection
-        context.provide(CounterRepository.new);
-        context.provide(Counter.new); // <- auto-injects CounterRepository
+        context.provideAuto(CounterRepository.new);
+        context.provideAuto(Counter.new); // <- auto-injects CounterRepository
       },
       // show something while loading async dependencies, defaults to black screen
       loadingBuilder: (context) {

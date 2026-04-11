@@ -7,6 +7,7 @@ class ProvideIt extends InheritedWidget {
   const ProvideIt({
     super.key,
     this.scope,
+    this.setup,
     this.provide,
     this.watchers = const [ListenableWatcher()],
     this.loadingBuilder = _loadingBuilder,
@@ -60,6 +61,10 @@ ProvideIt(
     (Map a, Map b) => mapEquals(a, b),
     _ => a == b,
   };
+
+  /// Perform any async setup before [provide] is called.
+  /// If it returns a [Future], [loadingBuilder] will be shown until it completes.
+  final FutureOr<void> Function()? setup;
 
   /// Initializes [ProvideIt] and sets up root [ContextProviders].
   ///

@@ -63,11 +63,12 @@ sealed class Bind<R> extends LinkedListEntry<Bind> {
 
 extension ContextBind on BuildContext {
   R bind<R>(BindProvider<R> provider) {
+    final scope = ScopeIt.of(this);
     assert(
       // e.g. ListView.builder, SliverList.builder
       this is! RenderSliverBoxChildManager,
       'Cannot bind a provider to an unstable context: wrap it in a Builder or refactor it into its own widget to obtain a stable context.',
     );
-    return ScopeIt.of(this).bind(this, provider);
+    return scope.bind(this, provider);
   }
 }

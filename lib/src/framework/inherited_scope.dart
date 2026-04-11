@@ -2,7 +2,7 @@ part of '../framework.dart';
 
 sealed class InheritedScope extends InheritedElement {
   InheritedScope(super.widget);
-  final _nodes = HashMap<Element, Node>.identity();
+  final _nodes = HashMap<Element, Node>();
   final _inactiveNodes = <Node>[];
 
   Node? _currentNode;
@@ -15,7 +15,7 @@ sealed class InheritedScope extends InheritedElement {
 
     for (var i = 0; i < length; i++) {
       final node = _inactiveNodes[i];
-      if (!node.deactivated) continue;
+      if (!node.deactivated) continue; // reactivated
 
       _nodes.remove(node.dependent)
         ?..finalize()
@@ -28,9 +28,7 @@ sealed class InheritedScope extends InheritedElement {
 
   @override
   void updateDependencies(Element dependent, _) {
-    if (identical(_currentNode?.dependent, dependent)) return;
-
-    if (_currentNode == null) {
+    if (_currentNode == null && _inactiveNodes.isEmpty) {
       scheduleMicrotask(finalizeTree);
     }
 
@@ -42,6 +40,10 @@ sealed class InheritedScope extends InheritedElement {
 
   @override
   void removeDependent(Element dependent) {
+    if (_currentNode == null && _inactiveNodes.isEmpty) {
+      scheduleMicrotask(finalizeTree);
+    }
+
     final node = _nodes[dependent]!;
     _inactiveNodes.add(node..deactivate());
 
@@ -66,7 +68,10 @@ extension on BuildContext {
   @pragma('dart2js:tryInline')
   @pragma('wasm:prefer-inline')
   Node dependOnInheritedNode(InheritedScope ancestor) {
-    dependOnInheritedElement(ancestor);
+    if (!identical(ancestor._currentNode?.dependent, this)) {
+      dependOnInheritedElement(ancestor);
+    }
+
     return ancestor._currentNode!;
   }
 }

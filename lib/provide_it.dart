@@ -12,6 +12,7 @@ export 'src/framework.dart'
 export 'src/legacy.dart' hide ProviderWidget, ProviderlessWidget;
 export 'src/providers/provide.dart';
 export 'src/providers/provide_async.dart';
+export 'src/providers/provide_auto.dart';
 export 'src/providers/provide_value.dart';
 export 'src/providers/use.dart';
 export 'src/providers/use_automatic_keep_alive.dart';
