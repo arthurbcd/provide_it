@@ -4,21 +4,21 @@ import 'package:provide_it/src/framework.dart';
 
 import 'injector_test.dart';
 
-Future<ReadIt> provideIt(
+Future<ReadKey> provideIt(
   WidgetTester tester,
   WidgetBuilder builder, {
   void Function(BuildContext context)? provide,
 }) async {
-  final scope = ReadIt.scoped();
+  final key = ReadKey();
   await tester.pumpWidget(
     ProvideIt(
-      key: UniqueKey(),
+      key: key,
       provide: provide,
-      scope: scope,
+      // scope: scope,
       child: Builder(builder: builder),
     ),
   );
-  return scope;
+  return key;
 }
 
 void main() {

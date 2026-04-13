@@ -20,5 +20,4 @@ part 'framework/inherited_provider.dart';
 part 'framework/inherited_scope.dart';
 part 'framework/provide_it.dart';
 part 'framework/read_it.dart';
-part 'framework/scope_it.dart';
 part 'framework/watcher.dart';

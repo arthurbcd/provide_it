@@ -1,83 +1,48 @@
 part of '../framework.dart';
 
-abstract mixin class ReadIt {
-  /// The default root [ProvideIt.scope], also accessible via [readIt].
-  /// Automatically attaches to the root [ProvideIt] where [ProvideIt.scope] is null.
-  static final ReadIt instance = _ReadItRoot();
-  static final ReadIt I = instance;
+mixin ReadIt on InheritIt {
+  @protected
+  FutureOr<void> allReady() {
+    final futures = <Future<void>>[];
 
-  /// Creates a new [ReadIt] scope, isolated from [ReadIt.instance] dependencies.
-  /// Must attach to a [ProvideIt.scope].
-  ///
-  /// Useful for creating independent scopes, such as in packages or nested modules.
-  /// Example:
-  /// ```dart
-  /// final myScope = ReadIt.scoped();
-  ///
-  /// ProvideIt(
-  ///   scope: myScope, // creates a new independent scope
-  ///   provide: (context) {
-  ///     // This scope won't have access to dependencies from ReadIt.instance
-  ///     context.provide(() => MyService());
-  ///   },
-  ///   child: MyApp(),
-  /// );
-  /// ```
-  factory ReadIt.scoped() = _ReadItScope;
+    void isReady(InheritedBind bind) {
+      if (bind.isReady() case Future<void> future) {
+        futures.add(future);
+      }
+    }
 
-  @Deprecated('Use ReadIt.scoped() instead.')
-  factory ReadIt.asNewInstance() = ReadIt.scoped;
+    _cache.forEach((_, cache) => cache.forEach(isReady));
 
-  /// The future when all [InheritedState.read] can be read synchronously.
-  FutureOr<void> allReady();
+    if (futures.isNotEmpty) {
+      return Future.wait(futures, eagerError: true).then((_) {});
+    }
+  }
 
-  /// The future when [T] is ready.
-  FutureOr<void> isReady<T>();
+  @protected
+  FutureOr<void> isReady<T>({BuildContext? context}) {
+    final state = getInheritedBind<T>(context: context);
+    assert(state != null || null is T, 'InheritedProvider<$T> not found.');
 
-  /// Async reads the value of a [InheritedProvider].
-  FutureOr<T> readAsync<T>();
+    if (state?.isReady() case Future<void> future) {
+      return future.then((_) {});
+    }
+  }
 
-  /// Reads the value of [InheritedProvider].
-  T read<T>();
+  @protected
+  T read<T>({BuildContext? context}) {
+    if (readAsync<T>(context: context) case T value) return value;
+    if (null is T) return null as T;
+    throw ProviderNotReadyException('$T is loading');
+  }
 
-  /// Syntactic sugar for [ReadIt.read].
-  T call<T>() => read<T>();
+  @protected
+  FutureOr<T> readAsync<T>({BuildContext? context, String? type}) {
+    final state = getInheritedBind<T>(context: context, type: type);
 
-  /// Whether is attached to a [ProvideIt] scope.
-  bool get attached => false;
-}
-
-class _ReadIt with ReadIt {
-  ReadIt? _scope;
-
-  @override
-  FutureOr<void> allReady() => scope.allReady();
-
-  @override
-  FutureOr<void> isReady<T>() => scope.isReady<T>();
-
-  @override
-  FutureOr<T> readAsync<T>() => scope.readAsync<T>();
-
-  @override
-  T read<T>() => scope.read<T>();
-
-  @override
-  bool get attached => _scope != null;
-}
-
-class _ReadItRoot extends _ReadIt {}
-
-class _ReadItScope extends _ReadIt {}
-
-extension on _ReadIt {
-  ReadIt get scope {
-    assert(
-      attached,
-      this == ReadIt.instance
-          ? 'ReadIt not attached. You must set a ProvideIt above your app.'
-          : 'ReadIt not attached. You must set it to a ProvideIt.scope.',
-    );
-    return _scope!;
+    return switch (state?.read()) {
+      T value => value,
+      Future future => future.then((it) => it as T),
+      _ => throw ProviderNotFoundException('$type not found.'),
+    };
   }
 }

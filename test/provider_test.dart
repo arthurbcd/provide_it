@@ -7,7 +7,6 @@ extension on WidgetTester {
     BuildContext? context;
     await pumpWidget(
       ProvideIt(
-        scope: ReadIt.asNewInstance(),
         child: Builder(
           builder: (ctx) {
             context = ctx;

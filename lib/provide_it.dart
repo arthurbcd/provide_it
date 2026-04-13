@@ -2,13 +2,7 @@ library;
 
 export 'src/core.dart';
 export 'src/framework.dart'
-    show
-        ProvideIt,
-        ReadIt,
-        HookProvider,
-        HookState,
-        InheritedProvider,
-        InheritedState;
+    show ProvideIt, HookProvider, HookState, InheritedProvider, InheritedState;
 export 'src/legacy.dart' hide ProviderWidget, ProviderlessWidget;
 export 'src/providers/provide.dart';
 export 'src/providers/provide_async.dart';

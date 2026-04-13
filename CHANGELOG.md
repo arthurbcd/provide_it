@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.33.0
+
+- Removed `ReadIt.instance` & `readIt` locator. Use `ReadKey` instead.
+- Updated `README.md`.
+
 ## 0.32.0
 
 - Broken `context.provide` into `context.provide` & `context.provideAuto`.

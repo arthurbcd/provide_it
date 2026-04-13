@@ -81,8 +81,6 @@ class InheritedExample extends StatelessWidget {
 }
 ```
 
-> You can also use `ReadIt.instance` / `readIt`, to read the root ProvideIt scope contextlessly.
-
 ### Available Providers
 
 Below is a list of all `context` providers currently available.
@@ -117,19 +115,19 @@ ProvideIt was born from a few questions:
 
 This project took cues from several existing packages and ideas:
 
-- **provider & get_it** – syntax and lookup logic.
-- **flutter_hooks & watch_it** – binding and reactivity engine.
+- **provider** – syntax and scoping.
+- **flutter_hooks & context_watch** – binding and reactivity engine.
 - **auto_injector** – automatic injection without code generation.
 
-> And of course  **flutter**, by using native tools like `Listenable`, `ValueNotifier` and `AsyncSnapshot`. This package depends only on flutter/widgets.
+> And of course **flutter**, by using native tools like `Listenable`, `ValueNotifier` and `AsyncSnapshot`. This package depends only on `flutter/widgets`.
 
-### How it Works: The "Unicorn" Architecture
+### How it Works: The Scoped Container
 
-ProvideIt doesn't behave exactly like **get_it** or **provider**. It's a hybrid engine designed to give you the best of both worlds.
+ProvideIt doesn't behave exactly like a Service Locator or a traditional Provider chain. It's a scoped container designed to be Flutter-native.
 
 - **Not a Service Locator**: Unlike **get_it**, ProvideIt is lifecycle-aware. It knows when a widget dies and cleans up the mess.
 
-- **Not a Scoped Wrapper**: Unlike provider, it isn't strictly chained to the parent-child hierarchy. You can access states in sibling routes or dialogs without complex nesting.
+- **Not a Scoped Wrapper**: Unlike **provider**, it isn't strictly chained to the parent-child hierarchy. You can access states in sibling routes or dialogs without complex nesting.
 
 ### State Binding
 

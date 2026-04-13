@@ -5,9 +5,6 @@ import 'package:flutter/rendering.dart';
 import '../provide_it.dart';
 import 'framework.dart';
 
-/// Contextless [ContextReaders]. Reads the root [ProvideIt] scope.
-final readIt = ReadIt.instance;
-
 /// Extension methods that DO NOT depend on [BuildContext].
 ///
 /// Use them freely.

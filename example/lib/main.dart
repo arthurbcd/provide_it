@@ -52,8 +52,7 @@ class Home extends StatelessWidget {
     });
 
     return GestureDetector(
-      // you can also read singletons contextlessly with [readIt]. fails on duplicates.
-      onTap: () => readIt<Counter>().increment(),
+      onTap: () => context.read<Counter>().increment(),
       child: Text('Count: $count'),
     );
   }

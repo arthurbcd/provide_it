@@ -6,24 +6,15 @@ typedef ErrorBuilder =
 class ProvideIt extends InheritedWidget {
   const ProvideIt({
     super.key,
-    this.scope,
     this.setup,
     this.provide,
     this.watchers = const [ListenableWatcher()],
     this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
     required super.child,
-  }) : assert(
-         scope is! _ReadItRoot,
-         'ReadIt.instance can\'t be used as a scope. Remove it or use ReadIt.scoped() instead.',
-       ),
-       assert(
-         scope is _ReadItScope?,
-         'Invalid scope. Only ReadIt.scoped() can be used as a scope.',
-       ),
-       assert(provide is! Future<void> Function(BuildContext), '''
+  }) : assert(provide is! Future<void> Function(BuildContext), '''
 ProvideIt.provide must be sync.
-You can use `async` directly in a `context.provideAsync`:
+You can use `async` directly in `setup` or `context.provideAsync`:
 
 ProvideIt(
   provide: (context) { // <- DO NOT mark it as async.
@@ -41,32 +32,26 @@ ProvideIt(
 );
 ''');
 
-  static ProvideIt? of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<ProvideIt>();
-  }
+  static Widget _loadingBuilder(BuildContext context) =>
+      const SizedBox.shrink();
 
-  static Widget _loadingBuilder(BuildContext context) {
-    return const SizedBox.shrink();
-  }
-
-  static Widget _errorBuilder(BuildContext context, Object e, StackTrace s) {
-    return ErrorWidget(e);
-  }
+  static Widget _errorBuilder(BuildContext context, Object e, StackTrace s) =>
+      ErrorWidget(e);
 
   /// The default equality to use. Defaults to one-depth collections equality.
   /// Override it to `DeepCollectionEquality.equals` to mimic lib `provider` behavior.
-  static Equals equals = (Object? a, Object? b) => switch ((a, b)) {
+  static var equals = (Object? a, Object? b) => switch ((a, b)) {
     (List a, List b) => listEquals(a, b),
     (Set a, Set b) => setEquals(a, b),
     (Map a, Map b) => mapEquals(a, b),
     _ => a == b,
   };
 
-  /// Perform any async setup before [provide] is called.
+  /// Perform any async setup before [provide] is called. Called once.
   /// If it returns a [Future], [loadingBuilder] will be shown until it completes.
   final FutureOr<void> Function()? setup;
 
-  /// Initializes [ProvideIt] and sets up root [ContextProviders].
+  /// Initializes [ProvideIt] and sets up root providers.
   ///
   /// The [provide] callback follows [ReadIt.allReady], showing:
   /// - [loadingBuilder]: when any async provider is loading.
@@ -95,14 +80,6 @@ ProvideIt(
   ///
   final List<Watcher> watchers;
 
-  /// The [ReadIt] scope to use. When `null`, defaults to:
-  /// - [ReadIt.instance] when root.
-  /// - [ReadIt.asNewInstance] when not root.
-  final ReadIt? scope;
-
-  @override
-  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
-
   /// Returns the first matching [Watcher] for the given value.
   Watcher? resolveWatcher(Object value) {
     for (var i = 0; i < watchers.length; i++) {
@@ -114,8 +91,93 @@ ProvideIt(
   }
 
   @override
+  bool updateShouldNotify(covariant InheritedWidget oldWidget) => false;
+
+  @override
   InheritedElement createElement() => ScopeIt(this);
 }
 
-@internal
-typedef Equals = bool Function(Object? a, Object? b);
+class ScopeIt extends InheritedScope with BindIt, InheritIt, DependIt, ReadIt {
+  ScopeIt(ProvideIt super.widget);
+
+  static ScopeIt of(BuildContext context) {
+    final scope = context.getElementForInheritedWidgetOfExactType<ProvideIt>();
+    assert(scope != null, 'You must set a `ProvideIt` above your app.');
+    return scope as ScopeIt;
+  }
+
+  @override
+  ProvideIt get widget => super.widget as ProvideIt;
+
+  @override
+  Widget build() {
+    switch (useFuture(widget.setup)) {
+      case AsyncSnapshot(connectionState: ConnectionState.waiting):
+        return widget.loadingBuilder(this);
+      case AsyncSnapshot(:final error?, :final stackTrace?):
+        return widget.errorBuilder(this, error, stackTrace);
+    }
+
+    try {
+      widget.provide?.call(this);
+    } catch (error, stackTrace) {
+      return widget.errorBuilder(this, error, stackTrace);
+    }
+
+    switch (useFuture(allReady)) {
+      case AsyncSnapshot(connectionState: ConnectionState.waiting):
+        return widget.loadingBuilder(this);
+      case AsyncSnapshot(:final error?, :final stackTrace?):
+        return widget.errorBuilder(this, error, stackTrace);
+    }
+
+    return widget.child;
+  }
+}
+
+class Node extends NodeBase with Bindings, Dependencies {
+  Node(super.dependent);
+}
+
+extension type ReadKey._(GlobalKey _) implements Key {
+  /// Creates a [ReadKey] for contextless reading.
+  /// Must be attached to [ProvideIt.key] or any descendant [Widget.key].
+  factory ReadKey({String? debugLabel}) =>
+      ReadKey._(GlobalKey(debugLabel: debugLabel));
+
+  /// [ContextReaders.read].
+  T call<T>() => read<T>();
+
+  /// [ContextReaders.read].
+  T read<T>() {
+    if (_scope?.read<T>() case T value) return value;
+    throw _notAttached;
+  }
+
+  /// [ContextReaders.readAsync].
+  FutureOr<T> readAsync<T>() {
+    if (_scope?.readAsync<T>() case T value) return value;
+    throw _notAttached;
+  }
+
+  /// [ContextReaders.isReady].
+  FutureOr<void> isReady<T>() {
+    if (null is! T && _scope == null) throw _notAttached;
+    return _scope?.isReady<T>();
+  }
+
+  /// [ContextReaders.allReady].
+  FutureOr<void> allReady() {
+    if (_scope == null) throw _notAttached;
+    return _scope?.allReady();
+  }
+
+  Error get _notAttached =>
+      StateError('ReadKey not attached. You must set it to a Widget.key.');
+
+  ScopeIt? get _scope => switch (_.currentContext) {
+    ScopeIt scope => scope,
+    final context? => ScopeIt.of(context),
+    _ => null,
+  };
+}

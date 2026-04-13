@@ -124,7 +124,7 @@ mixin Bindings on NodeBase {
     super.reassemble();
     if (binds == null) return;
     for (var bind = binds?.first; bind != null; bind = bind.next) {
-      final reassembled = scope._reassembledBinds ??= HashSet.identity();
+      final reassembled = scope._reassembledBinds ??= HashSet();
       reassembled.add(bind..reassemble());
     }
   }

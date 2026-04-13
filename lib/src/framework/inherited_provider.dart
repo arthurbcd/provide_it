@@ -166,7 +166,7 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   bool get selfDependent => _dependents.containsKey(_bind!.dependent);
 
   @protected
-  ReadIt get scope => _bind!.scope;
+  BindIt get scope => _bind!.scope;
 
   @protected
   BuildContext get context => _bind!.dependent;
