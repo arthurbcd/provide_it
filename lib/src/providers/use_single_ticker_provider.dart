@@ -6,10 +6,11 @@ extension ContextUseSingleTickerProvider on BuildContext {
   /// Creates a single [TickerProvider] for the current [BuildContext].
   /// See: [SingleTickerProviderStateMixin].
   TickerProvider useSingleTickerProvider({Object? key}) {
-    if (key == null) {
-      return bind(const _SingleTickerProviderHook());
-    }
-    return bind(_SingleTickerProviderHook(key: key));
+    return bind(
+      key == null
+          ? const _SingleTickerProviderHook()
+          : _SingleTickerProviderHook(key: key),
+    );
   }
 }
 

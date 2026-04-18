@@ -6,7 +6,7 @@ mixin BindIt on InheritedScope {
 
   @protected
   R bind<R>(BuildContext context, BindProvider<R> provider) {
-    final node = context.dependOnInheritedNode(this);
+    final node = context.dependOnInheritedScope(this);
     final binds = node.binds ??= Binds();
     final Bind<R> bind;
 
@@ -67,11 +67,9 @@ mixin BindIt on InheritedScope {
     super.finalizeTree();
   }
 
-  static void _unbind(Bind bind) {
-    bind
-      ..unbind()
-      .._node = null;
-  }
+  static void _unbind(Bind bind) => bind
+    ..unbind()
+    .._node = null;
 }
 
 final class Binds extends LinkedList<Bind> {

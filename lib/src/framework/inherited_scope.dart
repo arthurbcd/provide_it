@@ -67,7 +67,7 @@ extension on BuildContext {
   @pragma('vm:prefer-inline')
   @pragma('dart2js:tryInline')
   @pragma('wasm:prefer-inline')
-  Node dependOnInheritedNode(InheritedScope ancestor) {
+  Node dependOnInheritedScope(InheritedScope ancestor) {
     if (!identical(ancestor._currentNode?.dependent, this)) {
       dependOnInheritedElement(ancestor);
     }

@@ -1,8 +1,7 @@
-import 'package:provide_it/src/framework.dart';
-
+import '../framework.dart';
 import 'use_single_ticker_provider.dart';
 
-extension UseAnimationController on BuildContext {
+extension ContextUseAnimationController on BuildContext {
   /// The default duration for [useAnimationController.duration].
   static Duration duration = Duration(milliseconds: 600);
 
@@ -11,7 +10,7 @@ extension UseAnimationController on BuildContext {
   /// The controller automatically disposes with `this` context.
   ///
   /// When not provided, the following parameters will:
-  /// - [duration] defaults to [UseAnimationController.duration].
+  /// - [duration] defaults to [ContextUseAnimationController.duration].
   /// - [reverseDuration] defaults to [duration].
   /// - [vsync] defaults to [useSingleTickerProvider].
   ///
@@ -27,25 +26,27 @@ extension UseAnimationController on BuildContext {
     Object? key,
   }) {
     vsync ??= useSingleTickerProvider(key: key);
-    duration ??= UseAnimationController.duration;
+    duration ??= ContextUseAnimationController.duration;
     reverseDuration ??= duration;
 
-    return bind(_AnimationControllerHook(
-      duration: duration,
-      reverseDuration: reverseDuration,
-      debugLabel: debugLabel,
-      initialValue: initialValue,
-      lowerBound: lowerBound,
-      upperBound: upperBound,
-      vsync: vsync,
-      animationBehavior: animationBehavior,
-      key: key,
-    ));
+    return bind(
+      _UseAnimationController(
+        duration: duration,
+        reverseDuration: reverseDuration,
+        debugLabel: debugLabel,
+        initialValue: initialValue,
+        lowerBound: lowerBound,
+        upperBound: upperBound,
+        vsync: vsync,
+        animationBehavior: animationBehavior,
+        key: key,
+      ),
+    );
   }
 }
 
-class _AnimationControllerHook extends HookProvider<AnimationController> {
-  const _AnimationControllerHook({
+class _UseAnimationController extends HookProvider<AnimationController> {
+  const _UseAnimationController({
     this.duration,
     this.reverseDuration,
     this.debugLabel,
@@ -67,8 +68,7 @@ class _AnimationControllerHook extends HookProvider<AnimationController> {
   final AnimationBehavior animationBehavior;
 
   @override
-  _AnimationControllerHookState createState() =>
-      _AnimationControllerHookState();
+  _UseAnimationControllerState createState() => _UseAnimationControllerState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
@@ -78,8 +78,8 @@ class _AnimationControllerHook extends HookProvider<AnimationController> {
   }
 }
 
-class _AnimationControllerHookState
-    extends HookState<AnimationController, _AnimationControllerHook> {
+class _UseAnimationControllerState
+    extends HookState<AnimationController, _UseAnimationController> {
   @override
   String get debugLabel => 'useAnimationController';
 
@@ -95,7 +95,7 @@ class _AnimationControllerHookState
   );
 
   @override
-  void didUpdateProvider(_AnimationControllerHook oldProvider) {
+  void didUpdateProvider(_UseAnimationController oldProvider) {
     super.didUpdateProvider(oldProvider);
     if (provider.duration != oldProvider.duration) {
       controller.duration = provider.duration;

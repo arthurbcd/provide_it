@@ -4,21 +4,17 @@ import 'package:provide_it/src/framework.dart';
 
 import 'injector_test.dart';
 
-Future<ReadKey> provideIt(
+Future<void> provideIt(
   WidgetTester tester,
   WidgetBuilder builder, {
   void Function(BuildContext context)? provide,
 }) async {
-  final key = ReadKey();
   await tester.pumpWidget(
     ProvideIt(
-      key: key,
       provide: provide,
-      // scope: scope,
       child: Builder(builder: builder),
     ),
   );
-  return key;
 }
 
 void main() {
@@ -27,7 +23,7 @@ void main() {
       bool createCalled = false;
 
       await provideIt(tester, (context) {
-        context.provideAuto<int>(() {
+        context.provide<int>(() {
           createCalled = true;
           return 42;
         }, lazy: false);
@@ -41,7 +37,7 @@ void main() {
       int createCount = 0;
 
       await provideIt(tester, (context) {
-        context.provideAuto<int>(() {
+        context.provide<int>(() {
           createCount++;
           return 42;
         }, lazy: true);
@@ -83,9 +79,9 @@ void main() {
       BuildContext? ctx;
       await provideIt(tester, (context) {
         ctx = context;
-        context.provideAuto(() => 1);
-        context.provideAuto(() => 'b');
-        context.provideAuto((int a, String b) => (a, b));
+        context.provide(() => 1);
+        context.provide(() => 'b');
+        context.provide((int a, String b) => (a, b));
         return Container();
       });
 
@@ -98,9 +94,9 @@ void main() {
       BuildContext? ctx;
       await provideIt(tester, (context) {
         ctx = context;
-        context.provideAuto((int a, String b) => (a, b));
-        context.provideAuto(() => 'b');
-        context.provideAuto(() => 1);
+        context.provide((int a, String b) => (a, b));
+        context.provide(() => 'b');
+        context.provide(() => 1);
         return Container();
       });
 
@@ -113,9 +109,9 @@ void main() {
       BuildContext? ctx;
       await provideIt(tester, (context) {
         ctx = context;
-        context.provideAuto((int a, String b) => (a, b));
-        context.provideAuto(() => 'b');
-        context.provideAuto(() => 1);
+        context.provide((int a, String b) => (a, b));
+        context.provide(() => 'b');
+        context.provide(() => 1);
 
         return Container();
       });
@@ -131,9 +127,9 @@ void main() {
       Object? value3;
       Object? value4;
       await provideIt(tester, (context) {
-        context.provideAuto((int a, String b) => (a, b));
-        context.provideAuto(() => 'b');
-        context.provideAuto(() => 1);
+        context.provide((int a, String b) => (a, b));
+        context.provide(() => 'b');
+        context.provide(() => 1);
         return Builder(
           builder: (context) {
             value1 = context.select(((int, String) s) => s.$1);
@@ -161,14 +157,14 @@ void main() {
 
         await provideIt(tester, (context) {
           // Provedor externo
-          context.provideAuto<int>(() => 1);
+          context.provide<int>(() => 1);
 
           return Builder(
             builder: (context) {
               outerValue = context.read<int>();
               return Builder(
                 builder: (context) {
-                  context.provideAuto<int>(() => 2);
+                  context.provide<int>(() => 2);
                   return Builder(
                     builder: (context) {
                       innerValue = context.read<int>();
@@ -196,17 +192,17 @@ void main() {
 
         await provideIt(tester, (context) {
           // Provedor externo
-          context.provideAuto<int>(() => 1);
+          context.provide<int>(() => 1);
 
           return Builder(
             builder: (context) {
-              context.provideAuto<int>(() => 2);
+              context.provide<int>(() => 2);
 
               return Builder(
                 builder: (context) {
                   readContext = context as Element;
                   outerValue = context.read<int>();
-                  context.provideAuto<int>(() => 3);
+                  context.provide<int>(() => 3);
                   innerValue = context.read<int>();
                   return Container();
                 },
@@ -244,7 +240,7 @@ void main() {
                 Builder(
                   builder: (context) {
                     contextA = context;
-                    context.provideAuto(() => 'A');
+                    context.provide(() => 'A');
                     return const Text('Provider Branch');
                   },
                 ),
@@ -252,7 +248,7 @@ void main() {
                 Builder(
                   builder: (context) {
                     contextB = context;
-                    context.provideAuto(() => 'B');
+                    context.provide(() => 'B');
                     return const Text('Provider Branch');
                   },
                 ),
@@ -290,7 +286,7 @@ void main() {
   group('ContextStates', () {
     testWidgets('value should bind value to context', (tester) async {
       await provideIt(tester, (context) {
-        final (value, setValue) = context.useValue(0);
+        final (value, setValue) = context.useState(0);
         return GestureDetector(
           key: Key('$value'),
           onTap: () => setValue(value + 1),
@@ -308,8 +304,8 @@ void main() {
 
     testWidgets('value should bind multiple values to context', (tester) async {
       await provideIt(tester, (context) {
-        final (value, setValue) = context.useValue(0);
-        final (value2, setValue2) = context.useValue(10);
+        final (value, setValue) = context.useState(0);
+        final (value2, setValue2) = context.useState(10);
         return GestureDetector(
           key: Key('$value $value2'),
           onTap: () {
@@ -424,7 +420,7 @@ void main() {
       int? key = 1;
 
       await provideIt(tester, (context) {
-        final (value, setValue) = context.useValue(0);
+        final (value, setValue) = context.useState(0);
 
         return Column(
           children: [
@@ -491,7 +487,7 @@ void main() {
       int buildCount = 0;
       await provideIt(tester, (context) {
         buildCount++;
-        context.provideAuto(() => Counter(0));
+        context.provide(() => Counter(0));
 
         return Builder(
           builder: (context) {
@@ -523,7 +519,7 @@ void main() {
 
       await provideIt(tester, (context) {
         rootBuildCount++;
-        context.provideAuto(() => Counter(0));
+        context.provide(() => Counter(0));
         return Builder(
           builder: (context) {
             newBuildCount++;
@@ -607,9 +603,9 @@ void main() {
         provide: (context) {
           context.provideAsync(NestedA.init);
           context.provideAsync(NestedB.init);
-          context.provideAuto(Nested.new); // needs NestedA and NestedB
+          context.provide(Nested.new); // needs NestedA and NestedB
           context.provideAsync(Async.init);
-          context.provideAuto(Leaf.new); // needs Nested and Async
+          context.provide(Leaf.new); // needs Nested and Async
         },
         (context) {
           value = context.watch<Leaf>();
@@ -646,7 +642,7 @@ void main() {
     final contexts = <int, BuildContext>{};
 
     await provideIt(tester, (context) {
-      final counter = context.useValue(0);
+      final counter = context.useState(0);
       count = counter.value;
 
       return Builder(
@@ -654,7 +650,7 @@ void main() {
         builder: (context) {
           contexts[counter.value] = context;
 
-          context.provideAuto(
+          context.provide(
             () => Counter(0),
             lazy: false,
             dispose: (_) => disposed = true,
@@ -683,8 +679,8 @@ void main() {
     InheritedState? state;
 
     await provideIt(tester, (context) {
-      context.provideAuto(() => Counter(0));
-      final counter = context.useValue(0);
+      context.provide(() => Counter(0));
+      final counter = context.useState(0);
       count = counter.value;
 
       final scope = ScopeIt.of(context);
@@ -721,12 +717,12 @@ void main() {
     int disposeCount = 0;
 
     await provideIt(tester, (context) {
-      final counter = context.useValue(0);
+      final counter = context.useState(0);
 
       return Builder(
         key: Key(counter.value.toString()),
         builder: (context) {
-          context.provideAuto(
+          context.provide(
             () {
               createCount++;
               return '';
@@ -765,7 +761,7 @@ void main() {
     final providerEvents = <String>[];
 
     await provideIt(tester, (context) {
-      final (swap, setSwap) = context.useValue(false);
+      final (swap, setSwap) = context.useState(false);
 
       final button = _LifecycleBuilder(
         key: key,

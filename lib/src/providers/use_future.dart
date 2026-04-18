@@ -1,9 +1,9 @@
 import 'dart:async';
 
-import 'package:provide_it/src/framework.dart';
+import '../framework.dart';
 
 extension ContextUseFuture on BuildContext {
-  /// Subscribes to a [Future] function and returns its snapshot.
+  /// Creates and subscribes to the [Future] of [create] and returns its snapshot.
   AsyncSnapshot<T> useFuture<T>(
     FutureOr<T> create()?, {
     T? initialData,
@@ -13,12 +13,22 @@ extension ContextUseFuture on BuildContext {
   }
 
   /// Subscribes to an already created [Future] and returns its snapshot.
+  @Deprecated('Use Future.watch() instead.')
   AsyncSnapshot<T> useFutureValue<T>(
     FutureOr<T>? future, {
     T? initialData,
     Object? key,
   }) {
     return bind(_FutureHook.value(future, initialData: initialData, key: key));
+  }
+}
+
+extension FutureWatch<T> on Future<T> {
+  /// Subscribes to this [Future] and returns its snapshot.
+  AsyncSnapshot<T> watch(BuildContext context, {T? initialData, Object? key}) {
+    return context.bind(
+      _FutureHook.value(this, initialData: initialData, key: key),
+    );
   }
 }
 

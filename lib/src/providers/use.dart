@@ -4,34 +4,22 @@ extension ContextUse on BuildContext {
   /// Provides [create] locally to this [BuildContext].
   ///
   /// You can use the value directly.
-  T use<T>(
-    T create(), {
-    void dispose(T value)?,
-    Object? key,
-  }) {
-    return bind(_Hook<T>(
-      create,
-      dispose: dispose,
-      key: key,
-    ));
+  T use<T>(T create(), {void dispose(T value)?, Object? key}) {
+    return bind(_Use<T>(create, dispose: dispose, key: key));
   }
 }
 
-class _Hook<T> extends HookProvider<T> {
-  const _Hook(
-    this.create, {
-    this.dispose,
-    super.key,
-  });
+class _Use<T> extends HookProvider<T> {
+  const _Use(this.create, {this.dispose, super.key});
 
   final T Function() create;
   final void Function(T value)? dispose;
 
   @override
-  _HookState<T> createState() => _HookState();
+  _UseState<T> createState() => _UseState();
 }
 
-class _HookState<T> extends HookState<T, _Hook<T>> {
+class _UseState<T> extends HookState<T, _Use<T>> {
   @override
   String get debugLabel => 'use<$T>';
 

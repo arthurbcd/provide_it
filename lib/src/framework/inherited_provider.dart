@@ -41,8 +41,6 @@ final class InheritedBind<T> extends Bind<void> {
 
   String get type => state.type;
 
-  Symbol get symbol => Symbol(type);
-
   @mustCallSuper
   T depend(Element dependent, InheritedAspect<T?> aspect) {
     state.addDependent(dependent, aspect);
@@ -143,7 +141,7 @@ final class InheritedBind<T> extends Bind<void> {
 /// - [R]: The [BindProvider] type that this state is associated with.
 ///
 /// See also:
-/// - [ContextProvideAuto]
+/// - [ContextProvide]
 /// - [ContextProvideValue]
 ///
 abstract class InheritedState<T, R extends InheritedProvider<T>> {

@@ -12,7 +12,7 @@ mixin DependIt on InheritIt {
       throw ProviderNotFoundException('$T not found.');
     }
 
-    final node = context.dependOnInheritedNode(this);
+    final node = context.dependOnInheritedScope(this);
 
     // bind handles self-dependency
     if (node.dependent != bind.dependent) {

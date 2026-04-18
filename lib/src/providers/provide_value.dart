@@ -18,10 +18,7 @@ extension ContextProvideValue on BuildContext {
 class _ProvideValue<T> extends InheritedProvider<T> {
   const _ProvideValue(this.value, {super.key, this.updateShouldNotify});
 
-  /// An already created [value].
   final T value;
-
-  /// Whether to notify dependents when the value changes.
   final bool Function(T prev, T next)? updateShouldNotify;
 
   @override

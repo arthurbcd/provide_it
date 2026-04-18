@@ -2,7 +2,6 @@ part of '../framework.dart';
 
 typedef TypeOf<T> = T;
 
-/// Engine for [InheritedProvider] that manages provider inheritance and lookup.
 mixin InheritIt on InheritedScope {
   final _cache = HashMap<Object, InheritedCache>();
   final _types = HashMap<String, Type>();

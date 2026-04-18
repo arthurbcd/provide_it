@@ -3,47 +3,43 @@ import 'dart:async';
 import '../framework.dart';
 
 extension ContextUseStream on BuildContext {
-  /// Subscribes to a [Stream] function and returns its snapshot.
+  /// Creates and subscribes to the [Stream] of [create] and returns its snapshot.
   AsyncSnapshot<T> useStream<T>(
     Stream<T> create()?, {
     T? initialData,
     Object? key,
   }) {
-    return bind(_StreamHook(
-      create,
-      initialData: initialData,
-      key: key,
-    ));
+    return bind(_UseStream(create, initialData: initialData, key: key));
   }
 
   /// Subscribes to an already created [Stream] and returns its snapshot.
+  @Deprecated('Use Stream.watch() instead.')
   AsyncSnapshot<T> useStreamValue<T>(
-    Stream<T>? stream, {
+    Stream<T> stream, {
     T? initialData,
     Object? key,
   }) {
-    return bind(_StreamHook.value(
-      stream,
-      initialData: initialData,
-      key: key,
-    ));
+    return stream.watch(this, initialData: initialData, key: key);
   }
 }
 
-class _StreamHook<T> extends HookProvider<AsyncSnapshot<T>> {
-  const _StreamHook(
-    this.create, {
-    this.initialData,
-    super.key,
-  })  : value = null,
-        label = 'useStream';
+extension StreamWatch<T> on Stream<T> {
+  /// Subscribes to this [Stream] and returns its snapshot.
+  AsyncSnapshot<T> watch(BuildContext context, {T? initialData, Object? key}) {
+    return context.bind(
+      _UseStream.value(this, initialData: initialData, key: key),
+    );
+  }
+}
 
-  const _StreamHook.value(
-    this.value, {
-    this.initialData,
-    super.key,
-  })  : create = null,
-        label = 'useStreamValue';
+class _UseStream<T> extends HookProvider<AsyncSnapshot<T>> {
+  const _UseStream(this.create, {this.initialData, super.key})
+    : value = null,
+      label = 'useStream';
+
+  const _UseStream.value(this.value, {this.initialData, super.key})
+    : create = null,
+      label = 'useStreamValue';
 
   final Stream<T> Function()? create;
   final Stream<T>? value;
@@ -55,7 +51,7 @@ class _StreamHook<T> extends HookProvider<AsyncSnapshot<T>> {
 }
 
 /// [StreamBuilder] clone.
-class _StreamHookState<T> extends HookState<AsyncSnapshot<T>, _StreamHook<T>> {
+class _StreamHookState<T> extends HookState<AsyncSnapshot<T>, _UseStream<T>> {
   @override
   String get debugLabel => '{${provider.label}}<$T>';
 
@@ -72,7 +68,7 @@ class _StreamHookState<T> extends HookState<AsyncSnapshot<T>, _StreamHook<T>> {
   }
 
   @override
-  void didUpdateProvider(covariant _StreamHook<T> oldProvider) {
+  void didUpdateProvider(covariant _UseStream<T> oldProvider) {
     super.didUpdateProvider(oldProvider);
 
     if (oldProvider.value != provider.value ||

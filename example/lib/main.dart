@@ -17,8 +17,8 @@ void main() {
         });
 
         // Zero boilerplate injection
-        context.provideAuto(CounterRepository.new);
-        context.provideAuto(Counter.new); // <- auto-injects CounterRepository
+        context.provide(CounterRepository.new);
+        context.provide(Counter.new); // <- auto-injects CounterRepository
       },
       // show something while loading async dependencies, defaults to black screen
       loadingBuilder: (context) {
@@ -64,7 +64,7 @@ class HookExample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (count, setCount) = context.useValue(0);
+    final (count, setCount) = context.useState(0);
 
     return GestureDetector(
       onTap: () => setCount(count + 1),
@@ -129,7 +129,10 @@ class CounterExample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (count, setCount) = context.useValue(0);
+    final (count, setCount) = context.useState(0);
+    final counter = context.useState(0);
+    counter.value;
+
     return GestureDetector(
       onTap: () => setCount(count + 1),
       child: Text('Count: $count'),

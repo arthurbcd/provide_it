@@ -1,8 +1,6 @@
 import 'dart:async';
 
-import 'package:provide_it/src/framework.dart';
-
-import '../injector/injector.dart';
+import '../framework.dart';
 
 extension ContextProvideAsync on BuildContext {
   /// Provides the future value of [create].
@@ -78,12 +76,6 @@ class _ProvideAsyncState<T> extends InheritedState<T, _ProvideAsync<T>> {
     }
 
     if (_error case (Object error, StackTrace stackTrace)) {
-      assert(error is! InjectorError, '''
-InjectorError: ${error.message}.
-
-Did you provide the missing type?
-context.provide<${error.expectedT}>(...); // <- provide it
-        ''');
       Error.throwWithStackTrace(error, stackTrace);
     }
 

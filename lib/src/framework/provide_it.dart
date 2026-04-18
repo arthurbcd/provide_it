@@ -68,8 +68,10 @@ ProvideIt(
   final ErrorBuilder errorBuilder;
 
   /// [Watcher]s are used to automatically watch for changes in providers such as:
-  /// - `context.provide`: [_Inherited]
-  /// - `context.provideValue`: [_Inherited.value]
+  /// - `context.provide`
+  /// - `context.provideAuto`
+  /// - `context.provideAsync`
+  /// - `context.provideValue`
   ///
   /// You can create your own [Watcher] by extending the class and setting in [watchers].
   /// By default, [ListenableWatcher] is used to watch for [Listenable] changes.
@@ -137,47 +139,4 @@ class ScopeIt extends InheritedScope with BindIt, InheritIt, DependIt, ReadIt {
 
 class Node extends NodeBase with Bindings, Dependencies {
   Node(super.dependent);
-}
-
-extension type ReadKey._(GlobalKey _) implements Key {
-  /// Creates a [ReadKey] for contextless reading.
-  /// Must be attached to [ProvideIt.key] or any descendant [Widget.key].
-  factory ReadKey({String? debugLabel}) =>
-      ReadKey._(GlobalKey(debugLabel: debugLabel));
-
-  /// [ContextReaders.read].
-  T call<T>() => read<T>();
-
-  /// [ContextReaders.read].
-  T read<T>() {
-    if (_scope?.read<T>() case T value) return value;
-    throw _notAttached;
-  }
-
-  /// [ContextReaders.readAsync].
-  FutureOr<T> readAsync<T>() {
-    if (_scope?.readAsync<T>() case T value) return value;
-    throw _notAttached;
-  }
-
-  /// [ContextReaders.isReady].
-  FutureOr<void> isReady<T>() {
-    if (null is! T && _scope == null) throw _notAttached;
-    return _scope?.isReady<T>();
-  }
-
-  /// [ContextReaders.allReady].
-  FutureOr<void> allReady() {
-    if (_scope == null) throw _notAttached;
-    return _scope?.allReady();
-  }
-
-  Error get _notAttached =>
-      StateError('ReadKey not attached. You must set it to a Widget.key.');
-
-  ScopeIt? get _scope => switch (_.currentContext) {
-    ScopeIt scope => scope,
-    final context? => ScopeIt.of(context),
-    _ => null,
-  };
 }

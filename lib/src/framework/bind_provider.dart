@@ -4,7 +4,7 @@ part of '../framework.dart';
 abstract class BindProvider<R> with Diagnosticable {
   const BindProvider({this.key});
 
-  /// Similar to [Widget.key].
+  /// Like [Widget.key].
   /// Controls how one provider replaces another in the bind tree.
   final Object? key;
 
@@ -14,7 +14,7 @@ abstract class BindProvider<R> with Diagnosticable {
 
 @internal
 sealed class Bind<R> extends LinkedListEntry<Bind> {
-  /// Similar to [Widget.canUpdate].
+  /// Like [Widget.canUpdate].
   static bool canUpdate(BindProvider oldProvider, BindProvider newProvider) {
     return oldProvider.runtimeType == newProvider.runtimeType &&
         ProvideIt.equals(oldProvider.key, newProvider.key);
