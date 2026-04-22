@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.34.0
+
+- Added flutter hooks for common use-cases, like `useAppLifecycleState` and `useFocusNode`.
+- Deprecated value hooks in favor of `T.watch(context)`.
+- Reverted `context.provideAuto` to `context.provide`.
+- Remove legacy & deprecated code.
+- Added several tests.
+
 ## 0.33.0
 
 - Removed `ReadIt.instance` & `readIt` locator. Use `ReadKey` instead.

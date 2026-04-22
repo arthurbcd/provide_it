@@ -75,6 +75,178 @@ void main() {
       expect(tappedValue, 42);
     });
 
+    testWidgets(
+      'useTextEditingController creates controller with initial text',
+      (tester) async {
+        late TextEditingController controller;
+
+        await provideIt(tester, (context) {
+          controller = context.useTextEditingController(text: 'hello');
+          return Container();
+        });
+
+        expect(controller.text, 'hello');
+      },
+    );
+
+    testWidgets('useAppLifecycleState follows lifecycle changes', (
+      tester,
+    ) async {
+      AppLifecycleState? state;
+
+      await provideIt(tester, (context) {
+        state = context.useAppLifecycleState();
+        return Container();
+      });
+
+      expect(state, isNull);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(state, AppLifecycleState.resumed);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+
+      expect(state, AppLifecycleState.inactive);
+    });
+
+    testWidgets('useAppLifecycleListener fires lifecycle events', (
+      tester,
+    ) async {
+      var resume = false;
+      var inactive = false;
+      var hide = false;
+      var pause = false;
+      var detach = false;
+      AppLifecycleState? callbackState;
+
+      await provideIt(tester, (context) {
+        context.useAppLifecycleListener(
+          onResume: () => resume = true,
+          onInactive: () => inactive = true,
+          onHide: () => hide = true,
+          onPause: () => pause = true,
+          onDetach: () => detach = true,
+          onStateChange: (value) => callbackState = value,
+        );
+        return Container();
+      });
+
+      expect(callbackState, isNull);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(resume, isTrue);
+      expect(callbackState, AppLifecycleState.resumed);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      await tester.pump();
+
+      expect(inactive, isTrue);
+      expect(callbackState, AppLifecycleState.inactive);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      await tester.pump();
+
+      expect(hide, isTrue);
+      expect(callbackState, AppLifecycleState.hidden);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await tester.pump();
+
+      expect(pause, isTrue);
+      expect(callbackState, AppLifecycleState.paused);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      await tester.pump();
+
+      expect(detach, isTrue);
+      expect(callbackState, AppLifecycleState.detached);
+    });
+
+    testWidgets('useFocusNode creates a FocusNode with configured options', (
+      tester,
+    ) async {
+      late FocusNode node;
+
+      await provideIt(tester, (context) {
+        node = context.useFocusNode(
+          debugLabel: 'test',
+          onKeyEvent: (_, __) => KeyEventResult.handled,
+          skipTraversal: true,
+          canRequestFocus: false,
+          descendantsAreFocusable: false,
+          descendantsAreTraversable: false,
+        );
+        return Container();
+      });
+
+      expect(node.debugLabel, 'test');
+      expect(node.skipTraversal, isTrue);
+      expect(node.canRequestFocus, isFalse);
+      expect(node.descendantsAreFocusable, isFalse);
+      expect(node.descendantsAreTraversable, isFalse);
+      expect(node.onKeyEvent, isNotNull);
+    });
+
+    testWidgets('useScrollController creates a ScrollController', (
+      tester,
+    ) async {
+      late ScrollController controller;
+
+      await provideIt(tester, (context) {
+        controller = context.useScrollController(
+          initialScrollOffset: 10.0,
+          keepScrollOffset: false,
+          debugLabel: 'scroll',
+          onAttach: (_) {},
+          onDetach: (_) {},
+        );
+        return Container();
+      });
+
+      expect(controller.initialScrollOffset, 10.0);
+      expect(controller.keepScrollOffset, isFalse);
+      expect(controller.debugLabel, 'scroll');
+      expect(controller.onAttach, isNotNull);
+      expect(controller.onDetach, isNotNull);
+    });
+
+    testWidgets('usePageController creates a PageController', (tester) async {
+      late PageController controller;
+
+      await provideIt(tester, (context) {
+        controller = context.usePageController(
+          initialPage: 2,
+          viewportFraction: 0.8,
+          onAttach: (_) {},
+          onDetach: (_) {},
+        );
+        return Container();
+      });
+
+      expect(controller.initialPage, 2);
+      expect(controller.viewportFraction, 0.8);
+      expect(controller.onAttach, isNotNull);
+      expect(controller.onDetach, isNotNull);
+    });
+
+    testWidgets('useValueNotifier creates a ValueNotifier with initial value', (
+      tester,
+    ) async {
+      late ValueNotifier<int> notifier;
+
+      await provideIt(tester, (context) {
+        notifier = context.useValueNotifier(123);
+        return Container();
+      });
+
+      expect(notifier.value, 123);
+    });
+
     testWidgets('provides multiples', (tester) async {
       BuildContext? ctx;
       await provideIt(tester, (context) {
@@ -642,20 +814,20 @@ void main() {
     final contexts = <int, BuildContext>{};
 
     await provideIt(tester, (context) {
-      final counter = context.useState(0);
-      count = counter.value;
+      final (value, setCount) = context.useState(0);
+      count = value;
 
       return Builder(
-        key: Key(count.toString()),
+        key: Key(value.toString()),
         builder: (context) {
-          contexts[counter.value] = context;
+          contexts[value] = context;
 
           context.provide(
             () => Counter(0),
             lazy: false,
             dispose: (_) => disposed = true,
           );
-          return GestureDetector(onTap: () => counter.value++);
+          return GestureDetector(onTap: () => setCount(value + 1));
         },
       );
     });
@@ -680,19 +852,19 @@ void main() {
 
     await provideIt(tester, (context) {
       context.provide(() => Counter(0));
-      final counter = context.useState(0);
-      count = counter.value;
+      final (value, setCount) = context.useState(0);
+      count = value;
 
       final scope = ScopeIt.of(context);
 
       return Builder(
         key: Key(count.toString()),
         builder: (context) {
-          contexts[counter.value] = context;
+          contexts[value] = context;
           context.watch<Counter>();
           state = scope.getInheritedBind<Counter>()?.state;
 
-          return GestureDetector(onTap: () => counter.value++);
+          return GestureDetector(onTap: () => setCount(value + 1));
         },
       );
     });
@@ -717,10 +889,10 @@ void main() {
     int disposeCount = 0;
 
     await provideIt(tester, (context) {
-      final counter = context.useState(0);
+      final (count, setCount) = context.useState(0);
 
       return Builder(
-        key: Key(counter.value.toString()),
+        key: Key(count.toString()),
         builder: (context) {
           context.provide(
             () {
@@ -735,7 +907,7 @@ void main() {
 
           return GestureDetector(
             key: Key(context.read<String>()),
-            onTap: () => counter.value++,
+            onTap: () => setCount(count + 1),
           );
         },
       );

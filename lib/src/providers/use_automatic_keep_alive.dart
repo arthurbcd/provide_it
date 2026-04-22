@@ -1,12 +1,7 @@
 import '../framework.dart';
 
 extension ContextUseAutomaticKeepAlive on BuildContext {
-  /// Enables or disables automatic keep-alive for the current widget subtree.
-  ///
-  /// When enabled, the subtree will be kept alive even when it is not visible,
-  /// preventing it from being disposed of.
-  ///
-  /// By default, automatic keep-alive is enabled.
+  /// Expresses desire to remain alive when offstage, e.g in a [PageView] or [ListView].
   /// See: [AutomaticKeepAliveClientMixin].
   void useAutomaticKeepAlive({bool wantKeepAlive = true}) {
     return bind(
@@ -46,19 +41,6 @@ class _UseAutomaticKeepAliveState
   void _releaseKeepAlive() {
     _keepAliveHandle!.dispose();
     _keepAliveHandle = null;
-  }
-
-  @protected
-  void updateKeepAlive() {
-    if (wantKeepAlive) {
-      if (_keepAliveHandle == null) {
-        _ensureKeepAlive();
-      }
-    } else {
-      if (_keepAliveHandle != null) {
-        _releaseKeepAlive();
-      }
-    }
   }
 
   @override

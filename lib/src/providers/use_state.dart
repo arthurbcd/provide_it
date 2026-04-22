@@ -38,13 +38,3 @@ class _UseStateState<T> extends HookState<Record, _UseState<T>> {
     return (value, setValue);
   }
 }
-
-extension UseStateRecordExtension<T> on (T, void Function(T)) {
-  @Deprecated(_destructure)
-  T get value => $1;
-  @Deprecated(_destructure)
-  set value(T value) => $2(value);
-}
-
-const _destructure =
-    'Destructure it. Ex: final (count, setCount) = context.useState(0);';

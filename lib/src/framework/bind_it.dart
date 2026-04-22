@@ -2,7 +2,7 @@ part of '../framework.dart';
 
 mixin BindIt on InheritedScope {
   final _inactiveBinds = <Bind>[];
-  Set<Bind>? _reassembledBinds;
+  Set<Bind>? _dirtyBinds;
 
   @protected
   R bind<R>(BuildContext context, BindProvider<R> provider) {
@@ -19,13 +19,13 @@ mixin BindIt on InheritedScope {
         binds.add(bind);
 
       case Bind<R> oldBind when Bind.canUpdate(oldBind.provider, provider):
-        assert(_reassembledBinds?.remove(oldBind) != false);
+        assert(_dirtyBinds?.remove(oldBind) ?? true);
         bind = oldBind..update(provider);
 
       case final oldBind:
         assert(
           oldBind.provider.runtimeType == provider.runtimeType || // key changed
-              _reassembledBinds?.remove(oldBind) == true, // reassembled
+              _dirtyBinds?.remove(oldBind) == true, // reassembled
           'Provider must be reassembled or key changed to replace.',
         );
         _inactiveBinds.add(oldBind..deactivate());
@@ -41,6 +41,12 @@ mixin BindIt on InheritedScope {
     return bind.build();
   }
 
+  @protected
+  @pragma('vm:prefer-inline')
+  void scheduleUpdate(Bind bind) {
+    (_dirtyBinds ??= HashSet()).add(bind);
+  }
+
   @override
   void finalizeTree() {
     for (var i = 0; i < _inactiveBinds.length; i++) {
@@ -49,10 +55,9 @@ mixin BindIt on InheritedScope {
     _inactiveBinds.clear();
 
     assert(() {
-      final orphans = _reassembledBinds;
-      if (orphans == null) return true;
+      if (_dirtyBinds == null) return true;
 
-      for (var bind in orphans) {
+      for (var bind in _dirtyBinds!) {
         if (bind.list!.length == 1) {
           removeDependent(bind.dependent);
           continue;
@@ -60,16 +65,18 @@ mixin BindIt on InheritedScope {
         bind.unlink();
         _unbind(bind..deactivate());
       }
-      _reassembledBinds = null;
+
+      _dirtyBinds = null;
       return true;
     }());
 
     super.finalizeTree();
   }
 
-  static void _unbind(Bind bind) => bind
-    ..unbind()
-    .._node = null;
+  static void _unbind(Bind bind) {
+    bind.unbind();
+    bind._node = null;
+  }
 }
 
 final class Binds extends LinkedList<Bind> {
@@ -122,8 +129,7 @@ mixin Bindings on NodeBase {
     super.reassemble();
     if (binds == null) return;
     for (var bind = binds?.first; bind != null; bind = bind.next) {
-      final reassembled = scope._reassembledBinds ??= HashSet();
-      reassembled.add(bind..reassemble());
+      scope.scheduleUpdate(bind..reassemble());
     }
   }
 

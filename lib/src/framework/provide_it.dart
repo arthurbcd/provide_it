@@ -9,8 +9,8 @@ class ProvideIt extends InheritedWidget {
     this.setup,
     this.provide,
     this.watchers = const [ListenableWatcher()],
-    this.loadingBuilder = _loadingBuilder,
     this.errorBuilder = _errorBuilder,
+    this.loadingBuilder = _loadingBuilder,
     required super.child,
   }) : assert(provide is! Future<void> Function(BuildContext), '''
 ProvideIt.provide must be sync.
@@ -69,7 +69,6 @@ ProvideIt(
 
   /// [Watcher]s are used to automatically watch for changes in providers such as:
   /// - `context.provide`
-  /// - `context.provideAuto`
   /// - `context.provideAsync`
   /// - `context.provideValue`
   ///
@@ -105,15 +104,18 @@ class ScopeIt extends InheritedScope with BindIt, InheritIt, DependIt, ReadIt {
   static ScopeIt of(BuildContext context) {
     final scope = context.getElementForInheritedWidgetOfExactType<ProvideIt>();
     assert(scope != null, 'You must set a `ProvideIt` above your app.');
+
     return scope as ScopeIt;
   }
 
   @override
   ProvideIt get widget => super.widget as ProvideIt;
 
+  FutureOr<void> setup() => widget.setup?.call();
+
   @override
   Widget build() {
-    switch (useFuture(widget.setup)) {
+    switch (useFuture(setup)) {
       case AsyncSnapshot(connectionState: ConnectionState.waiting):
         return widget.loadingBuilder(this);
       case AsyncSnapshot(:final error?, :final stackTrace?):

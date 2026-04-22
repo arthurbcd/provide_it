@@ -5,7 +5,7 @@ import '../framework.dart';
 extension ContextUseFuture on BuildContext {
   /// Creates and subscribes to the [Future] of [create] and returns its snapshot.
   AsyncSnapshot<T> useFuture<T>(
-    FutureOr<T> create()?, {
+    FutureOr<T>? create(), {
     T? initialData,
     Object? key,
   }) {
@@ -14,45 +14,36 @@ extension ContextUseFuture on BuildContext {
 
   /// Subscribes to an already created [Future] and returns its snapshot.
   @Deprecated('Use Future.watch() instead.')
-  AsyncSnapshot<T> useFutureValue<T>(
-    FutureOr<T>? future, {
-    T? initialData,
-    Object? key,
-  }) {
-    return bind(_FutureHook.value(future, initialData: initialData, key: key));
+  AsyncSnapshot<T> useFutureValue<T>(FutureOr<T>? future, {T? initialData}) {
+    return bind(_FutureHook.value(future, initialData: initialData));
   }
 }
 
 extension FutureWatch<T> on Future<T> {
   /// Subscribes to this [Future] and returns its snapshot.
-  AsyncSnapshot<T> watch(BuildContext context, {T? initialData, Object? key}) {
-    return context.bind(
-      _FutureHook.value(this, initialData: initialData, key: key),
-    );
+  AsyncSnapshot<T> watch(BuildContext context, {T? initialData}) {
+    return context.bind(_FutureHook.value(this, initialData: initialData));
   }
 }
 
 class _FutureHook<T> extends HookProvider<AsyncSnapshot<T>> {
-  const _FutureHook(this.create, {this.initialData, super.key})
-    : value = null,
-      label = 'useFuture';
+  const _FutureHook(this.create, {this.initialData, super.key}) : value = null;
+  const _FutureHook.value(this.value, {this.initialData}) : create = null;
 
-  const _FutureHook.value(this.value, {this.initialData, super.key})
-    : create = null,
-      label = 'useFutureValue';
-
-  final FutureOr<T> Function()? create;
+  final FutureOr<T>? Function()? create;
   final FutureOr<T>? value;
   final T? initialData;
-  final String label;
 
   @override
-  _FutureHookState<T> createState() => _FutureHookState<T>();
+  _FutureHookState<T> createState() => _FutureHookState();
 }
 
 class _FutureHookState<T> extends HookState<AsyncSnapshot<T>, _FutureHook<T>> {
   @override
-  String get debugLabel => '{${provider.label}}<$T>';
+  String get debugLabel => switch (provider.create) {
+    null => 'useFutureValue<$T>',
+    _ => 'useFuture<$T>',
+  };
 
   Object? _activeCallbackIdentity;
   late AsyncSnapshot<T> _snapshot;

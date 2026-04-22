@@ -71,9 +71,7 @@ class _ProvideState<T> extends InheritedState<T, _Provide<T>> {
 
   late final _injector = Injector<T>(
     provider.constructor,
-    locator: (p) {
-      return (scope as ScopeIt).readAsync(context: context, type: p.type);
-    },
+    locator: (p) => scope.readAsync(context, type: p.type),
   );
 
   void _create() {

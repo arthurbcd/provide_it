@@ -1,6 +1,13 @@
 part of '../framework.dart';
 
 mixin DependIt on InheritIt {
+  /// Stablishes a dependency between this `context` and an [InheritedState] by [T].
+  ///
+  /// - When first depending on the provider, [InheritedAspect.didDepend] will be called. Then,
+  /// for each [InheritedState.notifyDependents], [InheritedAspect.didChange] will be called.
+  ///
+  /// - When deactivated, [InheritedState.removeDependent] will be called for each
+  /// provider dependency that this `context` depends on.
   @protected
   T dependOnInheritedProvider<T>(
     BuildContext context,

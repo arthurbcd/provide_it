@@ -2,23 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/rendering.dart';
 
-import '../provide_it.dart';
 import 'framework.dart';
 
 /// Extension methods that DO NOT depend on [BuildContext].
-///
-/// Use them freely.
 extension ContextReaders on BuildContext {
   /// Reads a previously bound value by [T].
   T read<T>() {
-    return scope.read<T>(context: this);
+    return scope.read<T>(this);
   }
 
   /// Reads a previously bound value by [T].
   ///
   /// Returns a [Future] if the value is not ready.
   FutureOr<T> readAsync<T>() {
-    return scope.readAsync<T>(context: this);
+    return scope.readAsync<T>(this);
   }
 
   /// The future when all [InheritedState.isReady] are completed.
@@ -28,31 +25,41 @@ extension ContextReaders on BuildContext {
 
   /// The future when [T] is ready.
   FutureOr<void> isReady<T>() {
-    return scope.isReady<T>(context: this);
+    return scope.isReady<T>(this);
   }
 }
 
 /// Extension methods that DO DEPEND on [BuildContext].
-///
-/// Use them directly in [Widget] `build` methods.
 /// - [watch] and [select] can be used is any builder.
-/// - [listen] and [listenSelected] cannot be used in unstable builders,
-/// such as in `itemBuilder` of [ListView.builder], but can be used in a
-/// stable context, such as in a [Builder] inside the `itemBuilder`.
+/// - [listen] and [listenSelected] cannot be used in unstable builders.
 ///
-extension ContextDependents on BuildContext {
+/// Example of stable builders:
+/// - [StatelessWidget.build]
+/// - [State.build] of [StatefulWidget]
+/// - [Builder.builder]
+///
+/// Unstable builders:
+/// - [ListView.builder]
+/// - [GridView.builder]
+/// - [PageView.builder]
+/// - `pageBuilder` of [Page] routes.
+///
+/// As a workaround, you can wrap them in a [Builder] or refactor
+/// them into their own widget to obtain a stable context.
+///
+extension ContextDependencies on BuildContext {
   /// Watches a previously bound value by [T].
   ///
   /// Initializes the provider if not already.
   T watch<T>() {
-    return dependOnInheritedProvider(aspect: _Watch());
+    return scope.dependOnInheritedProvider(this, _Watch());
   }
 
   /// Selects a previously bound value by [T].
   ///
   /// Initializes the provider if not already.
   S select<T, S>(S selector(T value)) {
-    final value = dependOnInheritedProvider(aspect: _Select(selector));
+    final value = scope.dependOnInheritedProvider(this, _Select(selector));
     return selector(value);
   }
 
@@ -61,7 +68,7 @@ extension ContextDependents on BuildContext {
   /// Initializes the provider if not already.
   void listen<T>(void listener(T value)) {
     assert(this is! RenderSliverBoxChildManager, _unstableBuilder);
-    dependOnInheritedProvider(aspect: _Listen(listener));
+    scope.dependOnInheritedProvider(this, _Listen(listener));
   }
 
   /// Listens to a previously bound value by [T], [selector].
@@ -72,7 +79,7 @@ extension ContextDependents on BuildContext {
     void listener(S prev, S next),
   ) {
     assert(this is! RenderSliverBoxChildManager, _unstableBuilder);
-    dependOnInheritedProvider(aspect: _ListenSelected(selector, listener));
+    scope.dependOnInheritedProvider(this, _ListenSelected(selector, listener));
   }
 
   String get _unstableBuilder {
@@ -143,23 +150,10 @@ class _ListenSelected<T, S> extends InheritedAspect<T> {
   }
 }
 
-extension ContextDependsOnInheritedProvider on BuildContext {
-  /// Stablishes a dependency between this `context` and an [InheritedState] by [T].
-  ///
-  /// - When first depending on the provider, [InheritedAspect.didDepend] will be called. Then,
-  /// for each [InheritedState.notifyDependents], [InheritedAspect.didChange] will be called.
-  ///
-  /// - When deactivated, [InheritedState.removeDependent] will be called for each
-  /// provider dependency that this `context` depends on.
-  T dependOnInheritedProvider<T>({required InheritedAspect<T> aspect}) {
-    return scope.dependOnInheritedProvider<T>(this, aspect);
-  }
-}
-
 extension ContextInheritProviders on BuildContext {
   /// Inherits all [InheritedProvider] from [ancestor] to `this`.
   ///
-  /// This allows using [ContextReaders] and [ContextDependents] in simbling contexts,
+  /// This allows using [ContextReaders] and [ContextDependencies] in simbling contexts,
   /// such as in dialogs, routes, overlays, etc.
   void inheritProviders(BuildContext ancestor) {
     assert(this != ancestor, 'Cannot inherit providers from itself.');

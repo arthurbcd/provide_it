@@ -22,7 +22,10 @@ void main() {
       },
       // show something while loading async dependencies, defaults to black screen
       loadingBuilder: (context) {
-        return Center(child: Text('loading'));
+        return Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(child: Text('loading')),
+        );
       },
       // by default auto-notify/dispose listenable/notifier inherited providers
       watchers: [const ListenableWatcher()], // empty disables
@@ -53,7 +56,11 @@ class Home extends StatelessWidget {
 
     return GestureDetector(
       onTap: () => context.read<Counter>().increment(),
-      child: Text('Count: $count'),
+      child: Container(
+        alignment: Alignment.center,
+        color: Colors.deepOrange,
+        child: Text('Count: $count'),
+      ),
     );
   }
 }
@@ -111,9 +118,8 @@ class CounterRepository {
 }
 
 class Counter extends ChangeNotifier {
-  Counter({required this.repository, required this.counterId});
+  Counter({required this.repository});
   final CounterRepository repository;
-  final String counterId;
 
   int _count = 0;
   int get count => _count;
@@ -121,21 +127,5 @@ class Counter extends ChangeNotifier {
   void increment() {
     _count++;
     notifyListeners();
-  }
-}
-
-class CounterExample extends StatelessWidget {
-  const CounterExample({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final (count, setCount) = context.useState(0);
-    final counter = context.useState(0);
-    counter.value;
-
-    return GestureDetector(
-      onTap: () => setCount(count + 1),
-      child: Text('Count: $count'),
-    );
   }
 }

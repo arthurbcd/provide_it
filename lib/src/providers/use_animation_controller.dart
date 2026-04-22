@@ -2,18 +2,7 @@ import '../framework.dart';
 import 'use_single_ticker_provider.dart';
 
 extension ContextUseAnimationController on BuildContext {
-  /// The default duration for [useAnimationController.duration].
-  static Duration duration = Duration(milliseconds: 600);
-
-  /// Creates an [AnimationController] for the current [BuildContext].
-  ///
-  /// The controller automatically disposes with `this` context.
-  ///
-  /// When not provided, the following parameters will:
-  /// - [duration] defaults to [ContextUseAnimationController.duration].
-  /// - [reverseDuration] defaults to [duration].
-  /// - [vsync] defaults to [useSingleTickerProvider].
-  ///
+  /// Creates an [AnimationController] that is automatically disposed.
   AnimationController useAnimationController({
     Duration? duration,
     Duration? reverseDuration,
@@ -26,8 +15,6 @@ extension ContextUseAnimationController on BuildContext {
     Object? key,
   }) {
     vsync ??= useSingleTickerProvider(key: key);
-    duration ??= ContextUseAnimationController.duration;
-    reverseDuration ??= duration;
 
     return bind(
       _UseAnimationController(

@@ -164,7 +164,7 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   bool get selfDependent => _dependents.containsKey(_bind!.dependent);
 
   @protected
-  BindIt get scope => _bind!.scope;
+  ReadIt get scope => _bind!.scope;
 
   @protected
   BuildContext get context => _bind!.dependent;
@@ -180,8 +180,8 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
 
   /// Notifies all dependents [InheritedAspect] of this [InheritedState].
   ///
-  /// An aspect can be a [watch], [listen], [select], [listenSelected] or any custom aspect
-  /// that invokes [ContextDependsOnInheritedProvider].
+  /// An aspect can be a `watch`, `listen`, `select`, `listenSelected` or any custom aspect
+  /// that invokes `context.dependsOnInheritedProvider`.
   ///
   /// Unlike [State.setState], this method triggers a rebuild only for widgets depending on this provider,
   /// not the provider itself.
@@ -191,9 +191,9 @@ abstract class InheritedState<T, R extends InheritedProvider<T>> {
   void notifyDependents() {
     final value = read() as T;
 
-    _dependents.forEach((Element element, List<InheritedAspect<T?>> aspects) {
+    _dependents.forEach((Element dependent, List<InheritedAspect<T?>> aspects) {
       for (var i = 0; i < aspects.length; i++) {
-        aspects[i].didChange(element, value);
+        aspects[i].didChange(dependent, value);
       }
     });
   }
@@ -236,9 +236,9 @@ abstract class InheritedAspect<T> {
 }
 
 class ProviderNotReadyException implements Exception {
-  ProviderNotReadyException(this.message);
+  const ProviderNotReadyException(this.message);
   final String message;
 
   @override
-  String toString() => 'LoadingProvideException: $message';
+  String toString() => 'ProviderNotReadyException: $message';
 }

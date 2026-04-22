@@ -19,7 +19,7 @@ mixin ReadIt on InheritIt {
   }
 
   @protected
-  FutureOr<void> isReady<T>({BuildContext? context}) {
+  FutureOr<void> isReady<T>(BuildContext context) {
     final state = getInheritedBind<T>(context: context);
     assert(state != null || null is T, 'InheritedProvider<$T> not found.');
 
@@ -29,14 +29,14 @@ mixin ReadIt on InheritIt {
   }
 
   @protected
-  T read<T>({BuildContext? context}) {
-    if (readAsync<T>(context: context) case T value) return value;
+  T read<T>(BuildContext context) {
+    if (readAsync<T>(context) case T value) return value;
     if (null is T) return null as T;
     throw ProviderNotReadyException('$T is loading');
   }
 
   @protected
-  FutureOr<T> readAsync<T>({BuildContext? context, String? type}) {
+  FutureOr<T> readAsync<T>(BuildContext context, {String? type}) {
     final state = getInheritedBind<T>(context: context, type: type);
 
     return switch (state?.read()) {

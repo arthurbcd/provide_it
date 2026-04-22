@@ -17,7 +17,7 @@ For handling local state quickly.
 ```dart
 // Hook & use locally.
 final counter = context.use(() => Counter());
-final (count, setCount) = context.useValue(0);
+final (count, setCount) = context.useState(0);
 ```
 
 ### Hook Example
@@ -27,7 +27,7 @@ class CounterExample extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (count, setCount) = context.useValue(0);
+    final (count, setCount) = context.useState(0);
 
     return GestureDetector(
       onTap: () => setCount(count + 1),
@@ -44,7 +44,7 @@ For sharing state across screens and routes.
 ```dart
 // Provide it...
 context.provide(() => Counter()); // classic
-context.provideAuto(Counter.new); // auto-injects dependencies
+context.provide(Counter.new); // auto-injects dependencies
 context.provideValue(0);
 
 // ... and use it anywhere
@@ -87,19 +87,26 @@ Below is a list of all `context` providers currently available.
 
 | Extension method | Provider type | Description |
 |------------------|---------------|-------------|
-| `context.provide` | InheritedProvider | Provides a value using a manual factory |
-| `context.provideAuto` | InheritedProvider | Provides a value with auto-dependency injection |
+| `context.provide` | InheritedProvider | Provides a value with auto-dependency injection |
 | `context.provideAsync` | InheritedProvider | Provides a `Future` value asynchronously |
 | `context.provideValue` | InheritedProvider | Provides an existing value with optional update callback |
 | `context.use` | HookProvider | Creates a local value tied to the context |
-| `context.useValue` | HookProvider | Returns a mutable value record |
+| `context.useState` | HookProvider | Returns a mutable value record |
 | `context.useStream` | HookProvider | Subscribes to a `Stream` and returns `AsyncSnapshot` |
-| `context.useStreamValue` | HookProvider | Subscribes to an existing `Stream` |
 | `context.useFuture` | HookProvider | Subscribes to a `Future` and returns `AsyncSnapshot` |
-| `context.useFutureValue` | HookProvider | Subscribes to an existing `Future` |
+| `context.useValueNotifier` | HookProvider | Creates a `ValueNotifier` that is automatically disposed |
+| `context.useAppLifecycleState` | HookProvider | Rebuilds when app lifecycle state changes |
+| `context.useAppLifecycleListener` | HookProvider | Listens to app lifecycle events without rebuilding |
+| `context.useFocusNode` | HookProvider | Creates a `FocusNode` that is automatically disposed |
+| `context.useScrollController` | HookProvider | Creates a `ScrollController` that is automatically disposed |
+| `context.usePageController` | HookProvider | Creates a `PageController` that is automatically disposed |
+| `context.useTextEditingController` | HookProvider | Creates a `TextEditingController` that is automatically disposed |
+| `context.useTextEditingControllerFromValue` | HookProvider | Creates a `TextEditingController` from a `TextEditingValue` |
 | `context.useSingleTickerProvider` | HookProvider | Provides a `TickerProvider` for animations |
 | `context.useAnimationController` | HookProvider | Creates an `AnimationController` tied to context |
 | `context.useAutomaticKeepAlive` | HookProvider | Enables/disables automatic keep-alive for the subtree |
+
+> For existing `Future`, `Stream`, and `Listenable` values, prefer `Future.watch(context)`, `Stream.watch(context)`, and `Listenable.watch(context)`.
 
 ---
 
@@ -131,12 +138,25 @@ ProvideIt doesn't behave exactly like a Service Locator or a traditional Provide
 
 ### State Binding
 
-At its core, ProvideIt is a **single** `InheritedWidget` acting as a container. When you use an extension like `context.useValue` or `context.provide`, you are performing State Binding.
+At its core, ProvideIt is a **single** `InheritedWidget` acting as a container. When you use an extension like `context.useState` or `context.provide`, you are performing State Binding.
 
 There are two types of bindings:
 
 1. **HookProvider** (Local): Private state. It lives and dies with that specific widget.
 2. **InheritedProvider** (Shared): Global-ish state. It's registered in the container and becomes available to other contexts.
+
+> **Note:** For stability and predictability, you must **never** use conditional logic (if/else) when calling providers. Both `InheritedProvider` and `HookProvider` rely on a consistent execution order to maintain internal state correctly.
+
+### The "Use" Mindset
+
+While the syntax may remind you of React Hooks, ProvideIt is built from the ground up for Flutter. The "use" prefix signifies **Creation and Lifecycle Management**.
+
+- **Creation & Lifecycle**: `context.use` works like a persistent `initState` + `dispose`. It's responsible for creating the object and ensuring it's cleaned up (auto-dispose). For example, `context.useAnimationController` creates the controller and disposes it when the widget is unmounted.
+- **Reactivity vs. Creation**: We separate *creation* from *observation* to avoid confusion:
+    - `context.useFuture(...)` / `context.useStream(...)`: **Creates** and manages the lifecycle of a new Future or Stream.
+    - `future.watch(context)` / `stream.watch(context)`: **Listens** to an *already existing* Future or Stream.
+    Under the hood both ways use the same `HookProvider` engine.
+- **Explicit Reactivity**: For existing values, use the clear and familiar `.watch`, `.listen`, and `.select` extensions.
 
 ### Scoping & Disambiguation
 
